@@ -26,6 +26,12 @@ function productionConfig() {
     ACTIONS_AUDIENCE: "https://api.example.test/actions",
     OAUTH_STORE_PATH: "/tmp/oauth-store.json",
     ALLOWED_ORIGINS: "https://chatgpt.com",
+    ACCESS_TOKEN_TTL_SECONDS: "900",
+    ID_TOKEN_TTL_SECONDS: "300",
+    AUTHORIZATION_CODE_TTL_SECONDS: "300",
+    REFRESH_TOKEN_TTL_SECONDS: "2592000",
+    RATE_LIMIT_WINDOW_SECONDS: "60",
+    RATE_LIMIT_MAX_REQUESTS: "120",
   });
 }
 

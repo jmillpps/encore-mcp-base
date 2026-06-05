@@ -28,12 +28,12 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
     actionsAudience,
     oauthStorePath,
     allowedOrigins: readAllowedOrigins(env, production),
-    accessTokenTtlSeconds: readNumber(env.ACCESS_TOKEN_TTL_SECONDS, 900),
-    idTokenTtlSeconds: readNumber(env.ID_TOKEN_TTL_SECONDS, 300),
-    authorizationCodeTtlSeconds: readNumber(env.AUTHORIZATION_CODE_TTL_SECONDS, 300),
-    refreshTokenTtlSeconds: readNumber(env.REFRESH_TOKEN_TTL_SECONDS, 2592000),
-    rateLimitWindowSeconds: readNumber(env.RATE_LIMIT_WINDOW_SECONDS, 60),
-    rateLimitMaxRequests: readNumber(env.RATE_LIMIT_MAX_REQUESTS, 120),
+    accessTokenTtlSeconds: readNumber(env, "ACCESS_TOKEN_TTL_SECONDS", 900, production),
+    idTokenTtlSeconds: readNumber(env, "ID_TOKEN_TTL_SECONDS", 300, production),
+    authorizationCodeTtlSeconds: readNumber(env, "AUTHORIZATION_CODE_TTL_SECONDS", 300, production),
+    refreshTokenTtlSeconds: readNumber(env, "REFRESH_TOKEN_TTL_SECONDS", 2592000, production),
+    rateLimitWindowSeconds: readNumber(env, "RATE_LIMIT_WINDOW_SECONDS", 60, production),
+    rateLimitMaxRequests: readNumber(env, "RATE_LIMIT_MAX_REQUESTS", 120, production),
     production,
   };
 }
@@ -67,9 +67,14 @@ function normalizeOrigin(value: string, production: boolean): string {
   return url.origin;
 }
 
-function readNumber(value: string | undefined, fallback: number): number {
-  if (value === undefined) return fallback;
+function readNumber(env: NodeJS.ProcessEnv, key: string, fallback: number, production: boolean): number {
+  const value = env[key];
+  if (value === undefined) {
+    if (production) throw new Error(`${key} is required`);
+    return fallback;
+  }
   const parsed = Number(value);
-  if (!Number.isSafeInteger(parsed) || parsed <= 0) throw new Error("invalid numeric configuration");
+  if (production && value.trim() === "") throw new Error(`${key} is required`);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) throw new Error(`${key} must be a positive safe integer`);
   return parsed;
 }

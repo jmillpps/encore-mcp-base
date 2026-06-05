@@ -9,6 +9,12 @@ test("production config requires explicit secure public URLs and origins", () =>
   assert.equal(config.mcpResource, "https://mcp.example.test");
   assert.equal(config.actionsAudience, "https://api.example.test/actions");
   assert.deepEqual(config.allowedOrigins, ["https://chatgpt.com"]);
+  assert.equal(config.accessTokenTtlSeconds, 900);
+  assert.equal(config.idTokenTtlSeconds, 300);
+  assert.equal(config.authorizationCodeTtlSeconds, 300);
+  assert.equal(config.refreshTokenTtlSeconds, 2592000);
+  assert.equal(config.rateLimitWindowSeconds, 60);
+  assert.equal(config.rateLimitMaxRequests, 120);
 });
 
 test("production config rejects insecure or ambiguous deployment inputs", () => {
@@ -18,6 +24,8 @@ test("production config rejects insecure or ambiguous deployment inputs", () => 
   assert.throws(() => readConfig(productionEnv({ ALLOWED_ORIGINS: "https://*.example.test" })), /wildcards/);
   assert.throws(() => readConfig(productionEnv({ ALLOWED_ORIGINS: "https://chatgpt.com/path" })), /must be origins/);
   assert.throws(() => readConfig(productionEnv({ OAUTH_STORE_PATH: "" })), /OAUTH_STORE_PATH is required/);
+  assert.throws(() => readConfig(productionEnv({ ACCESS_TOKEN_TTL_SECONDS: undefined })), /ACCESS_TOKEN_TTL_SECONDS is required/);
+  assert.throws(() => readConfig(productionEnv({ RATE_LIMIT_MAX_REQUESTS: "0" })), /RATE_LIMIT_MAX_REQUESTS must be a positive safe integer/);
 });
 
 test("local config keeps localhost defaults for development", () => {
@@ -36,6 +44,12 @@ function productionEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
     ACTIONS_AUDIENCE: "https://api.example.test/actions",
     OAUTH_STORE_PATH: "/tmp/oauth-store.json",
     ALLOWED_ORIGINS: "https://chatgpt.com",
+    ACCESS_TOKEN_TTL_SECONDS: "900",
+    ID_TOKEN_TTL_SECONDS: "300",
+    AUTHORIZATION_CODE_TTL_SECONDS: "300",
+    REFRESH_TOKEN_TTL_SECONDS: "2592000",
+    RATE_LIMIT_WINDOW_SECONDS: "60",
+    RATE_LIMIT_MAX_REQUESTS: "120",
     ...overrides,
   };
 }
