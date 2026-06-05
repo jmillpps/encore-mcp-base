@@ -12,6 +12,8 @@ test("userinfo accepts valid tokens issued for Actions and MCP resources", async
     const response = await oauth.userInfoRequest(flow.as, localClient, flow.tokens.access_token, {
       [oauth.allowInsecureRequests]: true,
     });
+    assert.equal(response.headers.get("cache-control"), "no-store");
+    assert.equal(response.headers.get("pragma"), "no-cache");
     const userInfo = await oauth.processUserInfoResponse(flow.as, localClient, flow.idClaims.sub, response);
     assert.equal(userInfo.email, "jmiller@inifnitedevlab.com");
   }

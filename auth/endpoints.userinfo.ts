@@ -11,7 +11,7 @@ export const userinfo = api.raw({ expose: true, method: "GET", path: "/oauth/use
     const config = readConfig();
     await enforceRateLimit(config, "oauth-userinfo", requestSubject(req));
     verifyBearerAnyAudience(config, String(req.headers.authorization ?? ""), [config.actionsAudience, config.mcpResource], ["openid"]);
-    writeJson(res, 200, staticUser);
+    writeJson(res, 200, staticUser, { "cache-control": "no-store", pragma: "no-cache" });
   } catch (error) {
     writeOAuthError(res, error, { endpoint: "oauth.userinfo", method: "GET", subject: requestSubject(req) });
   }
