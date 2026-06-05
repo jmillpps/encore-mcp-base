@@ -15,6 +15,9 @@ test("MCP Streamable HTTP validates transport headers and session lifecycle", as
   const malformed = await postRawMcp(service, "{");
   assert.equal(malformed.status, 400);
   assert.equal(((await readJson(malformed)).error as Record<string, unknown>).code, -32700);
+  const oversized = await postRawMcp(service, JSON.stringify({ jsonrpc: "2.0", id: "oversized", method: "ping", params: { payload: "x".repeat(33000) } }));
+  assert.equal(oversized.status, 413);
+  assert.equal(((await readJson(oversized)).error as Record<string, unknown>).code, -32600);
   await expectOAuthError(await postMcp(service, { jsonrpc: "2.0", id: "bad-session", method: "ping" }, { sessionId: "bad-session" }), 400, "bad_request");
   await expectOAuthError(await postMcp(service, { jsonrpc: "2.0", id: "bad-version", method: "ping" }, { sessionId, protocolVersion: "2024-01-01" }), 400, "bad_request");
   await expectOAuthError(await getMcp(service), 400, "bad_request");

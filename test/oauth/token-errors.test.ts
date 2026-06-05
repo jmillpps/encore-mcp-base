@@ -88,6 +88,23 @@ test("oauth endpoints return generic external error descriptions", async (t) => 
   assert.equal(JSON.stringify(userinfoError).includes("bearer"), false);
 });
 
+test("token endpoint rejects oversized form bodies", async (t) => {
+  const service = await startService(t);
+  const as = await discover(service);
+  const body = new URLSearchParams({
+    grant_type: "authorization_code",
+    client_id: "local-test",
+    client_secret: localClientSecret,
+    code: "x".repeat(33000),
+    redirect_uri: "http://localhost:4000/test/callback",
+    code_verifier: "verifier",
+    resource: service.actionsAudience,
+  });
+  const error = await expectOAuthError(await postToken(as.token_endpoint, body), 413, "bad_request");
+  assert.equal(error.error_description, "invalid request");
+  assert.equal(JSON.stringify(error).includes("x".repeat(64)), false);
+});
+
 async function tokenRequest(
   tokenEndpoint: string | undefined,
   resource: string,
