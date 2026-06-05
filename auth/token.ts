@@ -1,21 +1,14 @@
 import type { ServiceConfig } from "../shared/config.ts";
 import { ServiceError } from "../shared/errors.ts";
-import { assertClientAuthMethod, assertClientSecret, assertResource, findClient, type OAuthClient } from "./clients.ts";
+import { assertClientAuthMethod, assertClientSecret, findClient, type OAuthClient } from "./clients.ts";
 import { readClientCredentials } from "./client-auth.ts";
-import { assertAllowedParameters, optionalParameter, requiredParameter } from "./oauth-parameters.ts";
-import { staticUser } from "./static-user.ts";
-import { DiskOAuthStore } from "./storage/disk-store.ts";
-import { issueAccessToken } from "./tokens/access-token.ts";
-import { issueIdToken } from "./tokens/id-token.ts";
+import { assertAllowedParameters, optionalParameter } from "./oauth-parameters.ts";
+import type { DiskOAuthStore } from "./storage/disk-store.ts";
+import { authorizationCodeGrant } from "./tokens/authorization-code.ts";
+import { refreshTokenGrant } from "./tokens/refresh-token.ts";
+import type { TokenResponse } from "./tokens/token-response.ts";
 
-export interface TokenResponse {
-  access_token: string;
-  token_type: "bearer";
-  expires_in: number;
-  refresh_token?: string;
-  id_token?: string;
-  scope: string;
-}
+export type { TokenResponse } from "./tokens/token-response.ts";
 
 export async function handleTokenGrant(
   config: ServiceConfig,
@@ -40,44 +33,4 @@ function tokenGrantParameters(grant: string | undefined): string[] {
   if (grant === "authorization_code") return ["grant_type", "client_id", "client_secret", "code", "redirect_uri", "code_verifier", "resource"];
   if (grant === "refresh_token") return ["grant_type", "client_id", "client_secret", "refresh_token", "resource"];
   return ["grant_type", "client_id", "client_secret"];
-}
-
-async function authorizationCodeGrant(config: ServiceConfig, store: DiskOAuthStore, client: OAuthClient, form: URLSearchParams): Promise<TokenResponse> {
-  const code = requiredParameter(form, "code");
-  const redirectUri = requiredParameter(form, "redirect_uri");
-  const requestedResource = optionalParameter(form, "resource");
-  const record = await store.consumeAuthorizationCode(code, optionalParameter(form, "code_verifier"), {
-    clientId: client.clientId,
-    redirectUri,
-    ...(requestedResource !== undefined ? { resource: requestedResource } : {}),
-  });
-  const resource = requestedResource ?? record.resource;
-  assertResource(client, resource);
-  const refreshToken = await store.createRefreshToken({
-    clientId: client.clientId,
-    resource,
-    scopes: record.scopes,
-    userSub: record.userSub,
-    authTime: record.authTime,
-    ttlSeconds: config.refreshTokenTtlSeconds,
-  });
-  return tokenResponse(config, client.clientId, resource, record.scopes, refreshToken, record.authTime, record.nonce);
-}
-
-async function refreshTokenGrant(config: ServiceConfig, store: DiskOAuthStore, client: OAuthClient, form: URLSearchParams): Promise<TokenResponse> {
-  const token = requiredParameter(form, "refresh_token");
-  const rotated = await store.rotateRefreshToken(token, client.clientId, config.refreshTokenTtlSeconds, optionalParameter(form, "resource"));
-  return tokenResponse(config, client.clientId, rotated.oldRecord.resource, rotated.oldRecord.scopes, rotated.newToken, rotated.oldRecord.authTime);
-}
-
-function tokenResponse(config: ServiceConfig, clientId: string, resource: string, scopes: string[], refreshToken: string, authTime: number, nonce?: string): TokenResponse {
-  const response: TokenResponse = {
-    access_token: issueAccessToken(config, { sub: staticUser.sub, clientId, audience: resource, scopes }),
-    token_type: "bearer",
-    expires_in: config.accessTokenTtlSeconds,
-    refresh_token: refreshToken,
-    scope: scopes.join(" "),
-  };
-  if (scopes.includes("openid")) response.id_token = issueIdToken(config, staticUser, clientId, authTime, nonce);
-  return response;
 }
