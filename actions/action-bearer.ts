@@ -1,13 +1,15 @@
 import { APIError } from "encore.dev/api";
 import { verifyBearer } from "../auth/bearer.ts";
 import type { AccessTokenClaims } from "../auth/tokens/token-claims.ts";
+import { ServiceError } from "../shared/errors.ts";
 import { readConfig } from "../shared/config.ts";
 
 export function verifyActionBearer(authorization: string, scopes: string[]): AccessTokenClaims {
   try {
     const config = readConfig();
     return verifyBearer(config, authorization, config.actionsAudience, scopes);
-  } catch {
+  } catch (error) {
+    if (error instanceof ServiceError && error.status === 403) throw APIError.permissionDenied("insufficient scope");
     throw APIError.unauthenticated("invalid bearer token");
   }
 }
