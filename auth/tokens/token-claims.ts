@@ -23,4 +23,5 @@ export interface IdTokenClaims {
   preferred_username: string;
   email: string;
   email_verified: boolean;
+  nonce?: string;
 }

@@ -3,6 +3,7 @@ import { ServiceError } from "../shared/errors.ts";
 import { DiskOAuthStore } from "./storage/disk-store.ts";
 import { assertAllowedScopes, parseScopes } from "./scopes.ts";
 import { assertRedirectUri, assertResource, findClient, type OAuthClient } from "./clients.ts";
+import { oidcNonce } from "./nonce.ts";
 import { pkceInput } from "./pkce.ts";
 import { staticUser } from "./static-user.ts";
 
@@ -15,6 +16,7 @@ export interface AuthorizationRequest {
   resource?: string;
   codeChallenge?: string;
   codeChallengeMethod?: string;
+  nonce?: string;
 }
 
 export async function createAuthorizationRedirect(
@@ -32,6 +34,7 @@ export async function createAuthorizationRedirect(
   const scopes = parseScopes(request.scope);
   assertAllowedScopes(scopes, client.allowedScopes);
   const pkce = pkceInput(client.pkcePolicy, request.codeChallenge, request.codeChallengeMethod);
+  const nonce = oidcNonce(request.nonce);
   const code = await store.createAuthorizationCode({
     clientId: client.clientId,
     redirectUri: request.redirectUri,
@@ -40,6 +43,7 @@ export async function createAuthorizationRedirect(
     userSub: staticUser.sub,
     ttlSeconds: config.authorizationCodeTtlSeconds,
     ...pkce,
+    ...(nonce ? { nonce } : {}),
   });
   const redirect = new URL(request.redirectUri);
   redirect.searchParams.set("code", code);

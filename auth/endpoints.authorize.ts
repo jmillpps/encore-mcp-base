@@ -13,7 +13,17 @@ export const authorize = api.raw({ expose: true, method: "GET", path: "/oauth/au
     const config = readConfig();
     const url = new URL(req.url ?? "", config.issuer);
     await enforceRateLimit(config, "oauth-authorize", clientRateSubject(url.searchParams.get("client_id"), requestSubject(req)));
-    assertAllowedParameters(url.searchParams, ["response_type", "client_id", "redirect_uri", "scope", "state", "resource", "code_challenge", "code_challenge_method"]);
+    assertAllowedParameters(url.searchParams, [
+      "response_type",
+      "client_id",
+      "redirect_uri",
+      "scope",
+      "state",
+      "resource",
+      "code_challenge",
+      "code_challenge_method",
+      "nonce",
+    ]);
     const request = {
       responseType: requiredParameter(url.searchParams, "response_type"),
       clientId: requiredParameter(url.searchParams, "client_id"),
@@ -23,6 +33,7 @@ export const authorize = api.raw({ expose: true, method: "GET", path: "/oauth/au
       ...(url.searchParams.has("resource") ? { resource: optionalParameter(url.searchParams, "resource") ?? "" } : {}),
       ...(url.searchParams.has("code_challenge") ? { codeChallenge: optionalParameter(url.searchParams, "code_challenge") ?? "" } : {}),
       ...(url.searchParams.has("code_challenge_method") ? { codeChallengeMethod: optionalParameter(url.searchParams, "code_challenge_method") ?? "" } : {}),
+      ...(url.searchParams.has("nonce") ? { nonce: optionalParameter(url.searchParams, "nonce") ?? "" } : {}),
     };
     const redirect = await createAuthorizationRedirect(config, new DiskOAuthStore(config.oauthStorePath), loadClients(config), request);
     writeRedirect(res, redirect);

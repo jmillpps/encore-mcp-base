@@ -60,7 +60,7 @@ async function authorizationCodeGrant(config: ServiceConfig, store: DiskOAuthSto
     userSub: record.userSub,
     ttlSeconds: config.refreshTokenTtlSeconds,
   });
-  return tokenResponse(config, client.clientId, resource, record.scopes, refreshToken);
+  return tokenResponse(config, client.clientId, resource, record.scopes, refreshToken, record.nonce);
 }
 
 async function refreshTokenGrant(config: ServiceConfig, store: DiskOAuthStore, client: OAuthClient, form: URLSearchParams): Promise<TokenResponse> {
@@ -69,7 +69,7 @@ async function refreshTokenGrant(config: ServiceConfig, store: DiskOAuthStore, c
   return tokenResponse(config, client.clientId, rotated.oldRecord.resource, rotated.oldRecord.scopes, rotated.newToken);
 }
 
-function tokenResponse(config: ServiceConfig, clientId: string, resource: string, scopes: string[], refreshToken: string): TokenResponse {
+function tokenResponse(config: ServiceConfig, clientId: string, resource: string, scopes: string[], refreshToken: string, nonce?: string): TokenResponse {
   const response: TokenResponse = {
     access_token: issueAccessToken(config, { sub: staticUser.sub, clientId, audience: resource, scopes }),
     token_type: "bearer",
@@ -77,6 +77,6 @@ function tokenResponse(config: ServiceConfig, clientId: string, resource: string
     refresh_token: refreshToken,
     scope: scopes.join(" "),
   };
-  if (scopes.includes("openid")) response.id_token = issueIdToken(config, staticUser, clientId);
+  if (scopes.includes("openid")) response.id_token = issueIdToken(config, staticUser, clientId, nonce);
   return response;
 }

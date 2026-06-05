@@ -25,6 +25,7 @@ export class DiskOAuthStore {
       userSub: input.userSub,
       expiresAt: createdAt + input.ttlSeconds,
       createdAt,
+      ...(input.nonce ? { nonce: input.nonce } : {}),
       ...(input.codeChallenge ? { codeChallenge: input.codeChallenge } : {}),
       ...(input.codeChallengeMethod ? { codeChallengeMethod: input.codeChallengeMethod } : {}),
     };

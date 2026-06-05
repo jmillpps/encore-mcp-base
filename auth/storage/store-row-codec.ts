@@ -1,14 +1,43 @@
 import type { AuthorizationCodeRecord, McpSessionRecord, RefreshTokenRecord } from "./store-records.ts";
-import { compact, hash, methodS256, optionalHash, optionalSeconds, row, scopes, scopesJson, seconds, text, type DiskRow } from "./store-row-primitives.ts";
+import { isOidcNonce } from "../nonce.ts";
+import {
+  compact,
+  hash,
+  malformed,
+  methodS256,
+  optionalHash,
+  optionalSeconds,
+  optionalText,
+  row,
+  scopes,
+  scopesJson,
+  seconds,
+  text,
+  type DiskRow,
+} from "./store-row-primitives.ts";
 
 export function authorizationCodeFromDisk(value: unknown): AuthorizationCodeRecord {
-  const record = row(value, ["code_hash", "client_id", "redirect_uri", "resource", "scopes_json", "code_challenge", "code_challenge_method", "user_sub", "expires_at", "consumed_at", "created_at"]);
+  const record = row(value, [
+    "code_hash",
+    "client_id",
+    "redirect_uri",
+    "resource",
+    "scopes_json",
+    "nonce",
+    "code_challenge",
+    "code_challenge_method",
+    "user_sub",
+    "expires_at",
+    "consumed_at",
+    "created_at",
+  ]);
   return {
     codeHash: hash(record, "code_hash"),
     clientId: text(record, "client_id"),
     redirectUri: text(record, "redirect_uri"),
     resource: text(record, "resource"),
     scopes: scopes(record),
+    nonce: optionalNonce(record, "nonce"),
     codeChallenge: optionalHash(record, "code_challenge"),
     codeChallengeMethod: methodS256(record, "code_challenge_method"),
     userSub: text(record, "user_sub"),
@@ -25,6 +54,7 @@ export function authorizationCodeToDisk(record: AuthorizationCodeRecord): DiskRo
     redirect_uri: record.redirectUri,
     resource: record.resource,
     scopes_json: scopesJson(record.scopes),
+    nonce: record.nonce,
     code_challenge: record.codeChallenge,
     code_challenge_method: record.codeChallengeMethod,
     user_sub: record.userSub,
@@ -99,4 +129,11 @@ export function rateLimitFromDisk(value: unknown): { count: number; resetAt: num
 
 export function rateLimitToDisk(record: { count: number; resetAt: number }): DiskRow {
   return { count: record.count, reset_at: record.resetAt };
+}
+
+function optionalNonce(record: DiskRow, key: string): string | undefined {
+  const value = optionalText(record, key);
+  if (value === undefined) return undefined;
+  if (!isOidcNonce(value)) malformed();
+  return value;
 }

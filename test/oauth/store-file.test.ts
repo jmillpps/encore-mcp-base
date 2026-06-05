@@ -19,6 +19,7 @@ test("OAuth store persists PRD field names and reloads records through the stric
     redirectUri: "http://localhost:4000/callback",
     resource: "http://localhost:4000/actions",
     scopes: ["openid", "profile", "email"],
+    nonce: "nonce-value",
     userSub: "user_justin_miller",
     ttlSeconds: 300,
   });
@@ -39,6 +40,7 @@ test("OAuth store persists PRD field names and reloads records through the stric
   const persisted = await readFile(path, "utf8");
   assert.match(persisted, /"code_hash"/);
   assert.match(persisted, /"scopes_json"/);
+  assert.match(persisted, /"nonce"/);
   assert.match(persisted, /"rotated_from_hash"/);
   assert.match(persisted, /"reset_at"/);
   assert.equal(persisted.includes("codeHash"), false);
@@ -56,6 +58,12 @@ test("OAuth store rejects malformed JSON and unexpected record shapes", async (t
   await assert.rejects(() => new DiskOAuthStore(path).createRefreshToken(refreshInput()), /store file is malformed/);
   await writeFile(path, JSON.stringify({ authorizationCodes: { [validHash]: { code_hash: validHash, unexpected: true } } }), "utf8");
   await assert.rejects(() => new DiskOAuthStore(path).createRefreshToken(refreshInput()), /store file is malformed/);
+  await writeFile(
+    path,
+    JSON.stringify({ authorizationCodes: { [validHash]: authorizationCodeDiskRecord({ nonce: "bad nonce" }) } }),
+    "utf8",
+  );
+  await assert.rejects(() => new DiskOAuthStore(path).createRefreshToken(refreshInput()), /store file is malformed/);
 });
 
 test("OAuth store rejects traversal and non-json paths", () => {
@@ -71,5 +79,19 @@ function refreshInput() {
     resource: "http://localhost:4000/actions",
     scopes: ["openid"],
     ttlSeconds: 300,
+  };
+}
+
+function authorizationCodeDiskRecord(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    code_hash: validHash,
+    client_id: "local-test",
+    redirect_uri: "http://localhost:4000/callback",
+    resource: "http://localhost:4000/actions",
+    scopes_json: JSON.stringify(["openid"]),
+    user_sub: "user_justin_miller",
+    expires_at: 9999999999,
+    created_at: 1,
+    ...overrides,
   };
 }

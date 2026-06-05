@@ -4,6 +4,7 @@ export interface AuthorizationCodeRecord {
   redirectUri: string;
   resource: string;
   scopes: string[];
+  nonce?: string;
   codeChallenge?: string;
   codeChallengeMethod?: "S256";
   userSub: string;

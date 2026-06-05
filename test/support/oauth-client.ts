@@ -29,6 +29,7 @@ export async function authorizeCode(
   as: oauth.AuthorizationServer,
   resource: string,
   scope = "openid profile email",
+  nonce?: string,
 ): Promise<AuthorizedCode> {
   const codeVerifier = oauth.generateRandomCodeVerifier();
   const codeChallenge = await oauth.calculatePKCECodeChallenge(codeVerifier);
@@ -42,6 +43,7 @@ export async function authorizeCode(
   url.searchParams.set("resource", resource);
   url.searchParams.set("code_challenge", codeChallenge);
   url.searchParams.set("code_challenge_method", "S256");
+  if (nonce) url.searchParams.set("nonce", nonce);
   const response = await fetch(url, { redirect: "manual" });
   assert.equal(response.status, 302);
   const location = requireString(response.headers.get("location"), "location");
@@ -55,6 +57,7 @@ export async function exchangeCode(
   authorization: AuthorizedCode,
   resource: string,
   codeVerifier = authorization.codeVerifier,
+  expectedNonce?: string,
 ): Promise<{ response: Response; tokens: oauth.TokenEndpointResponse; idClaims: oauth.IDToken }> {
   const response = await oauth.authorizationCodeGrantRequest(
     authorization.as,
@@ -68,7 +71,10 @@ export async function exchangeCode(
       [oauth.allowInsecureRequests]: true,
     },
   );
-  const tokens = await oauth.processAuthorizationCodeResponse(authorization.as, localClient, response, { requireIdToken: true });
+  const tokens = await oauth.processAuthorizationCodeResponse(authorization.as, localClient, response, {
+    requireIdToken: true,
+    expectedNonce: expectedNonce ?? oauth.expectNoNonce,
+  });
   await oauth.validateApplicationLevelSignature(authorization.as, response, { [oauth.allowInsecureRequests]: true });
   const idClaims = oauth.getValidatedIdTokenClaims(tokens);
   assert.ok(idClaims);
@@ -79,10 +85,11 @@ export async function completeAuthorizationCodeFlow(
   service: TestService,
   resource = service.actionsAudience,
   scope = "openid profile email",
+  nonce?: string,
 ): Promise<CompletedFlow> {
   const as = await discover(service);
-  const authorization = await authorizeCode(service, as, resource, scope);
-  const { tokens, idClaims } = await exchangeCode(authorization, resource);
+  const authorization = await authorizeCode(service, as, resource, scope, nonce);
+  const { tokens, idClaims } = await exchangeCode(authorization, resource, authorization.codeVerifier, nonce);
   return { ...authorization, tokens, idClaims };
 }
 

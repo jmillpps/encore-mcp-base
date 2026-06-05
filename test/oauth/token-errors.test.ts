@@ -24,6 +24,9 @@ test("authorization endpoint rejects invalid client request parameters", async (
     "bad_request",
   );
   await expectOAuthError(await fetch(authorizeUrl(as.authorization_endpoint, service.actionsAudience, { codeChallenge: "short" }), { redirect: "manual" }), 400, "bad_request");
+  const invalidNonce = authorizeUrl(as.authorization_endpoint, service.actionsAudience, {});
+  invalidNonce.searchParams.set("nonce", "bad nonce");
+  await expectOAuthError(await fetch(invalidNonce, { redirect: "manual" }), 400, "bad_request");
 });
 
 test("token endpoint rejects invalid secrets without consuming the authorization code", async (t) => {

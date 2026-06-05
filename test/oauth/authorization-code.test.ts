@@ -45,6 +45,13 @@ test("authorization code cannot be reused after token exchange", async (t) => {
   assert.equal(body.error, "invalid_grant");
 });
 
+test("authorization code flow carries OIDC nonce into the ID token", async (t) => {
+  const service = await startService(t);
+  const nonce = oauth.generateRandomNonce();
+  const flow = await completeAuthorizationCodeFlow(service, service.actionsAudience, "openid profile email", nonce);
+  assert.equal(flow.idClaims.nonce, nonce);
+});
+
 test("expired authorization code cannot be exchanged", async (t) => {
   const service = await startService(t, { AUTHORIZATION_CODE_TTL_SECONDS: "1" });
   const flow = await completeAuthorizationCodeFlow(service);
