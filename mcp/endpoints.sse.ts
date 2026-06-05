@@ -12,7 +12,7 @@ export const sse = api.raw({ expose: true, method: "GET", path: "/sse" }, async 
     res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-store" });
     res.end(`event: endpoint\ndata: ${JSON.stringify({ endpoint: "/messages" })}\n\n`);
   } catch (error) {
-    writeError(res, error);
+    writeError(res, error, { endpoint: "mcp.sse", method: "GET", subject: requestSubject(req) });
   }
 });
 
@@ -30,6 +30,6 @@ export const messages = api.raw({ expose: true, method: "POST", path: "/messages
     }
     writeJson(res, result.status, result.body);
   } catch (error) {
-    writeError(res, error);
+    writeError(res, error, { endpoint: "mcp.messages", method: "POST", subject: requestSubject(req) });
   }
 });

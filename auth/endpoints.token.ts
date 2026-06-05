@@ -21,6 +21,6 @@ export const token = api.raw({ expose: true, method: "POST", path: "/oauth/token
     );
     writeJson(res, 200, body, { "cache-control": "no-store", pragma: "no-cache" });
   } catch (error) {
-    writeError(res, error);
+    writeError(res, error, { endpoint: "oauth.token", method: "POST", subject: requestSubject(req) });
   }
 });

@@ -1,5 +1,13 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { emitDiagnostic } from "./diagnostics.ts";
 import { ServiceError } from "./errors.ts";
+
+export interface ErrorContext {
+  endpoint: string;
+  method?: string;
+  subject?: string;
+  fields?: Record<string, unknown>;
+}
 
 export async function readBody(req: IncomingMessage, limit = 32768): Promise<string> {
   const chunks: Buffer[] = [];
@@ -50,10 +58,24 @@ export function requestSubject(req: IncomingMessage): string {
   return address.replace(/^::ffff:/, "");
 }
 
-export function writeError(res: ServerResponse, error: unknown): void {
+export function writeError(res: ServerResponse, error: unknown, context?: ErrorContext): void {
   if (error instanceof ServiceError) {
+    emitDiagnostic(error.status >= 500 ? "error" : "warn", "service_error", {
+      endpoint: context?.endpoint,
+      method: context?.method,
+      subject: context?.subject,
+      status: error.status,
+      code: error.code,
+      ...context?.fields,
+    });
     writeJson(res, error.status, { error: error.code, error_description: error.message });
     return;
   }
+  emitDiagnostic("error", "unhandled_error", {
+    endpoint: context?.endpoint,
+    method: context?.method,
+    subject: context?.subject,
+    ...context?.fields,
+  });
   writeJson(res, 500, { error: "server_error", error_description: "internal server error" });
 }

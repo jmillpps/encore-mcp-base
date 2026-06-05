@@ -8,9 +8,13 @@ import { negotiateProtocolVersion } from "./protocol-version.ts";
 import { readMcpProtocolVersion, readMcpSessionId, validateOrigin, validatePostAccept, validatePostContentType, writeCors } from "./transport-headers.ts";
 
 export const mcpOptions = api.raw({ expose: true, method: "OPTIONS", path: "/mcp" }, async (req, res) => {
-  const config = readConfig();
-  writeCors(config, req, res);
-  writeNoContent(res);
+  try {
+    const config = readConfig();
+    writeCors(config, req, res);
+    writeNoContent(res);
+  } catch (error) {
+    writeError(res, error, { endpoint: "mcp.options", method: "OPTIONS", subject: requestSubject(req) });
+  }
 });
 
 export const mcpPost = api.raw({ expose: true, method: "POST", path: "/mcp" }, async (req, res) => {
@@ -29,7 +33,7 @@ export const mcpPost = api.raw({ expose: true, method: "POST", path: "/mcp" }, a
     if (!result.body) writeNoContent(res, result.status);
     else writeJson(res, result.status, result.body);
   } catch (error) {
-    writeError(res, error);
+    writeError(res, error, { endpoint: "mcp.post", method: "POST", subject: requestSubject(req) });
   }
 });
 
@@ -43,7 +47,7 @@ export const mcpGet = api.raw({ expose: true, method: "GET", path: "/mcp" }, asy
     res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-store" });
     res.end("event: message\ndata: {}\n\n");
   } catch (error) {
-    writeError(res, error);
+    writeError(res, error, { endpoint: "mcp.get", method: "GET", subject: requestSubject(req) });
   }
 });
 
@@ -57,6 +61,6 @@ export const mcpDelete = api.raw({ expose: true, method: "DELETE", path: "/mcp" 
     writeCors(config, req, res);
     writeNoContent(res);
   } catch (error) {
-    writeError(res, error);
+    writeError(res, error, { endpoint: "mcp.delete", method: "DELETE", subject: requestSubject(req) });
   }
 });

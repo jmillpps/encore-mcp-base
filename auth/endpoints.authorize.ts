@@ -24,6 +24,6 @@ export const authorize = api.raw({ expose: true, method: "GET", path: "/oauth/au
     const redirect = await createAuthorizationRedirect(config, new DiskOAuthStore(config.oauthStorePath), loadClients(config), request);
     writeRedirect(res, redirect);
   } catch (error) {
-    writeError(res, error);
+    writeError(res, error, { endpoint: "oauth.authorize", method: "GET", subject: requestSubject(req) });
   }
 });
