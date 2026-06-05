@@ -36,7 +36,7 @@ export function verifyAccessToken(config: ServiceConfig, token: string, audience
   const payload = verifyJwt(token, key.publicKey);
   const claims = accessClaims(payload);
   const now = nowSeconds();
-  if (claims.iss !== config.issuer || claims.aud !== audience || claims.exp < now || claims.nbf > now) {
+  if (claims.iss !== config.issuer || claims.aud !== audience || claims.exp <= now || claims.nbf > now) {
     throw new ServiceError("unauthorized", "invalid token", 401);
   }
   if (!hasScopes(claims.scope.split(/\s+/).filter(Boolean), requiredScopes)) {
