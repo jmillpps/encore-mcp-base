@@ -20,10 +20,10 @@ export async function initializeMcp(service: TestService): Promise<string> {
 export async function postMcp(
   service: TestService,
   body: Record<string, unknown>,
-  options: { sessionId?: string; authorization?: string; origin?: string; contentType?: string; protocolVersion?: string } = {},
+  options: { sessionId?: string; authorization?: string; origin?: string; contentType?: string; accept?: string; protocolVersion?: string } = {},
 ): Promise<Response> {
   const headers = new Headers({
-    accept: "application/json, text/event-stream",
+    accept: options.accept ?? "application/json, text/event-stream",
     "content-type": options.contentType ?? "application/json",
     origin: options.origin ?? "https://chatgpt.com",
   });

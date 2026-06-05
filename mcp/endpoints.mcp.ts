@@ -2,6 +2,7 @@ import { api } from "encore.dev/api";
 import { readConfig } from "../shared/config.ts";
 import { ServiceError } from "../shared/errors.ts";
 import { requestSubject, writeError, writeJson, writeNoContent } from "../shared/http.ts";
+import { acceptsMediaType } from "../shared/media-type.ts";
 import { createMcpSession, terminateMcpSession, touchMcpSession } from "./session-store.ts";
 import { handleMcpJson } from "./protocol.ts";
 import { negotiateProtocolVersion } from "./protocol-version.ts";
@@ -48,7 +49,7 @@ export const mcpGet = api.raw({ expose: true, method: "GET", path: "/mcp" }, asy
     const config = readConfig();
     validateOrigin(config, req);
     const accept = String(req.headers.accept ?? "");
-    if (!accept.includes("text/event-stream")) throw new ServiceError("bad_request", "invalid accept header", 400);
+    if (!acceptsMediaType(accept, "text/event-stream")) throw new ServiceError("bad_request", "invalid accept header", 400);
     const protocolVersion = negotiateProtocolVersion(readMcpProtocolVersion(req, true));
     await touchMcpSession(config, readMcpSessionId(req), protocolVersion);
     writeCors(config, req, res);

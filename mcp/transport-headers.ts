@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { ServiceConfig } from "../shared/config.ts";
 import { ServiceError } from "../shared/errors.ts";
+import { acceptsMediaType, mediaType } from "../shared/media-type.ts";
 
 export function validateOrigin(config: ServiceConfig, req: IncomingMessage): void {
   const origin = req.headers.origin;
@@ -11,14 +12,14 @@ export function validateOrigin(config: ServiceConfig, req: IncomingMessage): voi
 
 export function validatePostAccept(req: IncomingMessage): void {
   const accept = String(req.headers.accept ?? "");
-  if (!accept.includes("application/json") || !accept.includes("text/event-stream")) {
+  if (!acceptsMediaType(accept, "application/json") || !acceptsMediaType(accept, "text/event-stream")) {
     throw new ServiceError("bad_request", "invalid accept header", 400);
   }
 }
 
 export function validatePostContentType(req: IncomingMessage): void {
-  const contentType = String(req.headers["content-type"] ?? "").toLowerCase();
-  if (!contentType.startsWith("application/json")) {
+  const contentType = String(req.headers["content-type"] ?? "");
+  if (mediaType(contentType) !== "application/json") {
     throw new ServiceError("bad_request", "unsupported content type", 415);
   }
 }

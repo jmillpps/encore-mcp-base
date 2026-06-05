@@ -26,6 +26,18 @@ test("SSE transport rejects invalid origins and malformed message requests", asy
   const service = await startService(t);
   await expectOAuthError(await fetch(`${service.origin}/sse`, { headers: { origin: "https://evil.test" } }), 403, "forbidden");
   await expectOAuthError(await postMessage(service.origin, { jsonrpc: "2.0", id: "type", method: "ping" }, "text/plain"), 415, "bad_request");
+  await expectOAuthError(
+    await postMessage(service.origin, { jsonrpc: "2.0", id: "type-suffix", method: "ping" }, "application/json-seq"),
+    415,
+    "bad_request",
+  );
+  const charsetMessage = await postMessage(
+    service.origin,
+    { jsonrpc: "2.0", id: "charset", method: "ping" },
+    "application/json; charset=utf-8",
+  );
+  assert.equal(charsetMessage.status, 200);
+  assert.deepEqual((await readJson(charsetMessage)).result, {});
   const malformed = await fetch(`${service.origin}/messages`, {
     method: "POST",
     headers: { "content-type": "application/json", origin: "https://chatgpt.com" },

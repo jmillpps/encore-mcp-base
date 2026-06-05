@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { emitDiagnostic } from "./diagnostics.ts";
 import { ServiceError } from "./errors.ts";
+import { mediaType } from "./media-type.ts";
 
 export interface ErrorContext {
   endpoint: string;
@@ -36,10 +37,6 @@ export async function readForm(req: IncomingMessage): Promise<URLSearchParams> {
     throw new ServiceError("bad_request", "unsupported content type", 415);
   }
   return new URLSearchParams(await readBody(req));
-}
-
-function mediaType(value: string): string {
-  return value.split(";", 1)[0]?.trim().toLowerCase() ?? "";
 }
 
 export function writeJson(res: ServerResponse, status: number, body: unknown, headers: Record<string, string> = {}): void {
