@@ -11,6 +11,7 @@ test("authorization code flow issues externally processed OIDC tokens and userin
   const service = await startService(t);
   const flow = await completeAuthorizationCodeFlow(service);
   assert.equal(flow.tokens.token_type, "bearer");
+  assert.equal(flow.tokens.scope, "openid profile email");
   assert.equal(flow.idClaims.iss, service.origin);
   assert.equal(flow.idClaims.aud, localClient.client_id);
   assert.equal(flow.idClaims.email, "jmiller@inifnitedevlab.com");
@@ -23,6 +24,12 @@ test("authorization code flow issues externally processed OIDC tokens and userin
   const store = await readFile(service.storePath, "utf8");
   assert.equal(store.includes(flow.code), false);
   assert.equal(store.includes(requireString(flow.tokens.refresh_token, "refresh_token")), false);
+});
+
+test("authorization code flow preserves requested scope order while deduplicating", async (t) => {
+  const service = await startService(t);
+  const flow = await completeAuthorizationCodeFlow(service, service.actionsAudience, "profile openid email profile");
+  assert.equal(flow.tokens.scope, "profile openid email");
 });
 
 test("authorization code cannot be reused after token exchange", async (t) => {

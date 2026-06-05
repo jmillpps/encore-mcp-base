@@ -4,7 +4,7 @@ export const defaultScopes = ["openid", "profile", "email"] as const;
 
 export function parseScopes(input: string | undefined): string[] {
   const raw = input?.trim() ? input : defaultScopes.join(" ");
-  return [...new Set(raw.split(/\s+/).map((scope) => scope.trim()).filter(Boolean))].sort();
+  return [...new Set(raw.split(/\s+/).map((scope) => scope.trim()).filter(Boolean))];
 }
 
 export function assertAllowedScopes(requested: string[], allowed: readonly string[]): void {
