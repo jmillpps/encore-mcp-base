@@ -1,6 +1,7 @@
 import { randomToken, s256Challenge, sha256Base64Url } from "../../shared/crypto.ts";
 import { ServiceError } from "../../shared/errors.ts";
 import { nowSeconds } from "../../shared/time.ts";
+import { pkceVerifier } from "../pkce.ts";
 import { StoreFile } from "./store-file.ts";
 import type { AuthorizationCodeExpectation, AuthorizationCodeInput, RefreshTokenInput } from "./store-inputs.ts";
 import type { AuthorizationCodeRecord, McpSessionRecord, RefreshTokenRecord } from "./store-records.ts";
@@ -46,8 +47,9 @@ export class DiskOAuthStore {
       if (expected.resource !== undefined && record.resource !== expected.resource) {
         throw new ServiceError("invalid_grant", "invalid grant", 400);
       }
-      if (record.codeChallenge && s256Challenge(verifier ?? "") !== record.codeChallenge) {
-        throw new ServiceError("invalid_grant", "invalid grant", 400);
+      if (record.codeChallenge) {
+        const checkedVerifier = pkceVerifier(verifier);
+        if (s256Challenge(checkedVerifier) !== record.codeChallenge) throw new ServiceError("invalid_grant", "invalid grant", 400);
       }
       record.consumedAt = now;
       return record;

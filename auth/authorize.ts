@@ -3,6 +3,7 @@ import { ServiceError } from "../shared/errors.ts";
 import { DiskOAuthStore } from "./storage/disk-store.ts";
 import { assertAllowedScopes, parseScopes } from "./scopes.ts";
 import { assertRedirectUri, assertResource, findClient, type OAuthClient } from "./clients.ts";
+import { pkceInput } from "./pkce.ts";
 import { staticUser } from "./static-user.ts";
 
 export interface AuthorizationRequest {
@@ -44,11 +45,4 @@ export async function createAuthorizationRedirect(
   redirect.searchParams.set("code", code);
   redirect.searchParams.set("state", request.state);
   return redirect.toString();
-}
-
-function pkceInput(policy: string, challenge: string | undefined, method: string | undefined): { codeChallenge?: string; codeChallengeMethod?: "S256" } {
-  if (!challenge && policy === "required") throw new ServiceError("bad_request", "code_challenge is required", 400);
-  if (!challenge) return {};
-  if (method !== "S256") throw new ServiceError("bad_request", "code_challenge_method must be S256", 400);
-  return { codeChallenge: challenge, codeChallengeMethod: "S256" };
 }
