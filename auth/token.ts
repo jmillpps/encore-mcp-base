@@ -36,12 +36,13 @@ async function authorizationCodeGrant(config: ServiceConfig, store: DiskOAuthSto
   const code = form.get("code");
   const redirectUri = form.get("redirect_uri");
   if (!code || !redirectUri) throw new ServiceError("invalid_grant", "invalid grant", 400);
-  const record = await store.consumeAuthorizationCode(code, form.get("code_verifier") ?? undefined);
-  if (record.clientId !== client.clientId || record.redirectUri !== redirectUri) {
-    throw new ServiceError("invalid_grant", "invalid grant", 400);
-  }
-  const resource = form.get("resource") ?? record.resource;
-  if (resource !== record.resource) throw new ServiceError("invalid_grant", "invalid grant", 400);
+  const requestedResource = form.get("resource") ?? undefined;
+  const record = await store.consumeAuthorizationCode(code, form.get("code_verifier") ?? undefined, {
+    clientId: client.clientId,
+    redirectUri,
+    ...(requestedResource !== undefined ? { resource: requestedResource } : {}),
+  });
+  const resource = requestedResource ?? record.resource;
   assertResource(client, resource);
   const refreshToken = await store.createRefreshToken({
     clientId: client.clientId,
@@ -56,8 +57,7 @@ async function authorizationCodeGrant(config: ServiceConfig, store: DiskOAuthSto
 async function refreshTokenGrant(config: ServiceConfig, store: DiskOAuthStore, client: OAuthClient, form: URLSearchParams): Promise<TokenResponse> {
   const token = form.get("refresh_token");
   if (!token) throw new ServiceError("invalid_grant", "invalid grant", 400);
-  const rotated = await store.rotateRefreshToken(token, config.refreshTokenTtlSeconds);
-  if (rotated.oldRecord.clientId !== client.clientId) throw new ServiceError("invalid_grant", "invalid grant", 400);
+  const rotated = await store.rotateRefreshToken(token, client.clientId, config.refreshTokenTtlSeconds);
   return tokenResponse(config, client.clientId, rotated.oldRecord.resource, rotated.oldRecord.scopes, rotated.newToken);
 }
 

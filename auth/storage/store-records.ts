@@ -20,6 +20,7 @@ export interface RefreshTokenRecord {
   resource: string;
   scopes: string[];
   expiresAt: number;
+  rotatedFromHash?: string;
   rotatedToHash?: string;
   revokedAt?: number;
   createdAt: number;

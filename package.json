@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "encore run --browser=never --port=4000",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test \"test/**/*.test.ts\"",
+    "test": "node --experimental-strip-types --test --test-concurrency=1 \"test/**/*.test.ts\"",
     "check:architecture": "node tools/check-architecture.mjs",
     "check:dependencies": "node tools/check-dependencies.mjs",
     "check:file-scope": "node tools/check-file-scope.mjs",
@@ -15,7 +15,7 @@
     "check": "npm run typecheck && npm run check:dependencies && npm run check:architecture && npm run check:file-scope && npm run check:test-placement && npm test"
   },
   "dependencies": {
-    "encore.dev": "^1.57.6"
+    "encore.dev": "1.57.6"
   },
   "devDependencies": {
     "@types/node": "^25.0.0",

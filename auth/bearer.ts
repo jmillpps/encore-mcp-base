@@ -11,3 +11,18 @@ export function readBearer(header: string | undefined): string {
 export function verifyBearer(config: ServiceConfig, header: string | undefined, audience: string, scopes: string[] = []): AccessTokenClaims {
   return verifyAccessToken(config, readBearer(header), audience, scopes);
 }
+
+export function verifyBearerAnyAudience(config: ServiceConfig, header: string | undefined, audiences: string[], scopes: string[] = []): AccessTokenClaims {
+  const token = readBearer(header);
+  let scopeError: ServiceError | undefined;
+  for (const audience of audiences) {
+    try {
+      return verifyAccessToken(config, token, audience, scopes);
+    } catch (error) {
+      if (error instanceof ServiceError && error.status === 403) scopeError = error;
+      else if (!(error instanceof ServiceError) || error.status !== 401) throw error;
+    }
+  }
+  if (scopeError) throw scopeError;
+  throw new ServiceError("unauthorized", "invalid token", 401);
+}

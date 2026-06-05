@@ -16,3 +16,11 @@ export async function createMcpSession(config: ServiceConfig, protocolVersion: s
   });
   return sessionId;
 }
+
+export async function touchMcpSession(config: ServiceConfig, sessionId: string, protocolVersion: string): Promise<void> {
+  await new DiskOAuthStore(config.oauthStorePath).touchMcpSession(sha256Base64Url(sessionId), protocolVersion);
+}
+
+export async function terminateMcpSession(config: ServiceConfig, sessionId: string): Promise<void> {
+  await new DiskOAuthStore(config.oauthStorePath).terminateMcpSession(sha256Base64Url(sessionId));
+}

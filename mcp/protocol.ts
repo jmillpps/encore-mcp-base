@@ -29,6 +29,7 @@ export async function handleMcpJson(context: McpContext, input: unknown): Promis
     const result = await dispatch(context, request);
     return { status: 200, body: jsonRpcSuccess(request.id, result), initialized: request.method === "initialize" };
   } catch (error) {
+    if (error instanceof McpProtocolError) return { status: 200, body: jsonRpcError(request.id, error.rpcCode, error.message) };
     if (error instanceof ServiceError) return { status: error.status, body: jsonRpcError(request.id, -32000, error.message) };
     return { status: 500, body: jsonRpcError(request.id, -32603, "internal error") };
   }
@@ -49,5 +50,14 @@ async function dispatch(context: McpContext, request: JsonRpcRequest): Promise<u
     return callTool(context, name, args);
   }
   asRecord(request.params ?? {}, "params");
-  throw new ServiceError("not_found", "method not found", 404);
+  throw new McpProtocolError(-32601, "method not found");
+}
+
+class McpProtocolError extends Error {
+  readonly rpcCode: number;
+
+  constructor(rpcCode: number, message: string) {
+    super(message);
+    this.rpcCode = rpcCode;
+  }
 }

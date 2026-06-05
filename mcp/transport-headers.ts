@@ -16,6 +16,28 @@ export function validatePostAccept(req: IncomingMessage): void {
   }
 }
 
+export function validatePostContentType(req: IncomingMessage): void {
+  const contentType = String(req.headers["content-type"] ?? "").toLowerCase();
+  if (!contentType.startsWith("application/json")) {
+    throw new ServiceError("bad_request", "unsupported content type", 415);
+  }
+}
+
+export function readMcpSessionId(req: IncomingMessage): string {
+  const value = String(req.headers["mcp-session-id"] ?? "");
+  if (!/^[A-Za-z0-9_-]{16,256}$/.test(value)) throw new ServiceError("bad_request", "invalid mcp session", 400);
+  return value;
+}
+
+export function readMcpProtocolVersion(req: IncomingMessage, required: boolean): string | undefined {
+  const value = String(req.headers["mcp-protocol-version"] ?? "");
+  if (!value) {
+    if (required) throw new ServiceError("bad_request", "missing mcp protocol version", 400);
+    return undefined;
+  }
+  return value;
+}
+
 export function writeCors(config: ServiceConfig, req: IncomingMessage, res: ServerResponse): void {
   const origin = req.headers.origin;
   if (origin && config.allowedOrigins.includes(origin)) {

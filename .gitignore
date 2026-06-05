@@ -6,3 +6,7 @@ coverage/
 dist/
 tsconfig.tsbuildinfo
 *.log
+encore.gen.go
+encore.gen.cue
+/.encore
+/encore.gen

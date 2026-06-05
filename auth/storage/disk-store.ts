@@ -2,26 +2,8 @@ import { randomToken, s256Challenge, sha256Base64Url } from "../../shared/crypto
 import { ServiceError } from "../../shared/errors.ts";
 import { nowSeconds } from "../../shared/time.ts";
 import { StoreFile } from "./store-file.ts";
+import type { AuthorizationCodeExpectation, AuthorizationCodeInput, RefreshTokenInput } from "./store-inputs.ts";
 import type { AuthorizationCodeRecord, McpSessionRecord, RefreshTokenRecord } from "./store-records.ts";
-
-export interface AuthorizationCodeInput {
-  clientId: string;
-  redirectUri: string;
-  resource: string;
-  scopes: string[];
-  codeChallenge?: string;
-  codeChallengeMethod?: "S256";
-  userSub: string;
-  ttlSeconds: number;
-}
-
-export interface RefreshTokenInput {
-  clientId: string;
-  userSub: string;
-  resource: string;
-  scopes: string[];
-  ttlSeconds: number;
-}
 
 export class DiskOAuthStore {
   private readonly file: StoreFile;
@@ -51,13 +33,19 @@ export class DiskOAuthStore {
     return code;
   }
 
-  async consumeAuthorizationCode(code: string, verifier: string | undefined): Promise<AuthorizationCodeRecord> {
+  async consumeAuthorizationCode(code: string, verifier: string | undefined, expected: AuthorizationCodeExpectation): Promise<AuthorizationCodeRecord> {
     const hash = sha256Base64Url(code);
     return this.file.update((state) => {
       const record = state.authorizationCodes[hash];
       if (!record) throw new ServiceError("invalid_grant", "invalid grant", 400);
       const now = nowSeconds();
       if (record.consumedAt || record.expiresAt < now) throw new ServiceError("invalid_grant", "invalid grant", 400);
+      if (record.clientId !== expected.clientId || record.redirectUri !== expected.redirectUri) {
+        throw new ServiceError("invalid_grant", "invalid grant", 400);
+      }
+      if (expected.resource !== undefined && record.resource !== expected.resource) {
+        throw new ServiceError("invalid_grant", "invalid grant", 400);
+      }
       if (record.codeChallenge && s256Challenge(verifier ?? "") !== record.codeChallenge) {
         throw new ServiceError("invalid_grant", "invalid grant", 400);
       }
@@ -85,19 +73,20 @@ export class DiskOAuthStore {
     return token;
   }
 
-  async rotateRefreshToken(token: string, ttlSeconds: number): Promise<{ oldRecord: RefreshTokenRecord; newToken: string }> {
+  async rotateRefreshToken(token: string, clientId: string, ttlSeconds: number): Promise<{ oldRecord: RefreshTokenRecord; newToken: string }> {
     const oldHash = sha256Base64Url(token);
-    return this.file.update((state) => {
+    const result = await this.file.update((state) => {
       const oldRecord = state.refreshTokens[oldHash];
       const now = nowSeconds();
       if (!oldRecord || oldRecord.revokedAt || oldRecord.expiresAt < now) {
         throw new ServiceError("invalid_grant", "invalid grant", 400);
       }
+      if (oldRecord.clientId !== clientId) throw new ServiceError("invalid_grant", "invalid grant", 400);
       if (oldRecord.rotatedToHash) {
         for (const record of Object.values(state.refreshTokens)) {
           if (record.familyId === oldRecord.familyId) record.revokedAt = now;
         }
-        throw new ServiceError("invalid_grant", "invalid grant", 400);
+        return { reused: true as const };
       }
       const newToken = randomToken(32);
       const newRecord: RefreshTokenRecord = {
@@ -108,18 +97,41 @@ export class DiskOAuthStore {
         resource: oldRecord.resource,
         scopes: oldRecord.scopes,
         expiresAt: now + ttlSeconds,
+        rotatedFromHash: oldHash,
         createdAt: now,
       };
       oldRecord.rotatedToHash = newRecord.tokenHash;
       oldRecord.lastUsedAt = now;
       state.refreshTokens[newRecord.tokenHash] = newRecord;
-      return { oldRecord, newToken };
+      return { reused: false as const, oldRecord, newToken };
     });
+    if (result.reused) throw new ServiceError("invalid_grant", "invalid grant", 400);
+    return { oldRecord: result.oldRecord, newToken: result.newToken };
   }
 
   async saveMcpSession(record: McpSessionRecord): Promise<void> {
     await this.file.update((state) => {
       state.mcpSessions[record.sessionIdHash] = record;
+    });
+  }
+
+  async touchMcpSession(sessionIdHash: string, protocolVersion: string): Promise<void> {
+    await this.file.update((state) => {
+      const record = state.mcpSessions[sessionIdHash];
+      const now = nowSeconds();
+      if (!record || record.terminatedAt || record.expiresAt < now) throw new ServiceError("bad_request", "invalid mcp session", 400);
+      if (record.protocolVersion !== protocolVersion) throw new ServiceError("bad_request", "unsupported protocol version", 400);
+      record.lastSeenAt = now;
+    });
+  }
+
+  async terminateMcpSession(sessionIdHash: string): Promise<void> {
+    await this.file.update((state) => {
+      const record = state.mcpSessions[sessionIdHash];
+      const now = nowSeconds();
+      if (!record || record.terminatedAt || record.expiresAt < now) throw new ServiceError("bad_request", "invalid mcp session", 400);
+      record.terminatedAt = now;
+      record.lastSeenAt = now;
     });
   }
 }

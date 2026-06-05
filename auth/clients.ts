@@ -63,7 +63,7 @@ function localClients(config: ServiceConfig): OAuthClient[] {
     localClient("gpt-apps-mcp", "gpt-apps-secret", "GPT Apps MCP", [
       "https://chatgpt.com/connector/oauth/local-callback",
       "https://chatgpt.com/connector_platform_oauth_redirect",
-    ], scopes, [config.mcpResource]),
+    ], scopes, [config.mcpResource], "required"),
   ];
 }
 
@@ -74,6 +74,7 @@ function localClient(
   redirectUris: string[],
   allowedScopes: string[],
   allowedResources: string[],
+  pkcePolicy: PkcePolicy = "optional",
 ): OAuthClient {
   return {
     clientId,
@@ -83,7 +84,7 @@ function localClient(
     allowedScopes,
     allowedResources,
     tokenEndpointAuthMethod: "client_secret_post",
-    pkcePolicy: "optional",
+    pkcePolicy,
   };
 }
 
