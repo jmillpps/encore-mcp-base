@@ -1,4 +1,5 @@
 import { asRecord, optionalString } from "../shared/json.ts";
+import { serviceName, serviceTitle, serviceVersion } from "../shared/service-info.ts";
 import { supportedProtocolVersion } from "./protocol-version.ts";
 
 export function initializeResult(params: unknown): Record<string, unknown> {
@@ -8,9 +9,9 @@ export function initializeResult(params: unknown): Record<string, unknown> {
     protocolVersion: requested === supportedProtocolVersion ? requested : supportedProtocolVersion,
     capabilities: { tools: { listChanged: false } },
     serverInfo: {
-      name: "gpt-mcp-service",
-      title: "GPT MCP Service",
-      version: "0.1.0",
+      name: serviceName,
+      title: serviceTitle,
+      version: serviceVersion,
     },
   };
 }

@@ -19,6 +19,24 @@ test("MCP tools expose metadata and protected tools return auth challenges", asy
   assert.ok(Array.isArray(meta["mcp/www_authenticate"]));
 });
 
+test("MCP tools return structured content that matches advertised output schemas", async (t) => {
+  const service = await startService(t);
+  const sessionId = await initializeMcp(service);
+  const health = await callTool(service, sessionId, "health.check");
+  const healthContent = health.structuredContent as Record<string, unknown>;
+  assert.equal(healthContent.status, "ok");
+  assert.equal(typeof healthContent.timestamp, "string");
+  const serviceInfo = healthContent.service as Record<string, unknown>;
+  assert.equal(serviceInfo.name, "gpt-mcp-service");
+  assert.equal(serviceInfo.version, "0.1.0");
+  const validFlow = await completeAuthorizationCodeFlow(service, service.mcpResource);
+  const session = await callTool(service, sessionId, "auth.session", bearer(validFlow.tokens.access_token));
+  const sessionContent = session.structuredContent as Record<string, unknown>;
+  assert.equal(sessionContent.subject, "user_justin_miller");
+  assert.equal(sessionContent.clientId, "local-test");
+  assert.ok(Array.isArray(sessionContent.scopes));
+});
+
 test("MCP protected tools enforce audience and scopes", async (t) => {
   const service = await startService(t);
   const sessionId = await initializeMcp(service);

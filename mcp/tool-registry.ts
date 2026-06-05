@@ -3,7 +3,11 @@ import { ServiceError } from "../shared/errors.ts";
 import { enforceRateLimit } from "../auth/rate-limit.ts";
 import { verifyBearer } from "../auth/bearer.ts";
 import { staticUser } from "../auth/static-user.ts";
+import { serviceName, serviceVersion } from "../shared/service-info.ts";
+import { isoNow } from "../shared/time.ts";
 import { authChallengeResult } from "./auth-challenge.ts";
+import { assertMatchesSchema } from "./schema-validation.ts";
+import { booleanSchema, emptyInputSchema, objectSchema, stringArraySchema, stringSchema } from "./tool-schemas.ts";
 
 export interface McpTool {
   name: string;
@@ -27,18 +31,30 @@ export const tools: McpTool[] = [
     name: "health.check",
     title: "Health Check",
     description: "Check whether the service is reachable.",
-    inputSchema: emptyInput(),
-    outputSchema: objectOutput(["status", "service"]),
+    inputSchema: emptyInputSchema(),
+    outputSchema: objectSchema({
+      status: stringSchema(),
+      timestamp: stringSchema(),
+      service: objectSchema({ name: stringSchema(), version: stringSchema() }),
+    }),
     securitySchemes: [{ type: "noauth" }],
     requiredScopes: [],
-    run: async () => ({ content: [{ type: "text", text: "ok" }], structuredContent: { status: "ok", service: "gpt-mcp-service" } }),
+    run: async () => ({ content: [{ type: "text", text: "ok" }], structuredContent: { status: "ok", timestamp: isoNow(), service: { name: serviceName, version: serviceVersion } } }),
   },
   {
     name: "identity.profile",
     title: "Identity Profile",
     description: "Return the authenticated static user profile.",
-    inputSchema: emptyInput(),
-    outputSchema: objectOutput(["sub", "email", "name"]),
+    inputSchema: emptyInputSchema(),
+    outputSchema: objectSchema({
+      sub: stringSchema(),
+      given_name: stringSchema(),
+      family_name: stringSchema(),
+      name: stringSchema(),
+      preferred_username: stringSchema(),
+      email: stringSchema(),
+      email_verified: booleanSchema(),
+    }),
     securitySchemes: [{ type: "oauth2", scopes: ["openid", "profile", "email"] }],
     requiredScopes: ["openid", "profile", "email"],
     run: async (context) => protectedResult(context, ["openid", "profile", "email"], staticUser),
@@ -47,8 +63,8 @@ export const tools: McpTool[] = [
     name: "auth.session",
     title: "Auth Session",
     description: "Return authenticated token session metadata.",
-    inputSchema: emptyInput(),
-    outputSchema: objectOutput(["subject", "clientId", "audience"]),
+    inputSchema: emptyInputSchema(),
+    outputSchema: objectSchema({ subject: stringSchema(), clientId: stringSchema(), audience: stringSchema(), scopes: stringArraySchema() }),
     securitySchemes: [{ type: "oauth2", scopes: ["openid"] }],
     requiredScopes: ["openid"],
     run: async (context) => {
@@ -71,7 +87,9 @@ export async function callTool(context: ToolContext, name: string, args: Record<
   assertToolArguments(tool, args);
   await enforceRateLimit(context.config, "mcp-tool", context.rateLimitSubject ?? "unknown");
   try {
-    return await tool.run(context, args);
+    const result = await tool.run(context, args);
+    if (result.isError !== true) assertMatchesSchema(tool.outputSchema, result.structuredContent);
+    return result;
   } catch (error) {
     if (error instanceof ServiceError && (error.status === 401 || error.status === 403)) {
       return authChallengeResult(context.config, tool.requiredScopes);
@@ -91,12 +109,4 @@ function assertToolArguments(tool: McpTool, args: Record<string, unknown>): void
 async function protectedResult(context: ToolContext, scopes: string[], value: unknown): Promise<Record<string, unknown>> {
   verifyBearer(context.config, context.authorization, context.config.mcpResource, scopes);
   return { content: [{ type: "text", text: JSON.stringify(value) }], structuredContent: value };
-}
-
-function emptyInput(): Record<string, unknown> {
-  return { type: "object", properties: {}, additionalProperties: false };
-}
-
-function objectOutput(required: string[]): Record<string, unknown> {
-  return { type: "object", required, properties: Object.fromEntries(required.map((key) => [key, { type: "string" }])) };
 }
