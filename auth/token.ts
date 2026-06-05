@@ -2,6 +2,7 @@ import type { ServiceConfig } from "../shared/config.ts";
 import { ServiceError } from "../shared/errors.ts";
 import { assertClientAuthMethod, assertClientSecret, assertResource, findClient, type OAuthClient } from "./clients.ts";
 import { readClientCredentials } from "./client-auth.ts";
+import { assertAllowedParameters, optionalParameter, requiredParameter } from "./oauth-parameters.ts";
 import { staticUser } from "./static-user.ts";
 import { DiskOAuthStore } from "./storage/disk-store.ts";
 import { issueAccessToken } from "./tokens/access-token.ts";
@@ -23,22 +24,22 @@ export async function handleTokenGrant(
   form: URLSearchParams,
   authorization: string | undefined,
 ): Promise<TokenResponse> {
+  assertAllowedParameters(form, ["grant_type", "client_id", "client_secret", "code", "redirect_uri", "code_verifier", "resource", "refresh_token"]);
   const credentials = readClientCredentials(form, authorization);
   const client = findClient(clients, credentials.clientId);
   assertClientAuthMethod(client, credentials.method);
   assertClientSecret(client, credentials.clientSecret);
-  const grant = form.get("grant_type");
+  const grant = optionalParameter(form, "grant_type");
   if (grant === "authorization_code") return authorizationCodeGrant(config, store, client, form);
   if (grant === "refresh_token") return refreshTokenGrant(config, store, client, form);
   throw new ServiceError("bad_request", "unsupported grant_type", 400);
 }
 
 async function authorizationCodeGrant(config: ServiceConfig, store: DiskOAuthStore, client: OAuthClient, form: URLSearchParams): Promise<TokenResponse> {
-  const code = form.get("code");
-  const redirectUri = form.get("redirect_uri");
-  if (!code || !redirectUri) throw new ServiceError("invalid_grant", "invalid grant", 400);
-  const requestedResource = form.get("resource") ?? undefined;
-  const record = await store.consumeAuthorizationCode(code, form.get("code_verifier") ?? undefined, {
+  const code = requiredParameter(form, "code");
+  const redirectUri = requiredParameter(form, "redirect_uri");
+  const requestedResource = optionalParameter(form, "resource");
+  const record = await store.consumeAuthorizationCode(code, optionalParameter(form, "code_verifier"), {
     clientId: client.clientId,
     redirectUri,
     ...(requestedResource !== undefined ? { resource: requestedResource } : {}),
@@ -56,8 +57,7 @@ async function authorizationCodeGrant(config: ServiceConfig, store: DiskOAuthSto
 }
 
 async function refreshTokenGrant(config: ServiceConfig, store: DiskOAuthStore, client: OAuthClient, form: URLSearchParams): Promise<TokenResponse> {
-  const token = form.get("refresh_token");
-  if (!token) throw new ServiceError("invalid_grant", "invalid grant", 400);
+  const token = requiredParameter(form, "refresh_token");
   const rotated = await store.rotateRefreshToken(token, client.clientId, config.refreshTokenTtlSeconds);
   return tokenResponse(config, client.clientId, rotated.oldRecord.resource, rotated.oldRecord.scopes, rotated.newToken);
 }

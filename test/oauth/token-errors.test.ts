@@ -10,6 +10,12 @@ test("authorization endpoint rejects invalid client request parameters", async (
   await expectOAuthError(await fetch(authorizeUrl(as.authorization_endpoint, service.actionsAudience, { state: "" }), { redirect: "manual" }), 400, "bad_request");
   await expectOAuthError(await fetch(authorizeUrl(as.authorization_endpoint, service.actionsAudience, { redirectUri: "http://evil.test/callback" }), { redirect: "manual" }), 400, "bad_request");
   await expectOAuthError(await fetch(authorizeUrl(as.authorization_endpoint, service.actionsAudience, { scope: "openid admin" }), { redirect: "manual" }), 400, "invalid_scope");
+  const duplicateClient = authorizeUrl(as.authorization_endpoint, service.actionsAudience, {});
+  duplicateClient.searchParams.append("client_id", "local-test");
+  await expectOAuthError(await fetch(duplicateClient, { redirect: "manual" }), 400, "bad_request");
+  const unsupportedParameter = authorizeUrl(as.authorization_endpoint, service.actionsAudience, {});
+  unsupportedParameter.searchParams.set("prompt", "consent");
+  await expectOAuthError(await fetch(unsupportedParameter, { redirect: "manual" }), 400, "bad_request");
   await expectOAuthError(
     await fetch(authorizeUrl(as.authorization_endpoint, service.mcpResource, { clientId: "gpt-apps-mcp", redirectUri: "https://chatgpt.com/connector/oauth/local-callback", codeChallenge: "" }), {
       redirect: "manual",
@@ -40,6 +46,11 @@ test("token endpoint rejects bad redirect and bad PKCE without consuming the aut
   const badVerifier = await tokenRequest(as.token_endpoint, service.actionsAudience, pkceAuthorization.code, "bad-verifier", localClientSecret);
   await expectOAuthError(badVerifier, 400, "invalid_grant");
   assert.equal((await exchangeCode(pkceAuthorization, service.actionsAudience)).tokens.token_type, "bearer");
+  const duplicateAuthorization = await authorizeCode(service, as, service.actionsAudience);
+  const duplicateCode = tokenBody(service.actionsAudience, duplicateAuthorization.code, duplicateAuthorization.codeVerifier, localClientSecret);
+  duplicateCode.append("code", duplicateAuthorization.code);
+  await expectOAuthError(await postToken(as.token_endpoint, duplicateCode), 400, "bad_request");
+  assert.equal((await exchangeCode(duplicateAuthorization, service.actionsAudience)).tokens.token_type, "bearer");
 });
 
 async function tokenRequest(
@@ -51,18 +62,27 @@ async function tokenRequest(
   redirectUri = "http://localhost:4000/test/callback",
 ): Promise<Response> {
   const endpoint = requireString(tokenEndpoint, "token_endpoint");
+  return postToken(endpoint, tokenBody(resource, code, codeVerifier, clientSecret, redirectUri));
+}
+
+function postToken(tokenEndpoint: string | undefined, body: URLSearchParams): Promise<Response> {
+  const endpoint = requireString(tokenEndpoint, "token_endpoint");
   return fetch(endpoint, {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "authorization_code",
-      client_id: "local-test",
-      client_secret: clientSecret,
-      code,
-      redirect_uri: redirectUri,
-      code_verifier: codeVerifier,
-      resource,
-    }),
+    body,
+  });
+}
+
+function tokenBody(resource: string, code: string, codeVerifier: string, clientSecret: string, redirectUri = "http://localhost:4000/test/callback"): URLSearchParams {
+  return new URLSearchParams({
+    grant_type: "authorization_code",
+    client_id: "local-test",
+    client_secret: clientSecret,
+    code,
+    redirect_uri: redirectUri,
+    code_verifier: codeVerifier,
+    resource,
   });
 }
 
