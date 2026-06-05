@@ -66,6 +66,7 @@ export function listTools(): Record<string, unknown> {
 export async function callTool(context: ToolContext, name: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {
   const tool = tools.find((candidate) => candidate.name === name);
   if (!tool) throw new ServiceError("not_found", "tool not found", 404);
+  assertToolArguments(tool, args);
   try {
     return await tool.run(context, args);
   } catch (error) {
@@ -74,6 +75,14 @@ export async function callTool(context: ToolContext, name: string, args: Record<
     }
     throw error;
   }
+}
+
+function assertToolArguments(tool: McpTool, args: Record<string, unknown>): void {
+  if (tool.inputSchema.type !== "object" || tool.inputSchema.additionalProperties !== false) return;
+  const properties = tool.inputSchema.properties;
+  if (typeof properties !== "object" || properties === null || Array.isArray(properties)) throw new ServiceError("bad_request", "invalid tool schema", 400);
+  const allowed = new Set(Object.keys(properties));
+  if (Object.keys(args).some((key) => !allowed.has(key))) throw new ServiceError("bad_request", "invalid tool arguments", 400);
 }
 
 async function protectedResult(context: ToolContext, scopes: string[], value: unknown): Promise<Record<string, unknown>> {

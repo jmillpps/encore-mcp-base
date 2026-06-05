@@ -32,3 +32,16 @@ test("MCP protected tools enforce audience and scopes", async (t) => {
   const missingScopes = await callTool(service, sessionId, "identity.profile", bearer(narrowFlow.tokens.access_token));
   assert.equal(missingScopes.isError, true);
 });
+
+test("MCP tools reject arguments outside their input schemas", async (t) => {
+  const service = await startService(t);
+  const sessionId = await initializeMcp(service);
+  const response = await postMcp(
+    service,
+    { jsonrpc: "2.0", id: "bad-args", method: "tools/call", params: { name: "health.check", arguments: { unexpected: true } } },
+    { sessionId },
+  );
+  assert.equal(response.status, 400);
+  const body = await readJson(response);
+  assert.equal((body.error as Record<string, unknown>).message, "invalid tool arguments");
+});
