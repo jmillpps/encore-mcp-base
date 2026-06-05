@@ -10,6 +10,8 @@ export interface ServiceConfig {
   idTokenTtlSeconds: number;
   authorizationCodeTtlSeconds: number;
   refreshTokenTtlSeconds: number;
+  rateLimitWindowSeconds: number;
+  rateLimitMaxRequests: number;
   production: boolean;
 }
 
@@ -30,6 +32,8 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
     idTokenTtlSeconds: readNumber(env.ID_TOKEN_TTL_SECONDS, 300),
     authorizationCodeTtlSeconds: readNumber(env.AUTHORIZATION_CODE_TTL_SECONDS, 300),
     refreshTokenTtlSeconds: readNumber(env.REFRESH_TOKEN_TTL_SECONDS, 2592000),
+    rateLimitWindowSeconds: readNumber(env.RATE_LIMIT_WINDOW_SECONDS, 60),
+    rateLimitMaxRequests: readNumber(env.RATE_LIMIT_MAX_REQUESTS, 120),
     production,
   };
 }

@@ -1,5 +1,6 @@
 import type { ServiceConfig } from "../shared/config.ts";
 import { ServiceError } from "../shared/errors.ts";
+import { enforceRateLimit } from "../auth/rate-limit.ts";
 import { verifyBearer } from "../auth/bearer.ts";
 import { staticUser } from "../auth/static-user.ts";
 import { authChallengeResult } from "./auth-challenge.ts";
@@ -18,6 +19,7 @@ export interface McpTool {
 export interface ToolContext {
   config: ServiceConfig;
   authorization?: string;
+  rateLimitSubject?: string;
 }
 
 export const tools: McpTool[] = [
@@ -67,6 +69,7 @@ export async function callTool(context: ToolContext, name: string, args: Record<
   const tool = tools.find((candidate) => candidate.name === name);
   if (!tool) throw new ServiceError("not_found", "tool not found", 404);
   assertToolArguments(tool, args);
+  await enforceRateLimit(context.config, "mcp-tool", context.rateLimitSubject ?? "unknown");
   try {
     return await tool.run(context, args);
   } catch (error) {

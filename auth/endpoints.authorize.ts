@@ -1,14 +1,16 @@
 import { api } from "encore.dev/api";
 import { readConfig } from "../shared/config.ts";
-import { writeError, writeRedirect } from "../shared/http.ts";
+import { requestSubject, writeError, writeRedirect } from "../shared/http.ts";
 import { createAuthorizationRedirect } from "./authorize.ts";
 import { loadClients } from "./clients.ts";
+import { clientRateSubject, enforceRateLimit } from "./rate-limit.ts";
 import { DiskOAuthStore } from "./storage/disk-store.ts";
 
 export const authorize = api.raw({ expose: true, method: "GET", path: "/oauth/authorize" }, async (req, res) => {
   try {
     const config = readConfig();
     const url = new URL(req.url ?? "", config.issuer);
+    await enforceRateLimit(config, "oauth-authorize", clientRateSubject(url.searchParams.get("client_id"), requestSubject(req)));
     const request = {
       responseType: url.searchParams.get("response_type") ?? "",
       clientId: url.searchParams.get("client_id") ?? "",

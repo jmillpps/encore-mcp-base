@@ -18,14 +18,14 @@ export interface TestService {
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
-export async function startService(t: TestContext): Promise<TestService> {
+export async function startService(t: TestContext, envOverrides: NodeJS.ProcessEnv = {}): Promise<TestService> {
   const port = await freePort();
   const origin = `http://127.0.0.1:${port}`;
   const tempDir = await mkdtemp(join(tmpdir(), "mcp-service-test-"));
   const storePath = join(tempDir, "oauth-store.json");
   const child = spawn("encore", ["run", "--browser=never", "--port", String(port)], {
     cwd: projectRoot,
-    env: serviceEnv(origin, storePath),
+    env: serviceEnv(origin, storePath, envOverrides),
     stdio: ["ignore", "pipe", "pipe"],
   });
   let output = "";
@@ -53,7 +53,7 @@ export async function startService(t: TestContext): Promise<TestService> {
   return service;
 }
 
-function serviceEnv(origin: string, storePath: string): NodeJS.ProcessEnv {
+function serviceEnv(origin: string, storePath: string, envOverrides: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {
     ...process.env,
     PUBLIC_ISSUER_URL: origin,
@@ -61,6 +61,7 @@ function serviceEnv(origin: string, storePath: string): NodeJS.ProcessEnv {
     ACTIONS_AUDIENCE: `${origin}/actions`,
     OAUTH_STORE_PATH: storePath,
     ALLOWED_ORIGINS: "https://chatgpt.com https://chat.openai.com http://localhost:4000",
+    ...envOverrides,
   };
   delete env.NODE_ENV;
   return env;

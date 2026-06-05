@@ -45,6 +45,11 @@ export function writeRedirect(res: ServerResponse, location: string): void {
   res.end();
 }
 
+export function requestSubject(req: IncomingMessage): string {
+  const address = req.socket.remoteAddress ?? "unknown";
+  return address.replace(/^::ffff:/, "");
+}
+
 export function writeError(res: ServerResponse, error: unknown): void {
   if (error instanceof ServiceError) {
     writeJson(res, error.status, { error: error.code, error_description: error.message });

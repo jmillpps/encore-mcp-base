@@ -1,6 +1,6 @@
 import { api } from "encore.dev/api";
 import { readConfig } from "../shared/config.ts";
-import { readJsonBody, writeError, writeJson } from "../shared/http.ts";
+import { readJsonBody, requestSubject, writeError, writeJson } from "../shared/http.ts";
 import { handleMcpJson } from "./protocol.ts";
 import { validateOrigin, validatePostContentType, writeCors } from "./transport-headers.ts";
 
@@ -22,7 +22,7 @@ export const messages = api.raw({ expose: true, method: "POST", path: "/messages
     validateOrigin(config, req);
     validatePostContentType(req);
     writeCors(config, req, res);
-    const result = await handleMcpJson({ config, authorization: String(req.headers.authorization ?? "") }, await readJsonBody(req));
+    const result = await handleMcpJson({ config, authorization: String(req.headers.authorization ?? ""), rateLimitSubject: requestSubject(req) }, await readJsonBody(req));
     if (!result.body) {
       res.writeHead(result.status);
       res.end();

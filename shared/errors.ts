@@ -6,6 +6,7 @@ export type ErrorCode =
   | "invalid_grant"
   | "invalid_client"
   | "invalid_scope"
+  | "rate_limited"
   | "server_error";
 
 export class ServiceError extends Error {

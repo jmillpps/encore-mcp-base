@@ -8,6 +8,7 @@ import { jsonRpcError, jsonRpcSuccess, methodParamObject, methodParamString, par
 export interface McpContext {
   config: ServiceConfig;
   authorization?: string;
+  rateLimitSubject?: string;
 }
 
 export interface McpResult {

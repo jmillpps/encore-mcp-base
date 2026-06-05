@@ -1,7 +1,7 @@
 import { api } from "encore.dev/api";
 import { readConfig } from "../shared/config.ts";
 import { ServiceError } from "../shared/errors.ts";
-import { readJsonBody, writeError, writeJson, writeNoContent } from "../shared/http.ts";
+import { readJsonBody, requestSubject, writeError, writeJson, writeNoContent } from "../shared/http.ts";
 import { createMcpSession, terminateMcpSession, touchMcpSession } from "./session-store.ts";
 import { handleMcpJson } from "./protocol.ts";
 import { negotiateProtocolVersion } from "./protocol-version.ts";
@@ -24,7 +24,7 @@ export const mcpPost = api.raw({ expose: true, method: "POST", path: "/mcp" }, a
     const method = typeof body === "object" && body !== null && !Array.isArray(body) ? (body as Record<string, unknown>).method : undefined;
     const protocolVersion = negotiateProtocolVersion(readMcpProtocolVersion(req, method !== "initialize"));
     if (method !== "initialize") await touchMcpSession(config, readMcpSessionId(req), protocolVersion);
-    const result = await handleMcpJson({ config, authorization: String(req.headers.authorization ?? "") }, body);
+    const result = await handleMcpJson({ config, authorization: String(req.headers.authorization ?? ""), rateLimitSubject: requestSubject(req) }, body);
     if (result.initialized) res.setHeader("mcp-session-id", await createMcpSession(config, protocolVersion));
     if (!result.body) writeNoContent(res, result.status);
     else writeJson(res, result.status, result.body);
