@@ -112,6 +112,26 @@ test("token endpoint rejects oversized form bodies", async (t) => {
   assert.equal(JSON.stringify(error).includes("x".repeat(64)), false);
 });
 
+test("token endpoint validates form content types exactly", async (t) => {
+  const service = await startService(t);
+  const as = await discover(service);
+  const body = new URLSearchParams({
+    grant_type: "authorization_code",
+    client_id: "local-test",
+    client_secret: "bad-secret",
+  });
+  await expectOAuthError(
+    await postTokenWithContentType(as.token_endpoint, body, "application/x-www-form-urlencoded-evil"),
+    415,
+    "bad_request",
+  );
+  await expectOAuthError(
+    await postTokenWithContentType(as.token_endpoint, body, "application/x-www-form-urlencoded; charset=utf-8"),
+    401,
+    "invalid_client",
+  );
+});
+
 async function tokenRequest(
   tokenEndpoint: string | undefined,
   resource: string,
@@ -125,10 +145,14 @@ async function tokenRequest(
 }
 
 function postToken(tokenEndpoint: string | undefined, body: URLSearchParams): Promise<Response> {
+  return postTokenWithContentType(tokenEndpoint, body, "application/x-www-form-urlencoded");
+}
+
+function postTokenWithContentType(tokenEndpoint: string | undefined, body: URLSearchParams, contentType: string): Promise<Response> {
   const endpoint = requireString(tokenEndpoint, "token_endpoint");
   return fetch(endpoint, {
     method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
+    headers: { "content-type": contentType },
     body,
   });
 }

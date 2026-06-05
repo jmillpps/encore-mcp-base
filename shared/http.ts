@@ -32,10 +32,14 @@ export async function readJsonBody(req: IncomingMessage, limit = 32768): Promise
 
 export async function readForm(req: IncomingMessage): Promise<URLSearchParams> {
   const type = String(req.headers["content-type"] ?? "");
-  if (!type.toLowerCase().startsWith("application/x-www-form-urlencoded")) {
+  if (mediaType(type) !== "application/x-www-form-urlencoded") {
     throw new ServiceError("bad_request", "unsupported content type", 415);
   }
   return new URLSearchParams(await readBody(req));
+}
+
+function mediaType(value: string): string {
+  return value.split(";", 1)[0]?.trim().toLowerCase() ?? "";
 }
 
 export function writeJson(res: ServerResponse, status: number, body: unknown, headers: Record<string, string> = {}): void {
