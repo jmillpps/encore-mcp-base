@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { expectOAuthError, readJson } from "../support/http.ts";
 import { deleteSession, initializeMcp, postMcp } from "../support/mcp.ts";
@@ -7,6 +8,10 @@ import { startService } from "../support/service-process.ts";
 test("MCP Streamable HTTP validates transport headers and session lifecycle", async (t) => {
   const service = await startService(t);
   const sessionId = await initializeMcp(service);
+  const initializedStore = await readFile(service.storePath, "utf8");
+  assert.match(initializedStore, /"mcpSessions"/);
+  assert.match(initializedStore, /"session_id_hash"/);
+  assert.equal(initializedStore.includes(sessionId), false);
   const ping = await postMcp(service, { jsonrpc: "2.0", id: "ping", method: "ping" }, { sessionId });
   assert.equal(ping.status, 200);
   assert.deepEqual((await readJson(ping)).result, {});
@@ -63,6 +68,7 @@ test("MCP Streamable HTTP validates transport headers and session lifecycle", as
   assert.equal(((await readJson(missingMethodWithInvalidParams)).error as Record<string, unknown>).code, -32601);
   const deleted = await deleteSession(service, sessionId);
   assert.equal(deleted.status, 204);
+  assert.match(await readFile(service.storePath, "utf8"), /"terminated_at"/);
   await expectOAuthError(await postMcp(service, { jsonrpc: "2.0", id: "after-delete", method: "ping" }, { sessionId }), 400, "bad_request");
 });
 
