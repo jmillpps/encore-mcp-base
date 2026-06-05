@@ -52,7 +52,6 @@ async function dispatch(context: McpContext, request: JsonRpcRequest): Promise<u
     const args = methodParamObject(request, "arguments");
     return callTool(context, name, args);
   }
-  asRecord(request.params ?? {}, "params");
   throw new McpProtocolError(-32601, "method not found");
 }
 

@@ -58,6 +58,9 @@ test("MCP Streamable HTTP validates transport headers and session lifecycle", as
   const missingMethod = await postMcp(service, { jsonrpc: "2.0", id: "missing", method: "missing/method" }, { sessionId });
   assert.equal(missingMethod.status, 200);
   assert.equal(((await readJson(missingMethod)).error as Record<string, unknown>).code, -32601);
+  const missingMethodWithInvalidParams = await postMcp(service, { jsonrpc: "2.0", id: "missing-invalid-params", method: "missing/method", params: [] }, { sessionId });
+  assert.equal(missingMethodWithInvalidParams.status, 200);
+  assert.equal(((await readJson(missingMethodWithInvalidParams)).error as Record<string, unknown>).code, -32601);
   const deleted = await deleteSession(service, sessionId);
   assert.equal(deleted.status, 204);
   await expectOAuthError(await postMcp(service, { jsonrpc: "2.0", id: "after-delete", method: "ping" }, { sessionId }), 400, "bad_request");
