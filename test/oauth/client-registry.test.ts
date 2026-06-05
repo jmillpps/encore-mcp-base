@@ -24,6 +24,12 @@ test("client registry accepts validated production metadata", () => {
   assert.deepEqual(clients[0]?.allowedScopes, ["openid", "profile", "email"]);
 });
 
+test("client registry canonicalizes resource URLs for exact audience binding", () => {
+  const clients = parseClientJson(JSON.stringify([clientRecord({ allowedResources: ["https://mcp.example.test/", "https://api.example.test/actions/"] })]), true);
+  assert.deepEqual(clients[0]?.allowedResources, ["https://mcp.example.test", "https://api.example.test/actions"]);
+  assert.deepEqual(clients[0]?.redirectUris, ["https://chatgpt.com/aip/g-prod/oauth/callback"]);
+});
+
 test("client registry rejects unsafe or malformed metadata", () => {
   assert.throws(() => parseClientJson("{}", true), /non-empty array/);
   assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ clientSecretHash: "bad" })]), true), /SHA-256/);

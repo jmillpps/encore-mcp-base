@@ -25,9 +25,9 @@ function parseClient(value: unknown, index: number, production: boolean): OAuthC
     clientId: identifier(readString(record, "clientId"), "clientId"),
     clientSecretHash: secretHash(readString(record, "clientSecretHash")),
     displayName: readString(record, "displayName"),
-    redirectUris: urls(readStringArray(record, "redirectUris"), "redirectUris", production),
+    redirectUris: redirectUrls(readStringArray(record, "redirectUris"), production),
     allowedScopes: scopes(readStringArray(record, "allowedScopes")),
-    allowedResources: urls(readStringArray(record, "allowedResources"), "allowedResources", production),
+    allowedResources: resourceUrls(readStringArray(record, "allowedResources"), production),
     tokenEndpointAuthMethod: oneOf(readString(record, "tokenEndpointAuthMethod"), authMethods, "tokenEndpointAuthMethod"),
     pkcePolicy: oneOf(readString(record, "pkcePolicy"), pkcePolicies, "pkcePolicy"),
     clientClass: identifier(readString(record, "clientClass"), "clientClass"),
@@ -63,15 +63,21 @@ function secretHash(value: string): string {
   return value;
 }
 
-function urls(values: string[], key: string, production: boolean): string[] {
-  return values.map((value) => {
+function redirectUrls(values: string[], production: boolean): string[] {
+  return values.map((value) => parseHttpUrl(value, "redirectUris", production).toString());
+}
+
+function resourceUrls(values: string[], production: boolean): string[] {
+  return values.map((value) => parseHttpUrl(value, "allowedResources", production).href.replace(/\/$/, ""));
+}
+
+function parseHttpUrl(value: string, key: string, production: boolean): URL {
     if (value.includes("*")) throw new Error(`${key} cannot contain wildcards`);
     const url = new URL(value);
     if (url.protocol !== "https:" && url.protocol !== "http:") throw new Error(`${key} must use http or https`);
     if (production && url.protocol !== "https:") throw new Error(`${key} must use https in production`);
     if (url.hash) throw new Error(`${key} cannot include fragments`);
-    return url.toString();
-  });
+    return url;
 }
 
 function scopes(values: string[]): string[] {
