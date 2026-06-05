@@ -25,14 +25,21 @@ export async function handleTokenGrant(
   authorization: string | undefined,
 ): Promise<TokenResponse> {
   assertAllowedParameters(form, ["grant_type", "client_id", "client_secret", "code", "redirect_uri", "code_verifier", "resource", "refresh_token"]);
+  const grant = optionalParameter(form, "grant_type");
+  assertAllowedParameters(form, tokenGrantParameters(grant));
   const credentials = readClientCredentials(form, authorization);
   const client = findClient(clients, credentials.clientId);
   assertClientAuthMethod(client, credentials.method);
   assertClientSecret(client, credentials.clientSecret);
-  const grant = optionalParameter(form, "grant_type");
   if (grant === "authorization_code") return authorizationCodeGrant(config, store, client, form);
   if (grant === "refresh_token") return refreshTokenGrant(config, store, client, form);
   throw new ServiceError("bad_request", "unsupported grant_type", 400);
+}
+
+function tokenGrantParameters(grant: string | undefined): string[] {
+  if (grant === "authorization_code") return ["grant_type", "client_id", "client_secret", "code", "redirect_uri", "code_verifier", "resource"];
+  if (grant === "refresh_token") return ["grant_type", "client_id", "client_secret", "refresh_token", "resource"];
+  return ["grant_type", "client_id", "client_secret"];
 }
 
 async function authorizationCodeGrant(config: ServiceConfig, store: DiskOAuthStore, client: OAuthClient, form: URLSearchParams): Promise<TokenResponse> {
