@@ -3,7 +3,7 @@ import { ServiceError } from "../shared/errors.ts";
 import type { ServiceConfig } from "../shared/config.ts";
 import { defaultScopes } from "./scopes.ts";
 import { parseClientJson } from "./client-registry.ts";
-import type { OAuthClient, PkcePolicy } from "./client-types.ts";
+import type { OAuthClient, PkcePolicy, TokenEndpointAuthMethod } from "./client-types.ts";
 
 export type { OAuthClient, PkcePolicy } from "./client-types.ts";
 
@@ -25,6 +25,10 @@ export function assertClientSecret(client: OAuthClient, secret: string | undefin
   if (!constantTimeEqualString(hash, client.clientSecretHash)) {
     throw new ServiceError("invalid_client", "invalid client", 401);
   }
+}
+
+export function assertClientAuthMethod(client: OAuthClient, method: TokenEndpointAuthMethod): void {
+  if (client.tokenEndpointAuthMethod !== method) throw new ServiceError("invalid_client", "invalid client", 401);
 }
 
 export function assertRedirectUri(client: OAuthClient, redirectUri: string): void {

@@ -1,6 +1,6 @@
 import type { ServiceConfig } from "../shared/config.ts";
 import { ServiceError } from "../shared/errors.ts";
-import { assertClientSecret, assertResource, findClient, type OAuthClient } from "./clients.ts";
+import { assertClientAuthMethod, assertClientSecret, assertResource, findClient, type OAuthClient } from "./clients.ts";
 import { readClientCredentials } from "./client-auth.ts";
 import { staticUser } from "./static-user.ts";
 import { DiskOAuthStore } from "./storage/disk-store.ts";
@@ -25,6 +25,7 @@ export async function handleTokenGrant(
 ): Promise<TokenResponse> {
   const credentials = readClientCredentials(form, authorization);
   const client = findClient(clients, credentials.clientId);
+  assertClientAuthMethod(client, credentials.method);
   assertClientSecret(client, credentials.clientSecret);
   const grant = form.get("grant_type");
   if (grant === "authorization_code") return authorizationCodeGrant(config, store, client, form);
