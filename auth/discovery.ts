@@ -15,7 +15,7 @@ export function openidConfiguration(config: ServiceConfig, clients: readonly OAu
     token_endpoint_auth_methods_supported: ["client_secret_post", "client_secret_basic"],
     code_challenge_methods_supported: ["S256"],
     scopes_supported: supportedScopes(clients),
-    claims_supported: ["sub", "name", "given_name", "family_name", "preferred_username", "email", "email_verified"],
+    claims_supported: supportedClaims(),
   };
 }
 
@@ -40,6 +40,10 @@ export function protectedResourceMetadata(config: ServiceConfig, clients: readon
     scopes_supported: supportedScopes(clients, config.mcpResource),
     resource_documentation: `${config.issuer}/docs/mcp`,
   };
+}
+
+function supportedClaims(): string[] {
+  return ["iss", "sub", "aud", "exp", "iat", "auth_time", "nonce", "name", "given_name", "family_name", "preferred_username", "email", "email_verified"];
 }
 
 function supportedScopes(clients: readonly OAuthClient[], resource?: string): string[] {

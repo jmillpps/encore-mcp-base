@@ -17,6 +17,8 @@ test("OAuth discovery is processable by oauth4webapi", async (t) => {
   assert.deepEqual(metadata.grant_types_supported, ["authorization_code", "refresh_token"]);
   assert.deepEqual(metadata.code_challenge_methods_supported, ["S256"]);
   assert.deepEqual(metadata.scopes_supported, ["openid", "profile", "email"]);
+  assert.ok(metadata.claims_supported?.includes("nonce"));
+  assert.ok(metadata.claims_supported?.includes("auth_time"));
   const protectedResource = await readJson(await fetch(`${service.origin}/.well-known/oauth-protected-resource`));
   assert.deepEqual(protectedResource.scopes_supported, ["openid", "profile", "email"]);
 });
