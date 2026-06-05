@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
 import * as oauth from "oauth4webapi";
-import { completeAuthorizationCodeFlow, localClient } from "../support/oauth-client.ts";
+import { authorizeCode, completeAuthorizationCodeFlow, discover, exchangeCode, localClient } from "../support/oauth-client.ts";
 import { readJson, requireString } from "../support/http.ts";
 import { startService } from "../support/service-process.ts";
 
@@ -52,6 +52,15 @@ test("authorization code flow carries OIDC nonce into the ID token", async (t) =
   assert.equal(flow.idClaims.nonce, nonce);
 });
 
+test("authorization code flow preserves authentication time across delayed exchange", async (t) => {
+  const service = await startService(t);
+  const as = await discover(service);
+  const authorization = await authorizeCode(service, as, service.actionsAudience);
+  await delay(1100);
+  const { idClaims } = await exchangeCode(authorization, service.actionsAudience);
+  assert.ok(numberClaim(idClaims.auth_time, "auth_time") < numberClaim(idClaims.iat, "iat"));
+});
+
 test("expired authorization code cannot be exchanged", async (t) => {
   const service = await startService(t, { AUTHORIZATION_CODE_TTL_SECONDS: "1" });
   const flow = await completeAuthorizationCodeFlow(service);
@@ -71,3 +80,8 @@ test("expired authorization code cannot be exchanged", async (t) => {
   assert.equal(expired.status, 400);
   assert.equal((await readJson(expired)).error, "invalid_grant");
 });
+
+function numberClaim(value: unknown, name: string): number {
+  if (typeof value !== "number") assert.fail(`${name} must be a number`);
+  return value;
+}

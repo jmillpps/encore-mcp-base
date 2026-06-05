@@ -33,6 +33,7 @@ test("OAuth store persists PRD field names and reloads records through the stric
     userSub: "user_justin_miller",
     resource: "http://localhost:4000/actions",
     scopes: ["openid"],
+    authTime: 1,
     ttlSeconds: 300,
   });
   await new DiskOAuthStore(path).rotateRefreshToken(refreshToken, "local-test", 300);
@@ -40,6 +41,7 @@ test("OAuth store persists PRD field names and reloads records through the stric
   const persisted = await readFile(path, "utf8");
   assert.match(persisted, /"code_hash"/);
   assert.match(persisted, /"scopes_json"/);
+  assert.match(persisted, /"auth_time"/);
   assert.match(persisted, /"nonce"/);
   assert.match(persisted, /"rotated_from_hash"/);
   assert.match(persisted, /"reset_at"/);
@@ -78,6 +80,7 @@ function refreshInput() {
     userSub: "user_justin_miller",
     resource: "http://localhost:4000/actions",
     scopes: ["openid"],
+    authTime: 1,
     ttlSeconds: 300,
   };
 }
@@ -91,6 +94,7 @@ function authorizationCodeDiskRecord(overrides: Record<string, unknown> = {}): R
     scopes_json: JSON.stringify(["openid"]),
     user_sub: "user_justin_miller",
     expires_at: 9999999999,
+    auth_time: 1,
     created_at: 1,
     ...overrides,
   };

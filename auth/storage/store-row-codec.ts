@@ -29,6 +29,7 @@ export function authorizationCodeFromDisk(value: unknown): AuthorizationCodeReco
     "user_sub",
     "expires_at",
     "consumed_at",
+    "auth_time",
     "created_at",
   ]);
   return {
@@ -43,6 +44,7 @@ export function authorizationCodeFromDisk(value: unknown): AuthorizationCodeReco
     userSub: text(record, "user_sub"),
     expiresAt: seconds(record, "expires_at"),
     consumedAt: optionalSeconds(record, "consumed_at"),
+    authTime: seconds(record, "auth_time"),
     createdAt: seconds(record, "created_at"),
   };
 }
@@ -60,12 +62,26 @@ export function authorizationCodeToDisk(record: AuthorizationCodeRecord): DiskRo
     user_sub: record.userSub,
     expires_at: record.expiresAt,
     consumed_at: record.consumedAt,
+    auth_time: record.authTime,
     created_at: record.createdAt,
   });
 }
 
 export function refreshTokenFromDisk(value: unknown): RefreshTokenRecord {
-  const record = row(value, ["token_hash", "family_id", "client_id", "user_sub", "resource", "scopes_json", "expires_at", "rotated_from_hash", "revoked_at", "created_at", "last_used_at"]);
+  const record = row(value, [
+    "token_hash",
+    "family_id",
+    "client_id",
+    "user_sub",
+    "resource",
+    "scopes_json",
+    "expires_at",
+    "auth_time",
+    "rotated_from_hash",
+    "revoked_at",
+    "created_at",
+    "last_used_at",
+  ]);
   return {
     tokenHash: hash(record, "token_hash"),
     familyId: text(record, "family_id"),
@@ -74,6 +90,7 @@ export function refreshTokenFromDisk(value: unknown): RefreshTokenRecord {
     resource: text(record, "resource"),
     scopes: scopes(record),
     expiresAt: seconds(record, "expires_at"),
+    authTime: seconds(record, "auth_time"),
     rotatedFromHash: optionalHash(record, "rotated_from_hash"),
     revokedAt: optionalSeconds(record, "revoked_at"),
     createdAt: seconds(record, "created_at"),
@@ -90,6 +107,7 @@ export function refreshTokenToDisk(record: RefreshTokenRecord): DiskRow {
     resource: record.resource,
     scopes_json: scopesJson(record.scopes),
     expires_at: record.expiresAt,
+    auth_time: record.authTime,
     rotated_from_hash: record.rotatedFromHash,
     revoked_at: record.revokedAt,
     created_at: record.createdAt,

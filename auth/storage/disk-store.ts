@@ -24,6 +24,7 @@ export class DiskOAuthStore {
       scopes: input.scopes,
       userSub: input.userSub,
       expiresAt: createdAt + input.ttlSeconds,
+      authTime: createdAt,
       createdAt,
       ...(input.nonce ? { nonce: input.nonce } : {}),
       ...(input.codeChallenge ? { codeChallenge: input.codeChallenge } : {}),
@@ -68,6 +69,7 @@ export class DiskOAuthStore {
       resource: input.resource,
       scopes: input.scopes,
       expiresAt: createdAt + input.ttlSeconds,
+      authTime: input.authTime,
       createdAt,
     };
     await this.file.update((state) => {
@@ -101,6 +103,7 @@ export class DiskOAuthStore {
         resource: oldRecord.resource,
         scopes: oldRecord.scopes,
         expiresAt: now + ttlSeconds,
+        authTime: oldRecord.authTime,
         rotatedFromHash: oldHash,
         createdAt: now,
       };

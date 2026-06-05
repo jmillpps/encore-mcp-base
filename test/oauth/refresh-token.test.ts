@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { setTimeout as delay } from "node:timers/promises";
 import * as oauth from "oauth4webapi";
 import { completeAuthorizationCodeFlow, discover, localClient, refreshTokens } from "../support/oauth-client.ts";
-import { expectOAuthError, requireString } from "../support/http.ts";
+import { expectOAuthError, requireRecord, requireString } from "../support/http.ts";
 import { startService } from "../support/service-process.ts";
 
 test("refresh token rotation revokes the token family on reuse", async (t) => {
@@ -20,6 +21,17 @@ test("refresh token rotation revokes the token family on reuse", async (t) => {
     [oauth.allowInsecureRequests]: true,
   });
   await expectOAuthError(revokedFamilyToken, 400, "invalid_grant");
+});
+
+test("refresh token responses preserve the original ID token authentication time", async (t) => {
+  const service = await startService(t);
+  const flow = await completeAuthorizationCodeFlow(service);
+  const authTime = numberClaim(flow.idClaims.auth_time, "auth_time");
+  await delay(1100);
+  const refreshed = await refreshTokens(flow.as, requireString(flow.tokens.refresh_token, "refresh_token"));
+  const claims = decodeJwtPayload(requireString(refreshed.tokens.id_token, "id_token"));
+  assert.equal(claims.auth_time, authTime);
+  assert.ok(numberClaim(claims.iat, "iat") > authTime);
 });
 
 test("refresh token client mismatch does not rotate the legitimate token", async (t) => {
@@ -69,3 +81,14 @@ test("refresh token grant rejects arbitrary invalid tokens", async (t) => {
   });
   await expectOAuthError(response, 400, "invalid_grant");
 });
+
+function decodeJwtPayload(token: string): Record<string, unknown> {
+  const [, encodedPayload] = token.split(".");
+  const json = Buffer.from(requireString(encodedPayload, "jwt payload"), "base64url").toString("utf8");
+  return requireRecord(JSON.parse(json), "jwt payload");
+}
+
+function numberClaim(value: unknown, name: string): number {
+  if (typeof value !== "number") assert.fail(`${name} must be a number`);
+  return value;
+}

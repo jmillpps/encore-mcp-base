@@ -21,5 +21,6 @@ export interface RefreshTokenInput {
   userSub: string;
   resource: string;
   scopes: string[];
+  authTime: number;
   ttlSeconds: number;
 }

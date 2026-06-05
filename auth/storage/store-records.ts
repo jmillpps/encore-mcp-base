@@ -10,6 +10,7 @@ export interface AuthorizationCodeRecord {
   userSub: string;
   expiresAt: number;
   consumedAt?: number;
+  authTime: number;
   createdAt: number;
 }
 
@@ -21,6 +22,7 @@ export interface RefreshTokenRecord {
   resource: string;
   scopes: string[];
   expiresAt: number;
+  authTime: number;
   rotatedFromHash?: string;
   revokedAt?: number;
   createdAt: number;

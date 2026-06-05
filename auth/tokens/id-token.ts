@@ -5,7 +5,7 @@ import { getSigningKey } from "./signing-keys.ts";
 import { signJwt } from "./jwt.ts";
 import type { IdTokenClaims } from "./token-claims.ts";
 
-export function issueIdToken(config: ServiceConfig, user: StaticUser, clientId: string, nonce?: string): string {
+export function issueIdToken(config: ServiceConfig, user: StaticUser, clientId: string, authTime: number, nonce?: string): string {
   const now = nowSeconds();
   const key = getSigningKey(config);
   const claims: IdTokenClaims = {
@@ -14,7 +14,7 @@ export function issueIdToken(config: ServiceConfig, user: StaticUser, clientId: 
     aud: clientId,
     exp: now + config.idTokenTtlSeconds,
     iat: now,
-    auth_time: now,
+    auth_time: authTime,
     name: user.name,
     given_name: user.given_name,
     family_name: user.family_name,
