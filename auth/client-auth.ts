@@ -1,5 +1,6 @@
 import { Buffer } from "node:buffer";
 import { ServiceError } from "../shared/errors.ts";
+import { readAuthorizationCredentials } from "./authorization-header.ts";
 import type { TokenEndpointAuthMethod } from "./client-types.ts";
 
 export interface ClientCredentials {
@@ -10,8 +11,8 @@ export interface ClientCredentials {
 
 export function readClientCredentials(form: URLSearchParams, authorization: string | undefined): ClientCredentials {
   if (authorization) {
-    if (!authorization.startsWith("Basic ")) throw new ServiceError("invalid_client", "invalid client", 401);
-    return readBasicCredentials(form, authorization);
+    const credentials = readAuthorizationCredentials(authorization, "Basic", { code: "invalid_client", message: "invalid client", status: 401 });
+    return readBasicCredentials(form, credentials);
   }
   const clientId = form.get("client_id");
   if (!clientId) throw new ServiceError("invalid_client", "invalid client", 401);
@@ -19,9 +20,9 @@ export function readClientCredentials(form: URLSearchParams, authorization: stri
   return { clientId, method: "client_secret_post", ...(clientSecret ? { clientSecret } : {}) };
 }
 
-function readBasicCredentials(form: URLSearchParams, header: string): ClientCredentials {
+function readBasicCredentials(form: URLSearchParams, credentials: string): ClientCredentials {
   try {
-    const decoded = Buffer.from(header.slice("Basic ".length), "base64").toString("utf8");
+    const decoded = Buffer.from(credentials, "base64").toString("utf8");
     const separator = decoded.indexOf(":");
     if (separator < 1) throw new Error("bad basic credentials");
     if (form.get("client_secret")) throw new Error("ambiguous client credentials");

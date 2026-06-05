@@ -24,6 +24,9 @@ test("authorization code grant accepts client_secret_basic only for basic client
   const response = await handleTokenGrant(config, store, [client], form, basicCredentials(client.clientId, "basic-secret"));
   assert.equal(response.token_type, "bearer");
   assert.ok(response.access_token);
+  const lowerCaseCode = await issueCode(store, config, client);
+  const lowerCaseResponse = await handleTokenGrant(config, store, [client], tokenForm(lowerCaseCode, config), basicCredentials(client.clientId, "basic-secret", "basic"));
+  assert.equal(lowerCaseResponse.token_type, "bearer");
 });
 
 test("authorization code grant rejects client_secret_basic for post clients", async (t) => {
@@ -86,8 +89,8 @@ function postCredentials(form: URLSearchParams, client: OAuthClient, secret: str
   return withCredentials;
 }
 
-function basicCredentials(clientId: string, secret: string): string {
-  return `Basic ${Buffer.from(`${encodeURIComponent(clientId)}:${encodeURIComponent(secret)}`).toString("base64")}`;
+function basicCredentials(clientId: string, secret: string, scheme = "Basic"): string {
+  return `${scheme} ${Buffer.from(`${encodeURIComponent(clientId)}:${encodeURIComponent(secret)}`).toString("base64")}`;
 }
 
 interface TestContextLike {

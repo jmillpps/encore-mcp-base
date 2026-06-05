@@ -12,6 +12,9 @@ test("Actions endpoints reject missing tokens and accept scoped Actions tokens",
   const profile = await fetch(`${service.origin}/actions/profile`, { headers: { authorization: bearer(flow.tokens.access_token) } });
   assert.equal(profile.status, 200);
   assert.equal((await readJson(profile)).email, "jmiller@inifnitedevlab.com");
+  const lowerCaseProfile = await fetch(`${service.origin}/actions/profile`, { headers: { authorization: `bearer ${flow.tokens.access_token}` } });
+  assert.equal(lowerCaseProfile.status, 200);
+  assert.equal((await readJson(lowerCaseProfile)).email, "jmiller@inifnitedevlab.com");
   const session = await fetch(`${service.origin}/actions/session`, { headers: { authorization: bearer(flow.tokens.access_token) } });
   assert.equal(session.status, 200);
   assert.equal((await readJson(session)).audience, service.actionsAudience);

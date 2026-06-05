@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import * as oauth from "oauth4webapi";
 import { completeAuthorizationCodeFlow, localClient } from "../support/oauth-client.ts";
+import { readJson } from "../support/http.ts";
 import { startService } from "../support/service-process.ts";
 
 test("userinfo accepts valid tokens issued for Actions and MCP resources", async (t) => {
@@ -17,4 +18,7 @@ test("userinfo accepts valid tokens issued for Actions and MCP resources", async
     const userInfo = await oauth.processUserInfoResponse(flow.as, localClient, flow.idClaims.sub, response);
     assert.equal(userInfo.email, "jmiller@inifnitedevlab.com");
   }
+  const lowerCaseBearer = await fetch(`${service.origin}/oauth/userinfo`, { headers: { authorization: `bearer ${actionsFlow.tokens.access_token}` } });
+  assert.equal(lowerCaseBearer.status, 200);
+  assert.equal((await readJson(lowerCaseBearer)).email, "jmiller@inifnitedevlab.com");
 });
