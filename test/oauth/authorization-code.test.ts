@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
 import * as oauth from "oauth4webapi";
 import { completeAuthorizationCodeFlow, localClient } from "../support/oauth-client.ts";
@@ -42,4 +43,24 @@ test("authorization code cannot be reused after token exchange", async (t) => {
   assert.equal(replay.status, 400);
   const body = await readJson(replay);
   assert.equal(body.error, "invalid_grant");
+});
+
+test("expired authorization code cannot be exchanged", async (t) => {
+  const service = await startService(t, { AUTHORIZATION_CODE_TTL_SECONDS: "1" });
+  const flow = await completeAuthorizationCodeFlow(service);
+  await delay(1100);
+  const expired = await oauth.authorizationCodeGrantRequest(
+    flow.as,
+    localClient,
+    oauth.ClientSecretPost("local-test-secret"),
+    flow.callbackParameters,
+    "http://localhost:4000/test/callback",
+    flow.codeVerifier,
+    {
+      additionalParameters: new URLSearchParams([["resource", service.actionsAudience]]),
+      [oauth.allowInsecureRequests]: true,
+    },
+  );
+  assert.equal(expired.status, 400);
+  assert.equal((await readJson(expired)).error, "invalid_grant");
 });

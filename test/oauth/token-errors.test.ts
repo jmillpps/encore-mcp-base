@@ -51,6 +51,11 @@ test("token endpoint rejects bad redirect and bad PKCE without consuming the aut
   duplicateCode.append("code", duplicateAuthorization.code);
   await expectOAuthError(await postToken(as.token_endpoint, duplicateCode), 400, "bad_request");
   assert.equal((await exchangeCode(duplicateAuthorization, service.actionsAudience)).tokens.token_type, "bearer");
+  const missingVerifierAuthorization = await authorizeCode(service, as, service.actionsAudience);
+  const missingVerifier = tokenBody(service.actionsAudience, missingVerifierAuthorization.code, missingVerifierAuthorization.codeVerifier, localClientSecret);
+  missingVerifier.delete("code_verifier");
+  await expectOAuthError(await postToken(as.token_endpoint, missingVerifier), 400, "invalid_grant");
+  assert.equal((await exchangeCode(missingVerifierAuthorization, service.actionsAudience)).tokens.token_type, "bearer");
 });
 
 async function tokenRequest(

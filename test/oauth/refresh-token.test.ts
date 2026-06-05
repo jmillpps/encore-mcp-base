@@ -40,3 +40,12 @@ test("refresh token client mismatch does not rotate the legitimate token", async
   await expectOAuthError(mismatch, 400, "invalid_grant");
   assert.equal((await refreshTokens(flow.as, refreshToken)).tokens.token_type, "bearer");
 });
+
+test("refresh token grant rejects arbitrary invalid tokens", async (t) => {
+  const service = await startService(t);
+  const as = await discover(service);
+  const response = await oauth.refreshTokenGrantRequest(as, localClient, oauth.ClientSecretPost("local-test-secret"), "not-a-valid-refresh-token", {
+    [oauth.allowInsecureRequests]: true,
+  });
+  await expectOAuthError(response, 400, "invalid_grant");
+});
