@@ -118,12 +118,15 @@ async function waitForHealth(
 
 async function stopChild(child: ChildProcess): Promise<void> {
   if (child.exitCode !== null || child.signalCode !== null) return;
-  child.kill("SIGINT");
   const finished = once(child, "exit").then(() => undefined);
-  const killed = delay(5000).then(() => {
-    if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
-  });
-  await Promise.race([finished, killed]);
+  child.kill("SIGINT");
+  if (await exitsBefore(finished, 5000)) return;
+  if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
+  if (!(await exitsBefore(finished, 5000))) throw new Error("Encore process did not exit after SIGKILL");
+}
+
+async function exitsBefore(finished: Promise<void>, timeoutMs: number): Promise<boolean> {
+  return Promise.race([finished.then(() => true), delay(timeoutMs).then(() => false)]);
 }
 
 async function waitForExit(child: ChildProcess, timeoutMs: number): Promise<{ code: number | null; signal: NodeJS.Signals | null }> {
