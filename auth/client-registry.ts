@@ -2,6 +2,7 @@ import type { OAuthClient, PkcePolicy, TokenEndpointAuthMethod } from "./client-
 
 const authMethods = ["client_secret_post", "client_secret_basic"] as const;
 const pkcePolicies = ["required", "optional"] as const;
+const clientKeys = ["clientId", "clientSecretHash", "displayName", "redirectUris", "allowedScopes", "allowedResources", "tokenEndpointAuthMethod", "pkcePolicy", "clientClass"] as const;
 const identifierPattern = /^[A-Za-z0-9._:-]+$/;
 const scopePattern = /^[A-Za-z0-9:_./-]+$/;
 const sha256Base64UrlPattern = /^[A-Za-z0-9_-]{43}$/;
@@ -20,7 +21,7 @@ export function parseClientJson(value: string, production: boolean): OAuthClient
 }
 
 function parseClient(value: unknown, index: number, production: boolean): OAuthClient {
-  const record = objectRecord(value, `client ${index}`);
+  const record = objectRecord(value, `client ${index}`, clientKeys);
   return {
     clientId: identifier(readString(record, "clientId"), "clientId"),
     clientSecretHash: secretHash(readString(record, "clientSecretHash")),
@@ -34,9 +35,11 @@ function parseClient(value: unknown, index: number, production: boolean): OAuthC
   };
 }
 
-function objectRecord(value: unknown, name: string): Record<string, unknown> {
+function objectRecord(value: unknown, name: string, allowedKeys: readonly string[]): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error(`${name} must be an object`);
-  return value as Record<string, unknown>;
+  const record = value as Record<string, unknown>;
+  if (Object.keys(record).some((key) => !allowedKeys.includes(key))) throw new Error(`${name} contains unsupported fields`);
+  return record;
 }
 
 function readString(record: Record<string, unknown>, key: string): string {
