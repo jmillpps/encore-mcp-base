@@ -12,6 +12,9 @@ test("MCP Streamable HTTP validates transport headers and session lifecycle", as
   assert.deepEqual((await readJson(ping)).result, {});
   await expectOAuthError(await postMcp(service, { jsonrpc: "2.0", id: "bad-origin", method: "initialize", params: {} }, { origin: "https://evil.test" }), 403, "forbidden");
   await expectOAuthError(await postMcp(service, { jsonrpc: "2.0", id: "bad-type", method: "initialize", params: {} }, { contentType: "text/plain" }), 415, "bad_request");
+  const malformed = await postRawMcp(service, "{");
+  assert.equal(malformed.status, 400);
+  assert.equal(((await readJson(malformed)).error as Record<string, unknown>).code, -32700);
   await expectOAuthError(await postMcp(service, { jsonrpc: "2.0", id: "bad-session", method: "ping" }, { sessionId: "bad-session" }), 400, "bad_request");
   await expectOAuthError(await postMcp(service, { jsonrpc: "2.0", id: "bad-version", method: "ping" }, { sessionId, protocolVersion: "2024-01-01" }), 400, "bad_request");
   await expectOAuthError(await getMcp(service), 400, "bad_request");
@@ -33,4 +36,12 @@ function getMcp(service: { origin: string }, sessionId?: string, protocolVersion
   if (sessionId) headers.set("mcp-session-id", sessionId);
   if (sessionId) headers.set("mcp-protocol-version", protocolVersion);
   return fetch(`${service.origin}/mcp`, { method: "GET", headers });
+}
+
+function postRawMcp(service: { origin: string }, body: string): Promise<Response> {
+  return fetch(`${service.origin}/mcp`, {
+    method: "POST",
+    headers: { accept: "application/json, text/event-stream", "content-type": "application/json", origin: "https://chatgpt.com" },
+    body,
+  });
 }

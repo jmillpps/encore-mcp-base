@@ -1,7 +1,8 @@
 import { api } from "encore.dev/api";
 import { readConfig } from "../shared/config.ts";
-import { readJsonBody, requestSubject, writeError, writeJson } from "../shared/http.ts";
+import { requestSubject, writeError, writeJson } from "../shared/http.ts";
 import { handleMcpJson } from "./protocol.ts";
+import { isMcpBodyResult, readMcpJsonBody } from "./request-body.ts";
 import { validateOrigin, validatePostContentType, writeCors } from "./transport-headers.ts";
 
 export const sse = api.raw({ expose: true, method: "GET", path: "/sse" }, async (req, res) => {
@@ -22,7 +23,12 @@ export const messages = api.raw({ expose: true, method: "POST", path: "/messages
     validateOrigin(config, req);
     validatePostContentType(req);
     writeCors(config, req, res);
-    const result = await handleMcpJson({ config, authorization: String(req.headers.authorization ?? ""), rateLimitSubject: requestSubject(req) }, await readJsonBody(req));
+    const body = await readMcpJsonBody(req);
+    if (isMcpBodyResult(body)) {
+      writeJson(res, body.status, body.body);
+      return;
+    }
+    const result = await handleMcpJson({ config, authorization: String(req.headers.authorization ?? ""), rateLimitSubject: requestSubject(req) }, body);
     if (result.wwwAuthenticate) res.setHeader("www-authenticate", result.wwwAuthenticate);
     if (!result.body) {
       res.writeHead(result.status);

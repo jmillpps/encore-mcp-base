@@ -1,10 +1,11 @@
 import { api } from "encore.dev/api";
 import { readConfig } from "../shared/config.ts";
 import { ServiceError } from "../shared/errors.ts";
-import { readJsonBody, requestSubject, writeError, writeJson, writeNoContent } from "../shared/http.ts";
+import { requestSubject, writeError, writeJson, writeNoContent } from "../shared/http.ts";
 import { createMcpSession, terminateMcpSession, touchMcpSession } from "./session-store.ts";
 import { handleMcpJson } from "./protocol.ts";
 import { negotiateProtocolVersion } from "./protocol-version.ts";
+import { isMcpBodyResult, readMcpJsonBody } from "./request-body.ts";
 import { readMcpProtocolVersion, readMcpSessionId, validateOrigin, validatePostAccept, validatePostContentType, writeCors } from "./transport-headers.ts";
 
 export const mcpOptions = api.raw({ expose: true, method: "OPTIONS", path: "/mcp" }, async (req, res) => {
@@ -24,7 +25,11 @@ export const mcpPost = api.raw({ expose: true, method: "POST", path: "/mcp" }, a
     validatePostAccept(req);
     validatePostContentType(req);
     writeCors(config, req, res);
-    const body = await readJsonBody(req);
+    const body = await readMcpJsonBody(req);
+    if (isMcpBodyResult(body)) {
+      writeJson(res, body.status, body.body);
+      return;
+    }
     const method = typeof body === "object" && body !== null && !Array.isArray(body) ? (body as Record<string, unknown>).method : undefined;
     const protocolVersion = negotiateProtocolVersion(readMcpProtocolVersion(req, method !== "initialize"));
     if (method !== "initialize") await touchMcpSession(config, readMcpSessionId(req), protocolVersion);

@@ -31,7 +31,8 @@ test("SSE transport rejects invalid origins and malformed message requests", asy
     headers: { "content-type": "application/json", origin: "https://chatgpt.com" },
     body: "{",
   });
-  await expectOAuthError(malformed, 400, "bad_request");
+  assert.equal(malformed.status, 400);
+  assert.equal(requireRecord((await readJson(malformed)).error, "json-rpc error").code, -32700);
   const missing = await postMessage(service.origin, { jsonrpc: "2.0", id: "missing", method: "missing/method" });
   assert.equal(missing.status, 200);
   assert.equal(requireRecord((await readJson(missing)).error, "json-rpc error").code, -32601);
