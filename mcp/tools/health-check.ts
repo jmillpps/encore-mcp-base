@@ -1,0 +1,26 @@
+import { serviceName, serviceVersion } from "../../shared/service-info.ts";
+import { isoNow } from "../../shared/time.ts";
+import { emptyInputSchema, objectSchema, stringSchema } from "../tool-schemas.ts";
+import type { McpTool } from "../tool-types.ts";
+
+export const healthCheckTool: McpTool = {
+  name: "health.check",
+  title: "Health Check",
+  description: "Check whether the service is reachable.",
+  inputSchema: emptyInputSchema(),
+  outputSchema: objectSchema({
+    status: stringSchema(),
+    timestamp: stringSchema(),
+    service: objectSchema({ name: stringSchema(), version: stringSchema() }),
+  }),
+  securitySchemes: [{ type: "noauth" }],
+  requiredScopes: [],
+  run: async () => ({
+    content: [{ type: "text", text: "ok" }],
+    structuredContent: {
+      status: "ok",
+      timestamp: isoNow(),
+      service: { name: serviceName, version: serviceVersion },
+    },
+  }),
+};
