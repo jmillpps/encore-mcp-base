@@ -13,6 +13,15 @@ export async function readBody(req: IncomingMessage, limit = 32768): Promise<str
   return Buffer.concat(chunks).toString("utf8");
 }
 
+export async function readJsonBody(req: IncomingMessage, limit = 32768): Promise<unknown> {
+  try {
+    return JSON.parse(await readBody(req, limit));
+  } catch (error) {
+    if (error instanceof ServiceError) throw error;
+    throw new ServiceError("bad_request", "invalid json", 400);
+  }
+}
+
 export async function readForm(req: IncomingMessage): Promise<URLSearchParams> {
   const type = String(req.headers["content-type"] ?? "");
   if (!type.toLowerCase().startsWith("application/x-www-form-urlencoded")) {
