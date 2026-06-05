@@ -2,23 +2,13 @@ import { constantTimeEqualString, sha256Base64Url } from "../shared/crypto.ts";
 import { ServiceError } from "../shared/errors.ts";
 import type { ServiceConfig } from "../shared/config.ts";
 import { defaultScopes } from "./scopes.ts";
+import { parseClientJson } from "./client-registry.ts";
+import type { OAuthClient, PkcePolicy } from "./client-types.ts";
 
-export type TokenEndpointAuthMethod = "client_secret_post" | "client_secret_basic";
-export type PkcePolicy = "required" | "optional";
-
-export interface OAuthClient {
-  clientId: string;
-  clientSecretHash: string;
-  displayName: string;
-  redirectUris: string[];
-  allowedScopes: string[];
-  allowedResources: string[];
-  tokenEndpointAuthMethod: TokenEndpointAuthMethod;
-  pkcePolicy: PkcePolicy;
-}
+export type { OAuthClient, PkcePolicy } from "./client-types.ts";
 
 export function loadClients(config: ServiceConfig, env: NodeJS.ProcessEnv = process.env): OAuthClient[] {
-  if (env.OAUTH_CLIENTS_JSON) return parseClientJson(env.OAUTH_CLIENTS_JSON);
+  if (env.OAUTH_CLIENTS_JSON) return parseClientJson(env.OAUTH_CLIENTS_JSON, config.production);
   if (config.production) throw new Error("OAUTH_CLIENTS_JSON is required");
   return localClients(config);
 }
@@ -55,15 +45,15 @@ function localClients(config: ServiceConfig): OAuthClient[] {
     localClient("local-test", "local-test-secret", "Local Test", ["http://localhost:4000/test/callback"], scopes, [
       config.actionsAudience,
       config.mcpResource,
-    ]),
+    ], "local-test"),
     localClient("gpt-actions", "gpt-actions-secret", "GPT Actions", [
       "https://chat.openai.com/aip/g-local/oauth/callback",
       "https://chatgpt.com/aip/g-local/oauth/callback",
-    ], scopes, [config.actionsAudience]),
+    ], scopes, [config.actionsAudience], "gpt-actions"),
     localClient("gpt-apps-mcp", "gpt-apps-secret", "GPT Apps MCP", [
       "https://chatgpt.com/connector/oauth/local-callback",
       "https://chatgpt.com/connector_platform_oauth_redirect",
-    ], scopes, [config.mcpResource], "required"),
+    ], scopes, [config.mcpResource], "gpt-apps-mcp", "required"),
   ];
 }
 
@@ -74,6 +64,7 @@ function localClient(
   redirectUris: string[],
   allowedScopes: string[],
   allowedResources: string[],
+  clientClass: string,
   pkcePolicy: PkcePolicy = "optional",
 ): OAuthClient {
   return {
@@ -85,11 +76,6 @@ function localClient(
     allowedResources,
     tokenEndpointAuthMethod: "client_secret_post",
     pkcePolicy,
+    clientClass,
   };
-}
-
-function parseClientJson(value: string): OAuthClient[] {
-  const parsed = JSON.parse(value);
-  if (!Array.isArray(parsed)) throw new Error("OAUTH_CLIENTS_JSON must be an array");
-  return parsed as OAuthClient[];
 }
