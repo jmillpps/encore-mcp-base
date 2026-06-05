@@ -1,0 +1,25 @@
+{
+  "name": "gpt-mcp-service",
+  "private": true,
+  "version": "0.1.0",
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "dev": "encore run --browser=never --port=4000",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test \"test/**/*.test.ts\"",
+    "check:architecture": "node tools/check-architecture.mjs",
+    "check:dependencies": "node tools/check-dependencies.mjs",
+    "check:file-scope": "node tools/check-file-scope.mjs",
+    "check:test-placement": "node tools/check-test-placement.mjs",
+    "check": "npm run typecheck && npm run check:dependencies && npm run check:architecture && npm run check:file-scope && npm run check:test-placement && npm test"
+  },
+  "dependencies": {
+    "encore.dev": "^1.57.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.0",
+    "oauth4webapi": "^3.8.3",
+    "typescript": "^5.9.3"
+  }
+}

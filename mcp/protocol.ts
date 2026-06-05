@@ -1,0 +1,53 @@
+import type { ServiceConfig } from "../shared/config.ts";
+import { ServiceError } from "../shared/errors.ts";
+import { asRecord } from "../shared/json.ts";
+import { callTool, listTools } from "./tool-registry.ts";
+import { initializeResult } from "./lifecycle.ts";
+import { jsonRpcError, jsonRpcSuccess, methodParamObject, methodParamString, parseJsonRpc, type JsonRpcRequest } from "./json-rpc.ts";
+
+export interface McpContext {
+  config: ServiceConfig;
+  authorization?: string;
+}
+
+export interface McpResult {
+  status: number;
+  body?: Record<string, unknown>;
+  initialized?: boolean;
+}
+
+export async function handleMcpJson(context: McpContext, input: unknown): Promise<McpResult> {
+  let request: JsonRpcRequest;
+  try {
+    request = parseJsonRpc(input);
+  } catch (error) {
+    if (error instanceof ServiceError) return { status: error.status, body: jsonRpcError(undefined, -32600, error.message) };
+    throw error;
+  }
+  if (request.id === undefined) return handleNotification(request);
+  try {
+    const result = await dispatch(context, request);
+    return { status: 200, body: jsonRpcSuccess(request.id, result), initialized: request.method === "initialize" };
+  } catch (error) {
+    if (error instanceof ServiceError) return { status: error.status, body: jsonRpcError(request.id, -32000, error.message) };
+    return { status: 500, body: jsonRpcError(request.id, -32603, "internal error") };
+  }
+}
+
+function handleNotification(request: JsonRpcRequest): McpResult {
+  if (request.method === "notifications/initialized") return { status: 202 };
+  return { status: 202 };
+}
+
+async function dispatch(context: McpContext, request: JsonRpcRequest): Promise<unknown> {
+  if (request.method === "initialize") return initializeResult(request.params);
+  if (request.method === "ping") return {};
+  if (request.method === "tools/list") return listTools();
+  if (request.method === "tools/call") {
+    const name = methodParamString(request, "name");
+    const args = methodParamObject(request, "arguments");
+    return callTool(context, name, args);
+  }
+  asRecord(request.params ?? {}, "params");
+  throw new ServiceError("not_found", "method not found", 404);
+}

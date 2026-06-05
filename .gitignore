@@ -1,0 +1,8 @@
+node_modules/
+.encore/
+encore.gen/
+var/
+coverage/
+dist/
+tsconfig.tsbuildinfo
+*.log
