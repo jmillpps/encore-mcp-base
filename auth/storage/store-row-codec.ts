@@ -32,6 +32,7 @@ export function authorizationCodeFromDisk(value: unknown): AuthorizationCodeReco
     "auth_time",
     "created_at",
   ]);
+  const createdAt = seconds(record, "created_at");
   return {
     codeHash: hash(record, "code_hash"),
     clientId: text(record, "client_id"),
@@ -44,8 +45,8 @@ export function authorizationCodeFromDisk(value: unknown): AuthorizationCodeReco
     userSub: text(record, "user_sub"),
     expiresAt: seconds(record, "expires_at"),
     consumedAt: optionalSeconds(record, "consumed_at"),
-    authTime: seconds(record, "auth_time"),
-    createdAt: seconds(record, "created_at"),
+    authTime: authTime(record, createdAt),
+    createdAt,
   };
 }
 
@@ -82,6 +83,7 @@ export function refreshTokenFromDisk(value: unknown): RefreshTokenRecord {
     "created_at",
     "last_used_at",
   ]);
+  const createdAt = seconds(record, "created_at");
   return {
     tokenHash: hash(record, "token_hash"),
     familyId: text(record, "family_id"),
@@ -90,10 +92,10 @@ export function refreshTokenFromDisk(value: unknown): RefreshTokenRecord {
     resource: text(record, "resource"),
     scopes: scopes(record),
     expiresAt: seconds(record, "expires_at"),
-    authTime: seconds(record, "auth_time"),
+    authTime: authTime(record, createdAt),
     rotatedFromHash: optionalHash(record, "rotated_from_hash"),
     revokedAt: optionalSeconds(record, "revoked_at"),
-    createdAt: seconds(record, "created_at"),
+    createdAt,
     lastUsedAt: optionalSeconds(record, "last_used_at"),
   };
 }
@@ -153,5 +155,11 @@ function optionalNonce(record: DiskRow, key: string): string | undefined {
   const value = optionalText(record, key);
   if (value === undefined) return undefined;
   if (!isOidcNonce(value)) malformed();
+  return value;
+}
+
+function authTime(record: DiskRow, createdAt: number): number {
+  const value = seconds(record, "auth_time");
+  if (value > createdAt) malformed();
   return value;
 }

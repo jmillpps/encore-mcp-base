@@ -66,6 +66,18 @@ test("OAuth store rejects malformed JSON and unexpected record shapes", async (t
     "utf8",
   );
   await assert.rejects(() => new DiskOAuthStore(path).createRefreshToken(refreshInput()), /store file is malformed/);
+  await writeFile(
+    path,
+    JSON.stringify({ authorizationCodes: { [validHash]: authorizationCodeDiskRecord({ auth_time: 2, created_at: 1 }) } }),
+    "utf8",
+  );
+  await assert.rejects(() => new DiskOAuthStore(path).createRefreshToken(refreshInput()), /store file is malformed/);
+  await writeFile(
+    path,
+    JSON.stringify({ refreshTokens: { [validHash]: refreshTokenDiskRecord({ auth_time: 2, created_at: 1 }) } }),
+    "utf8",
+  );
+  await assert.rejects(() => new DiskOAuthStore(path).createRefreshToken(refreshInput()), /store file is malformed/);
 });
 
 test("OAuth store rejects traversal and non-json paths", () => {
@@ -93,6 +105,21 @@ function authorizationCodeDiskRecord(overrides: Record<string, unknown> = {}): R
     resource: "http://localhost:4000/actions",
     scopes_json: JSON.stringify(["openid"]),
     user_sub: "user_justin_miller",
+    expires_at: 9999999999,
+    auth_time: 1,
+    created_at: 1,
+    ...overrides,
+  };
+}
+
+function refreshTokenDiskRecord(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    token_hash: validHash,
+    family_id: validHash,
+    client_id: "local-test",
+    user_sub: "user_justin_miller",
+    resource: "http://localhost:4000/actions",
+    scopes_json: JSON.stringify(["openid"]),
     expires_at: 9999999999,
     auth_time: 1,
     created_at: 1,
