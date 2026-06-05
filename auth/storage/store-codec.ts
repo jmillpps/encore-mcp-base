@@ -1,5 +1,8 @@
 import { emptyStoreState, type OAuthStoreState } from "./store-records.ts";
-import { authorizationCodeFromDisk, authorizationCodeToDisk, mcpSessionFromDisk, mcpSessionToDisk, rateLimitFromDisk, rateLimitToDisk, refreshTokenFromDisk, refreshTokenToDisk } from "./store-row-codec.ts";
+import { authorizationCodeFromDisk, authorizationCodeToDisk } from "./authorization-code-row.ts";
+import { mcpSessionFromDisk, mcpSessionToDisk } from "./mcp-session-row.ts";
+import { rateLimitFromDisk, rateLimitToDisk } from "./rate-limit-row.ts";
+import { refreshTokenFromDisk, refreshTokenToDisk } from "./refresh-token-row.ts";
 import { malformed, type DiskRow } from "./store-row-primitives.ts";
 
 const mapKeyPattern = /^[A-Za-z0-9_-]{43}$/;
