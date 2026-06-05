@@ -7,14 +7,20 @@ interface AuthorizationError {
 }
 
 export function readAuthorizationCredentials(header: string | undefined, scheme: string, error: AuthorizationError): string {
-  if (!header) fail(error);
+  const credentials = authorizationCredentials(header, scheme);
+  if (credentials === undefined) fail(error);
+  return credentials;
+}
+
+export function authorizationCredentials(header: string | undefined, scheme: string): string | undefined {
+  if (!header) return undefined;
   const match = /^([!#$%&'*+\-.^_`|~0-9A-Za-z]+)[ \t]+(.+)$/.exec(header);
-  if (!match) fail(error);
+  if (!match) return undefined;
   const receivedScheme = match[1];
   const receivedCredentials = match[2];
-  if (receivedScheme === undefined || receivedCredentials === undefined || receivedScheme.toLowerCase() !== scheme.toLowerCase()) fail(error);
+  if (receivedScheme === undefined || receivedCredentials === undefined || receivedScheme.toLowerCase() !== scheme.toLowerCase()) return undefined;
   const credentials = receivedCredentials.trim();
-  if (!credentials) fail(error);
+  if (!credentials) return undefined;
   return credentials;
 }
 

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { Buffer } from "node:buffer";
 import test from "node:test";
 import { expectOAuthError, readJson, requireRecord } from "../support/http.ts";
 import { initializeMcp, postMcp } from "../support/mcp.ts";
@@ -11,6 +12,8 @@ test("live public endpoints enforce configured rate limits", async (t) => {
   await expectOAuthError(await fetch(authorizeUrl(service.origin, "state-2"), { redirect: "manual" }), 429, "rate_limited");
   await expectOAuthError(await tokenRequest(service.origin), 401, "invalid_client");
   await expectOAuthError(await tokenRequest(service.origin), 429, "rate_limited");
+  await expectOAuthError(await basicTokenRequest(service.origin, "basic", "gpt-actions", "gpt-actions-secret"), 401, "invalid_client");
+  await expectOAuthError(await basicTokenRequest(service.origin, "Basic", "gpt-actions", "gpt-actions-secret"), 429, "rate_limited");
   await expectOAuthError(await fetch(`${service.origin}/oauth/userinfo`), 401, "unauthorized");
   await expectOAuthError(await fetch(`${service.origin}/oauth/userinfo`), 429, "rate_limited");
   const sessionId = await initializeMcp(service);
@@ -30,6 +33,21 @@ function authorizeUrl(origin: string, state = "state-1"): URL {
   url.searchParams.set("state", state);
   url.searchParams.set("resource", `${origin}/actions`);
   return url;
+}
+
+function basicTokenRequest(origin: string, scheme: string, clientId: string, secret: string): Promise<Response> {
+  return fetch(`${origin}/oauth/token`, {
+    method: "POST",
+    headers: {
+      authorization: `${scheme} ${Buffer.from(`${encodeURIComponent(clientId)}:${encodeURIComponent(secret)}`).toString("base64")}`,
+      "content-type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({
+      grant_type: "authorization_code",
+      code: "bad-code",
+      redirect_uri: "https://chat.openai.com/aip/g-local/oauth/callback",
+    }),
+  });
 }
 
 function tokenRequest(origin: string): Promise<Response> {
