@@ -7,3 +7,9 @@ The first implementation supports authorization code flow, refresh tokens, signe
 OAuth state is stored durably on disk. The store keeps hashes for authorization codes and refresh tokens. Raw secrets and raw bearer tokens are not stored.
 
 The default local scopes are `openid`, `profile`, and `email`.
+
+The client registry controls allowed scopes per GPT client.
+
+Discovery metadata advertises the union of configured client scopes.
+
+Protected resource metadata advertises the scopes configured for clients that can use the MCP resource.
