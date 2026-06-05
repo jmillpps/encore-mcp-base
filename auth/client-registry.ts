@@ -79,6 +79,7 @@ function parseHttpUrl(value: string, key: string, production: boolean): URL {
     const url = new URL(value);
     if (url.protocol !== "https:" && url.protocol !== "http:") throw new Error(`${key} must use http or https`);
     if (production && url.protocol !== "https:") throw new Error(`${key} must use https in production`);
+    if (url.username || url.password) throw new Error(`${key} cannot include credentials`);
     if (url.hash) throw new Error(`${key} cannot include fragments`);
     return url;
 }
