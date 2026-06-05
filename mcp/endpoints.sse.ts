@@ -23,6 +23,7 @@ export const messages = api.raw({ expose: true, method: "POST", path: "/messages
     validatePostContentType(req);
     writeCors(config, req, res);
     const result = await handleMcpJson({ config, authorization: String(req.headers.authorization ?? ""), rateLimitSubject: requestSubject(req) }, await readJsonBody(req));
+    if (result.wwwAuthenticate) res.setHeader("www-authenticate", result.wwwAuthenticate);
     if (!result.body) {
       res.writeHead(result.status);
       res.end();

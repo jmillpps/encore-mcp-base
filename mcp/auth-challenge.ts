@@ -12,3 +12,12 @@ export function authChallengeResult(config: ServiceConfig, scopes: string[]): Re
     _meta: { "mcp/www_authenticate": [wwwAuthenticate(config, scopes)] },
   };
 }
+
+export function extractWwwAuthenticate(value: unknown): string[] | undefined {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return undefined;
+  const meta = (value as Record<string, unknown>)._meta;
+  if (typeof meta !== "object" || meta === null || Array.isArray(meta)) return undefined;
+  const challenges = (meta as Record<string, unknown>)["mcp/www_authenticate"];
+  if (!Array.isArray(challenges) || challenges.some((challenge) => typeof challenge !== "string")) return undefined;
+  return challenges;
+}

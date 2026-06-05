@@ -16,6 +16,10 @@ test("SSE transport announces the messages endpoint and accepts JSON-RPC message
   const message = await postMessage(service.origin, { jsonrpc: "2.0", id: "ping", method: "ping" });
   assert.equal(message.status, 200);
   assert.deepEqual((await readJson(message)).result, {});
+  const protectedMessage = await postMessage(service.origin, { jsonrpc: "2.0", id: "identity.profile", method: "tools/call", params: { name: "identity.profile", arguments: {} } });
+  assert.equal(protectedMessage.status, 200);
+  assert.match(protectedMessage.headers.get("www-authenticate") ?? "", /resource_metadata=/);
+  assert.equal(requireRecord((await readJson(protectedMessage)).result, "protected result").isError, true);
 });
 
 test("SSE transport rejects invalid origins and malformed message requests", async (t) => {

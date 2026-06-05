@@ -30,6 +30,7 @@ export const mcpPost = api.raw({ expose: true, method: "POST", path: "/mcp" }, a
     if (method !== "initialize") await touchMcpSession(config, readMcpSessionId(req), protocolVersion);
     const result = await handleMcpJson({ config, authorization: String(req.headers.authorization ?? ""), rateLimitSubject: requestSubject(req) }, body);
     if (result.initialized) res.setHeader("mcp-session-id", await createMcpSession(config, protocolVersion));
+    if (result.wwwAuthenticate) res.setHeader("www-authenticate", result.wwwAuthenticate);
     if (!result.body) writeNoContent(res, result.status);
     else writeJson(res, result.status, result.body);
   } catch (error) {
