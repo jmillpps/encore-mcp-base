@@ -43,6 +43,8 @@ export const mcpGet = api.raw({ expose: true, method: "GET", path: "/mcp" }, asy
     validateOrigin(config, req);
     const accept = String(req.headers.accept ?? "");
     if (!accept.includes("text/event-stream")) throw new ServiceError("bad_request", "invalid accept header", 400);
+    const protocolVersion = negotiateProtocolVersion(readMcpProtocolVersion(req, true));
+    await touchMcpSession(config, readMcpSessionId(req), protocolVersion);
     writeCors(config, req, res);
     res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-store" });
     res.end("event: message\ndata: {}\n\n");
