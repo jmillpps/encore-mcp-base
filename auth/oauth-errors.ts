@@ -43,6 +43,10 @@ function oauthErrorDescription(code: ErrorCode): string {
       return "grant is invalid";
     case "invalid_scope":
       return "scope is invalid";
+    case "unsupported_grant_type":
+      return "grant type is unsupported";
+    case "unsupported_response_type":
+      return "response type is unsupported";
     case "unauthorized":
       return "authorization required";
     case "forbidden":

@@ -33,7 +33,7 @@ export async function handleTokenGrant(
   assertClientSecret(client, credentials.clientSecret);
   if (grant === "authorization_code") return authorizationCodeGrant(config, store, client, form);
   if (grant === "refresh_token") return refreshTokenGrant(config, store, client, form);
-  throw new ServiceError("bad_request", "unsupported grant_type", 400);
+  throw new ServiceError("unsupported_grant_type", "unsupported grant_type", 400);
 }
 
 function tokenGrantParameters(grant: string | undefined): string[] {

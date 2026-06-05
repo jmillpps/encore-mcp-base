@@ -29,6 +29,24 @@ test("authorization endpoint rejects invalid client request parameters", async (
   await expectOAuthError(await fetch(invalidNonce, { redirect: "manual" }), 400, "bad_request");
 });
 
+test("oauth endpoints return standards-aligned unsupported mode errors", async (t) => {
+  const service = await startService(t);
+  const as = await discover(service);
+  const responseTypeError = await expectOAuthError(
+    await fetch(authorizeUrl(as.authorization_endpoint, service.actionsAudience, { responseType: "token" }), { redirect: "manual" }),
+    400,
+    "unsupported_response_type",
+  );
+  assert.equal(responseTypeError.error_description, "response type is unsupported");
+  const grantBody = new URLSearchParams({
+    grant_type: "client_credentials",
+    client_id: "local-test",
+    client_secret: localClientSecret,
+  });
+  const grantError = await expectOAuthError(await postToken(as.token_endpoint, grantBody), 400, "unsupported_grant_type");
+  assert.equal(grantError.error_description, "grant type is unsupported");
+});
+
 test("token endpoint rejects invalid secrets without consuming the authorization code", async (t) => {
   const service = await startService(t);
   const as = await discover(service);
@@ -174,7 +192,7 @@ function tokenBody(resource: string, code: string, codeVerifier: string, clientS
 
 function authorizeUrl(endpoint: string | undefined, resource: string, overrides: Record<string, string>): URL {
   const url = new URL(requireString(endpoint, "authorization_endpoint"));
-  url.searchParams.set("response_type", "code");
+  url.searchParams.set("response_type", overrides.responseType ?? "code");
   url.searchParams.set("client_id", overrides.clientId ?? "local-test");
   url.searchParams.set("redirect_uri", overrides.redirectUri ?? "http://localhost:4000/test/callback");
   url.searchParams.set("scope", overrides.scope ?? "openid profile email");

@@ -25,7 +25,7 @@ export async function createAuthorizationRedirect(
   clients: readonly OAuthClient[],
   request: AuthorizationRequest,
 ): Promise<string> {
-  if (request.responseType !== "code") throw new ServiceError("bad_request", "unsupported response_type", 400);
+  if (request.responseType !== "code") throw new ServiceError("unsupported_response_type", "unsupported response_type", 400);
   if (!request.state) throw new ServiceError("bad_request", "state is required", 400);
   const client = findClient(clients, request.clientId);
   assertRedirectUri(client, request.redirectUri);
