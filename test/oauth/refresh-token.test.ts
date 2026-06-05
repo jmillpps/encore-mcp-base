@@ -41,6 +41,26 @@ test("refresh token client mismatch does not rotate the legitimate token", async
   assert.equal((await refreshTokens(flow.as, refreshToken)).tokens.token_type, "bearer");
 });
 
+test("refresh token resource mismatch does not rotate the legitimate token", async (t) => {
+  const service = await startService(t);
+  const as = await discover(service);
+  const flow = await completeAuthorizationCodeFlow(service);
+  const refreshToken = requireString(flow.tokens.refresh_token, "refresh_token");
+  const mismatch = await fetch(as.token_endpoint as string, {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      client_id: "local-test",
+      client_secret: "local-test-secret",
+      refresh_token: refreshToken,
+      resource: service.mcpResource,
+    }),
+  });
+  await expectOAuthError(mismatch, 400, "invalid_grant");
+  assert.equal((await refreshTokens(flow.as, refreshToken)).tokens.token_type, "bearer");
+});
+
 test("refresh token grant rejects arbitrary invalid tokens", async (t) => {
   const service = await startService(t);
   const as = await discover(service);

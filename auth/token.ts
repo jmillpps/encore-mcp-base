@@ -58,7 +58,7 @@ async function authorizationCodeGrant(config: ServiceConfig, store: DiskOAuthSto
 
 async function refreshTokenGrant(config: ServiceConfig, store: DiskOAuthStore, client: OAuthClient, form: URLSearchParams): Promise<TokenResponse> {
   const token = requiredParameter(form, "refresh_token");
-  const rotated = await store.rotateRefreshToken(token, client.clientId, config.refreshTokenTtlSeconds);
+  const rotated = await store.rotateRefreshToken(token, client.clientId, config.refreshTokenTtlSeconds, optionalParameter(form, "resource"));
   return tokenResponse(config, client.clientId, rotated.oldRecord.resource, rotated.oldRecord.scopes, rotated.newToken);
 }
 
