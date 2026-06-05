@@ -1,6 +1,5 @@
 import { api, Header } from "encore.dev/api";
-import { readConfig } from "../shared/config.ts";
-import { verifyBearer } from "../auth/bearer.ts";
+import { verifyActionBearer } from "./action-bearer.ts";
 
 interface SessionRequest {
   authorization: Header<"Authorization">;
@@ -16,8 +15,7 @@ export interface SessionResponse {
 export const session = api<SessionRequest, SessionResponse>(
   { expose: true, auth: true, method: "GET", path: "/actions/session" },
   async (request) => {
-    const config = readConfig();
-    const claims = verifyBearer(config, request.authorization, config.actionsAudience);
+    const claims = verifyActionBearer(request.authorization, ["openid"]);
     return {
       subject: claims.sub,
       clientId: claims.client_id,

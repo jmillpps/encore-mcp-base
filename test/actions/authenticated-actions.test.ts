@@ -23,3 +23,13 @@ test("Actions endpoints reject MCP audience tokens", async (t) => {
   const response = await fetch(`${service.origin}/actions/profile`, { headers: { authorization: bearer(flow.tokens.access_token) } });
   assert.equal(response.status, 401);
 });
+
+test("Actions profile requires profile and email scopes", async (t) => {
+  const service = await startService(t);
+  const flow = await completeAuthorizationCodeFlow(service, service.actionsAudience, "openid");
+  const profile = await fetch(`${service.origin}/actions/profile`, { headers: { authorization: bearer(flow.tokens.access_token) } });
+  assert.equal(profile.status, 401);
+  const session = await fetch(`${service.origin}/actions/session`, { headers: { authorization: bearer(flow.tokens.access_token) } });
+  assert.equal(session.status, 200);
+  assert.deepEqual((await readJson(session)).scopes, ["openid"]);
+});
