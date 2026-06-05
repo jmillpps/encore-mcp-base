@@ -64,11 +64,11 @@ function secretHash(value: string): string {
 }
 
 function redirectUrls(values: string[], production: boolean): string[] {
-  return values.map((value) => parseHttpUrl(value, "redirectUris", production).toString());
+  return rejectDuplicates(values.map((value) => parseHttpUrl(value, "redirectUris", production).toString()), "redirectUris");
 }
 
 function resourceUrls(values: string[], production: boolean): string[] {
-  return values.map((value) => parseHttpUrl(value, "allowedResources", production).href.replace(/\/$/, ""));
+  return rejectDuplicates(values.map((value) => parseHttpUrl(value, "allowedResources", production).href.replace(/\/$/, "")), "allowedResources");
 }
 
 function parseHttpUrl(value: string, key: string, production: boolean): URL {
