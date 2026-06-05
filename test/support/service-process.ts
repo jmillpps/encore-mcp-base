@@ -53,6 +53,29 @@ export async function startService(t: TestContext, envOverrides: NodeJS.ProcessE
   return service;
 }
 
+export async function expectServiceStartupFailure(t: TestContext, envOverrides: NodeJS.ProcessEnv): Promise<string> {
+  const port = await freePort();
+  const tempDir = await mkdtemp(join(tmpdir(), "mcp-service-failure-test-"));
+  const child = spawn("encore", ["run", "--browser=never", "--port", String(port)], {
+    cwd: projectRoot,
+    env: cleanEnv({ ...process.env, OAUTH_STORE_PATH: join(tempDir, "oauth-store.json"), ...envOverrides }),
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  let output = "";
+  const append = (chunk: Buffer): void => {
+    output = `${output}${chunk.toString("utf8")}`.slice(-24000);
+  };
+  child.stdout.on("data", append);
+  child.stderr.on("data", append);
+  t.after(async () => {
+    await stopChild(child);
+    await rm(tempDir, { recursive: true, force: true });
+  });
+  const exit = await waitForExit(child, 30000);
+  if (exit.code === 0 && !/Error:/i.test(output)) throw new Error(`Encore startup succeeded unexpectedly\n${output}`);
+  return output;
+}
+
 function serviceEnv(origin: string, storePath: string, envOverrides: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {
     ...process.env,
@@ -65,6 +88,10 @@ function serviceEnv(origin: string, storePath: string, envOverrides: NodeJS.Proc
   };
   delete env.NODE_ENV;
   return env;
+}
+
+function cleanEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  return Object.fromEntries(Object.entries(env).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
 }
 
 async function waitForHealth(
@@ -97,6 +124,19 @@ async function stopChild(child: ChildProcess): Promise<void> {
     if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
   });
   await Promise.race([finished, killed]);
+}
+
+async function waitForExit(child: ChildProcess, timeoutMs: number): Promise<{ code: number | null; signal: NodeJS.Signals | null }> {
+  return new Promise((resolveExit, reject) => {
+    const timer = setTimeout(() => {
+      child.kill("SIGKILL");
+      reject(new Error("Encore startup failure check timed out"));
+    }, timeoutMs);
+    child.once("exit", (code, signal) => {
+      clearTimeout(timer);
+      resolveExit({ code, signal });
+    });
+  });
 }
 
 async function freePort(): Promise<number> {
