@@ -18,9 +18,20 @@ test("access token verifier rejects non-integer NumericDate values", () => {
   assertRejectsToken(config, { nbf: 0.5 });
 });
 
+test("access token verifier rejects malformed JWT input as unauthorized", () => {
+  const config = testConfig();
+  assertRejectsRawToken(config, "not-a-jwt");
+  assertRejectsRawToken(config, "aaa.bbb.ccc");
+  assertRejectsRawToken(config, `${signedAccessToken(config, {}).split(".").slice(0, 2).join(".")}.%%%`);
+});
+
 function assertRejectsToken(config: ServiceConfig, overrides: Record<string, unknown>): void {
+  assertRejectsRawToken(config, signedAccessToken(config, overrides));
+}
+
+function assertRejectsRawToken(config: ServiceConfig, token: string): void {
   assert.throws(
-    () => verifyAccessToken(config, signedAccessToken(config, overrides), config.actionsAudience),
+    () => verifyAccessToken(config, token, config.actionsAudience),
     (error) => error instanceof ServiceError && error.code === "unauthorized",
   );
 }

@@ -87,6 +87,12 @@ test("oauth endpoints return generic external error descriptions", async (t) => 
   const userinfoError = await expectOAuthError(await fetch(`${service.origin}/oauth/userinfo`), 401, "unauthorized");
   assert.equal(userinfoError.error_description, "authorization required");
   assert.equal(JSON.stringify(userinfoError).includes("bearer"), false);
+  const malformedUserinfoError = await expectOAuthError(
+    await fetch(`${service.origin}/oauth/userinfo`, { headers: { authorization: "Bearer aaa.bbb.ccc" } }),
+    401,
+    "unauthorized",
+  );
+  assert.equal(malformedUserinfoError.error_description, "authorization required");
 });
 
 test("token endpoint rejects oversized form bodies", async (t) => {
