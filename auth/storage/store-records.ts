@@ -21,7 +21,6 @@ export interface RefreshTokenRecord {
   scopes: string[];
   expiresAt: number;
   rotatedFromHash?: string;
-  rotatedToHash?: string;
   revokedAt?: number;
   createdAt: number;
   lastUsedAt?: number;

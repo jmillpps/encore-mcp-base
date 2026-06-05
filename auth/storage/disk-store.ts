@@ -82,7 +82,7 @@ export class DiskOAuthStore {
         throw new ServiceError("invalid_grant", "invalid grant", 400);
       }
       if (oldRecord.clientId !== clientId) throw new ServiceError("invalid_grant", "invalid grant", 400);
-      if (oldRecord.rotatedToHash) {
+      if (Object.values(state.refreshTokens).some((record) => record.rotatedFromHash === oldHash)) {
         for (const record of Object.values(state.refreshTokens)) {
           if (record.familyId === oldRecord.familyId) record.revokedAt = now;
         }
@@ -100,7 +100,6 @@ export class DiskOAuthStore {
         rotatedFromHash: oldHash,
         createdAt: now,
       };
-      oldRecord.rotatedToHash = newRecord.tokenHash;
       oldRecord.lastUsedAt = now;
       state.refreshTokens[newRecord.tokenHash] = newRecord;
       return { reused: false as const, oldRecord, newToken };
