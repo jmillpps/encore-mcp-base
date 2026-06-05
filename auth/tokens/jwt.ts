@@ -24,6 +24,14 @@ export function verifyJwt(token: string, publicKey: KeyObject): Record<string, u
   return payload as Record<string, unknown>;
 }
 
-function isHeader(value: unknown): value is { alg: "RS256" } {
-  return typeof value === "object" && value !== null && !Array.isArray(value) && (value as { alg?: unknown }).alg === "RS256";
+export function jwtKid(token: string): string {
+  const [encodedHeader] = token.split(".");
+  if (!encodedHeader) throw new ServiceError("unauthorized", "invalid token", 401);
+  const header = decodeJsonBase64Url(encodedHeader);
+  if (!isHeader(header)) throw new ServiceError("unauthorized", "invalid token", 401);
+  return header.kid;
+}
+
+function isHeader(value: unknown): value is { alg: "RS256"; kid: string } {
+  return typeof value === "object" && value !== null && !Array.isArray(value) && (value as { alg?: unknown }).alg === "RS256" && typeof (value as { kid?: unknown }).kid === "string";
 }

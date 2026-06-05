@@ -3,8 +3,8 @@ import { randomToken } from "../../shared/crypto.ts";
 import { ServiceError } from "../../shared/errors.ts";
 import { nowSeconds } from "../../shared/time.ts";
 import { hasScopes } from "../scopes.ts";
-import { getSigningKey } from "./signing-keys.ts";
-import { signJwt, verifyJwt } from "./jwt.ts";
+import { getSigningKey, getVerificationKeys } from "./signing-keys.ts";
+import { jwtKid, signJwt, verifyJwt } from "./jwt.ts";
 import type { AccessTokenClaims } from "./token-claims.ts";
 
 export interface AccessTokenInput {
@@ -32,7 +32,9 @@ export function issueAccessToken(config: ServiceConfig, input: AccessTokenInput)
 }
 
 export function verifyAccessToken(config: ServiceConfig, token: string, audience: string, requiredScopes: string[] = []): AccessTokenClaims {
-  const key = getSigningKey(config);
+  const kid = jwtKid(token);
+  const key = getVerificationKeys(config).find((candidate) => candidate.kid === kid);
+  if (!key) throw new ServiceError("unauthorized", "invalid token", 401);
   const payload = verifyJwt(token, key.publicKey);
   const claims = accessClaims(payload);
   const now = nowSeconds();
