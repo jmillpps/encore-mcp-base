@@ -7,20 +7,24 @@ export interface SigningKey {
   publicKey: KeyObject;
 }
 
-let cached: SigningKey | undefined;
+let cached: { source: string; key: SigningKey } | undefined;
 
 export function getSigningKey(config: ServiceConfig, env: NodeJS.ProcessEnv = process.env): SigningKey {
-  if (cached) return cached;
   if (env.OAUTH_PRIVATE_KEY_PEM) {
+    const source = `pem:${createHash("sha256").update(env.OAUTH_PRIVATE_KEY_PEM, "utf8").digest("base64url")}:${env.OAUTH_KEY_ID ?? ""}`;
+    if (cached?.source === source) return cached.key;
     const privateKey = createPrivateKey(env.OAUTH_PRIVATE_KEY_PEM);
     const publicKey = createPublicKey(privateKey);
-    cached = { kid: env.OAUTH_KEY_ID ?? keyId(privateKey), privateKey, publicKey };
-    return cached;
+    const key = { kid: env.OAUTH_KEY_ID ?? keyId(publicKey), privateKey, publicKey };
+    cached = { source, key };
+    return key;
   }
   if (config.production) throw new Error("OAUTH_PRIVATE_KEY_PEM is required");
+  if (cached?.source === "local") return cached.key;
   const pair = generateKeyPairSync("rsa", { modulusLength: 2048 });
-  cached = { kid: keyId(pair.publicKey), privateKey: pair.privateKey, publicKey: pair.publicKey };
-  return cached;
+  const key = { kid: keyId(pair.publicKey), privateKey: pair.privateKey, publicKey: pair.publicKey };
+  cached = { source: "local", key };
+  return key;
 }
 
 function keyId(publicKey: KeyObject): string {

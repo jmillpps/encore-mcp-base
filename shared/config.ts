@@ -17,9 +17,9 @@ export interface ServiceConfig {
 
 export function readConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig {
   const production = env.NODE_ENV === "production";
-  const issuer = env.PUBLIC_ISSUER_URL ?? "http://localhost:4000";
-  const mcpResource = env.MCP_RESOURCE_URL ?? issuer;
-  const actionsAudience = env.ACTIONS_AUDIENCE ?? `${issuer}/actions`;
+  const issuer = readHttpUrl(env, "PUBLIC_ISSUER_URL", "http://localhost:4000", production);
+  const mcpResource = readHttpUrl(env, "MCP_RESOURCE_URL", issuer, production);
+  const actionsAudience = readHttpUrl(env, "ACTIONS_AUDIENCE", `${issuer}/actions`, production);
   const oauthStorePath = env.OAUTH_STORE_PATH ?? (production ? "" : resolve(process.cwd(), "var/oauth-store.json"));
   if (production && oauthStorePath === "") throw new Error("OAUTH_STORE_PATH is required");
   return {
@@ -27,7 +27,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
     mcpResource,
     actionsAudience,
     oauthStorePath,
-    allowedOrigins: parseList(env.ALLOWED_ORIGINS ?? "https://chatgpt.com https://chat.openai.com http://localhost:4000"),
+    allowedOrigins: readAllowedOrigins(env, production),
     accessTokenTtlSeconds: readNumber(env.ACCESS_TOKEN_TTL_SECONDS, 900),
     idTokenTtlSeconds: readNumber(env.ID_TOKEN_TTL_SECONDS, 300),
     authorizationCodeTtlSeconds: readNumber(env.AUTHORIZATION_CODE_TTL_SECONDS, 300),
@@ -40,6 +40,31 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
 
 function parseList(value: string): string[] {
   return value.split(/\s+/).map((item) => item.trim()).filter(Boolean);
+}
+
+function readHttpUrl(env: NodeJS.ProcessEnv, key: string, fallback: string, production: boolean): string {
+  const value = env[key] ?? (production ? "" : fallback);
+  if (!value) throw new Error(`${key} is required`);
+  const url = new URL(value);
+  if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error(`${key} must use http or https`);
+  if (production && url.protocol !== "https:") throw new Error(`${key} must use https in production`);
+  if (url.username || url.password || url.hash) throw new Error(`${key} contains unsupported URL parts`);
+  return url.href.replace(/\/$/, "");
+}
+
+function readAllowedOrigins(env: NodeJS.ProcessEnv, production: boolean): string[] {
+  const value = env.ALLOWED_ORIGINS ?? (production ? "" : "https://chatgpt.com https://chat.openai.com http://localhost:4000");
+  if (!value) throw new Error("ALLOWED_ORIGINS is required");
+  return parseList(value).map((origin) => normalizeOrigin(origin, production));
+}
+
+function normalizeOrigin(value: string, production: boolean): string {
+  if (value.includes("*")) throw new Error("ALLOWED_ORIGINS cannot contain wildcards");
+  const url = new URL(value);
+  if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("ALLOWED_ORIGINS must use http or https");
+  if (production && url.protocol !== "https:") throw new Error("ALLOWED_ORIGINS must use https in production");
+  if (url.origin !== url.href.replace(/\/$/, "")) throw new Error("ALLOWED_ORIGINS entries must be origins");
+  return url.origin;
 }
 
 function readNumber(value: string | undefined, fallback: number): number {
