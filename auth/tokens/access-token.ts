@@ -38,7 +38,7 @@ export function verifyAccessToken(config: ServiceConfig, token: string, audience
   const payload = verifyJwt(token, key.publicKey);
   const claims = accessClaims(payload);
   const now = nowSeconds();
-  if (claims.iss !== config.issuer || claims.aud !== audience || claims.exp <= now || claims.nbf > now) {
+  if (claims.iss !== config.issuer || claims.aud !== audience || claims.exp <= now || claims.nbf > now || claims.iat > now) {
     throw new ServiceError("unauthorized", "invalid token", 401);
   }
   if (!hasScopes(claims.scope.split(/\s+/).filter(Boolean), requiredScopes)) {
@@ -50,8 +50,12 @@ export function verifyAccessToken(config: ServiceConfig, token: string, audience
 function accessClaims(payload: Record<string, unknown>): AccessTokenClaims {
   const required = ["iss", "sub", "aud", "jti", "client_id", "scope"];
   if (!required.every((key) => typeof payload[key] === "string")) throw new ServiceError("unauthorized", "invalid token", 401);
-  if (typeof payload.exp !== "number" || typeof payload.iat !== "number" || typeof payload.nbf !== "number") {
+  if (!isNumericDate(payload.exp) || !isNumericDate(payload.iat) || !isNumericDate(payload.nbf)) {
     throw new ServiceError("unauthorized", "invalid token", 401);
   }
   return payload as unknown as AccessTokenClaims;
+}
+
+function isNumericDate(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
