@@ -2,11 +2,14 @@ import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
 import { DiskOAuthStore } from "../../auth/storage/disk-store.ts";
 import { DiskRateLimitStore } from "../../auth/storage/rate-limit-store.ts";
+import { StoreFile } from "../../auth/storage/store-file.ts";
 
 const validHash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const secondValidHash = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
 test("OAuth store persists PRD field names and reloads records through the strict codec", async (t) => {
   const dir = await mkdtemp(join(tmpdir(), "mcp-oauth-store-"));
@@ -94,6 +97,32 @@ test("OAuth store rejects traversal and non-json paths", () => {
   assert.throws(() => new DiskOAuthStore("oauth-store.txt"), /store path must end with .json/);
 });
 
+test("OAuth store serializes updates across store instances for the same path", async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), "mcp-oauth-store-concurrent-"));
+  t.after(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+  const path = join(dir, "store.json");
+  const first = new StoreFile(path);
+  const second = new StoreFile(path);
+  const entered = deferred();
+  const release = deferred();
+  const firstUpdate = first.update(async (state) => {
+    state.rateLimits[validHash] = { count: 1, resetAt: 10 };
+    entered.resolve();
+    await release.promise;
+  });
+  await entered.promise;
+  const secondUpdate = second.update((state) => {
+    state.rateLimits[secondValidHash] = { count: 2, resetAt: 20 };
+  });
+  await delay(25);
+  release.resolve();
+  await Promise.all([firstUpdate, secondUpdate]);
+  const state = await new StoreFile(path).read();
+  assert.deepEqual(Object.keys(state.rateLimits).sort(), [validHash, secondValidHash].sort());
+});
+
 function refreshInput() {
   return {
     clientId: "local-test",
@@ -150,4 +179,12 @@ function mcpSessionDiskRecord(overrides: Record<string, unknown> = {}): Record<s
 async function writeMalformedAndReject(path: string, value: Record<string, unknown>) {
   await writeFile(path, JSON.stringify(value), "utf8");
   await assert.rejects(() => new DiskOAuthStore(path).createRefreshToken(refreshInput()), /store file is malformed/);
+}
+
+function deferred(): { promise: Promise<void>; resolve: () => void } {
+  let resolvePromise!: () => void;
+  const promise = new Promise<void>((resolve) => {
+    resolvePromise = resolve;
+  });
+  return { promise, resolve: resolvePromise };
 }

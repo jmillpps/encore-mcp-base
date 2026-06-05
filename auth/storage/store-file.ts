@@ -4,8 +4,9 @@ import { randomToken } from "../../shared/crypto.ts";
 import { emptyStoreState, type OAuthStoreState } from "./store-records.ts";
 import { normalizeStore, serializeStore } from "./store-codec.ts";
 
+const pathUpdates = new Map<string, Promise<void>>();
+
 export class StoreFile {
-  private pending: Promise<void> = Promise.resolve();
   readonly path: string;
 
   constructor(path: string) {
@@ -23,13 +24,18 @@ export class StoreFile {
   }
 
   async update<T>(fn: (state: OAuthStoreState) => T | Promise<T>): Promise<T> {
-    const work = this.pending.then(async () => {
+    const previous = pathUpdates.get(this.path) ?? Promise.resolve();
+    const work = previous.then(async () => {
       const state = await this.read();
       const result = await fn(state);
       await this.write(state);
       return result;
     });
-    this.pending = work.then(() => undefined, () => undefined);
+    const pending = work.then(() => undefined, () => undefined);
+    pathUpdates.set(this.path, pending);
+    pending.then(() => {
+      if (pathUpdates.get(this.path) === pending) pathUpdates.delete(this.path);
+    });
     return work;
   }
 
