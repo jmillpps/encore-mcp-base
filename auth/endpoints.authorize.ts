@@ -1,8 +1,9 @@
 import { api } from "encore.dev/api";
 import { readConfig } from "../shared/config.ts";
-import { requestSubject, writeError, writeRedirect } from "../shared/http.ts";
+import { requestSubject, writeRedirect } from "../shared/http.ts";
 import { createAuthorizationRedirect } from "./authorize.ts";
 import { loadClients } from "./clients.ts";
+import { writeOAuthError } from "./oauth-errors.ts";
 import { assertAllowedParameters, optionalParameter, requiredParameter } from "./oauth-parameters.ts";
 import { clientRateSubject, enforceRateLimit } from "./rate-limit.ts";
 import { DiskOAuthStore } from "./storage/disk-store.ts";
@@ -26,6 +27,6 @@ export const authorize = api.raw({ expose: true, method: "GET", path: "/oauth/au
     const redirect = await createAuthorizationRedirect(config, new DiskOAuthStore(config.oauthStorePath), loadClients(config), request);
     writeRedirect(res, redirect);
   } catch (error) {
-    writeError(res, error, { endpoint: "oauth.authorize", method: "GET", subject: requestSubject(req) });
+    writeOAuthError(res, error, { endpoint: "oauth.authorize", method: "GET", subject: requestSubject(req) });
   }
 });

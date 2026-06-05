@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import type { ServerResponse } from "node:http";
 import test from "node:test";
+import { writeOAuthError } from "../../auth/oauth-errors.ts";
 import { emitDiagnostic, redactFields, setDiagnosticSink, type DiagnosticEvent } from "../../shared/diagnostics.ts";
 import { ServiceError } from "../../shared/errors.ts";
 import { writeError } from "../../shared/http.ts";
@@ -66,6 +67,32 @@ test("writeError emits structured service diagnostics without secrets", () => {
     assert.equal(serialized.includes("bad-secret"), false);
     assert.equal(serialized.includes("Basic secret"), false);
     assert.equal(serialized.includes("local-test"), true);
+  } finally {
+    restore();
+  }
+});
+
+test("writeOAuthError emits generic responses and structured diagnostics", () => {
+  const events: DiagnosticEvent[] = [];
+  const restore = setDiagnosticSink((event) => events.push(event));
+  try {
+    const response = fakeResponse();
+    writeOAuthError(response, new ServiceError("bad_request", "redirect_uri is not registered", 400), {
+      endpoint: "oauth.authorize",
+      method: "GET",
+      subject: "127.0.0.1",
+      fields: { clientId: "local-test", client_secret: "bad-secret" },
+    });
+    assert.equal(response.status, 400);
+    assert.deepEqual(JSON.parse(String(response.body)), { error: "bad_request", error_description: "invalid request" });
+    assert.equal(events.length, 1);
+    assert.equal(events[0]?.event, "oauth_error");
+    assert.equal(events[0]?.level, "warn");
+    assert.equal(events[0]?.fields.endpoint, "oauth.authorize");
+    assert.equal(events[0]?.fields.code, "bad_request");
+    const serialized = JSON.stringify(events[0]);
+    assert.equal(serialized.includes("redirect_uri is not registered"), false);
+    assert.equal(serialized.includes("bad-secret"), false);
   } finally {
     restore();
   }

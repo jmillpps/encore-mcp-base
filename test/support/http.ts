@@ -8,11 +8,12 @@ export async function readJson(response: Response): Promise<Record<string, unkno
   return value as Record<string, unknown>;
 }
 
-export async function expectOAuthError(response: Response, status: number, code: string): Promise<void> {
+export async function expectOAuthError(response: Response, status: number, code: string): Promise<Record<string, unknown>> {
   assert.equal(response.status, status);
   const body = await readJson(response);
   assert.equal(body.error, code);
   assert.equal(typeof body.error_description, "string");
+  return body;
 }
 
 export function requireString(value: unknown, name: string): string {

@@ -1,14 +1,15 @@
 import { api } from "encore.dev/api";
 import { readConfig } from "../shared/config.ts";
-import { writeError, writeJson } from "../shared/http.ts";
+import { writeJson } from "../shared/http.ts";
 import { authorizationServerMetadata, openidConfiguration, protectedResourceMetadata } from "./discovery.ts";
+import { writeOAuthError } from "./oauth-errors.ts";
 import { jwks } from "./tokens/jwks.ts";
 
 export const openid = api.raw({ expose: true, method: "GET", path: "/.well-known/openid-configuration" }, async (_req, res) => {
   try {
     writeJson(res, 200, openidConfiguration(readConfig()));
   } catch (error) {
-    writeError(res, error, { endpoint: "oauth.discovery.openid", method: "GET" });
+    writeOAuthError(res, error, { endpoint: "oauth.discovery.openid", method: "GET" });
   }
 });
 
@@ -16,7 +17,7 @@ export const oauthServer = api.raw({ expose: true, method: "GET", path: "/.well-
   try {
     writeJson(res, 200, authorizationServerMetadata(readConfig()));
   } catch (error) {
-    writeError(res, error, { endpoint: "oauth.discovery.server", method: "GET" });
+    writeOAuthError(res, error, { endpoint: "oauth.discovery.server", method: "GET" });
   }
 });
 
@@ -24,7 +25,7 @@ export const protectedResource = api.raw({ expose: true, method: "GET", path: "/
   try {
     writeJson(res, 200, protectedResourceMetadata(readConfig()));
   } catch (error) {
-    writeError(res, error, { endpoint: "oauth.discovery.resource", method: "GET" });
+    writeOAuthError(res, error, { endpoint: "oauth.discovery.resource", method: "GET" });
   }
 });
 
@@ -32,6 +33,6 @@ export const jwksEndpoint = api.raw({ expose: true, method: "GET", path: "/oauth
   try {
     writeJson(res, 200, jwks(readConfig()));
   } catch (error) {
-    writeError(res, error, { endpoint: "oauth.jwks", method: "GET" });
+    writeOAuthError(res, error, { endpoint: "oauth.jwks", method: "GET" });
   }
 });

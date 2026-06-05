@@ -58,6 +58,36 @@ test("token endpoint rejects bad redirect and bad PKCE without consuming the aut
   assert.equal((await exchangeCode(missingVerifierAuthorization, service.actionsAudience)).tokens.token_type, "bearer");
 });
 
+test("oauth endpoints return generic external error descriptions", async (t) => {
+  const service = await startService(t);
+  const as = await discover(service);
+  const redirectError = await expectOAuthError(
+    await fetch(authorizeUrl(as.authorization_endpoint, service.actionsAudience, { redirectUri: "http://evil.test/callback" }), { redirect: "manual" }),
+    400,
+    "bad_request",
+  );
+  assert.equal(redirectError.error_description, "invalid request");
+  assert.equal(JSON.stringify(redirectError).includes("redirect_uri"), false);
+  const scopeError = await expectOAuthError(
+    await fetch(authorizeUrl(as.authorization_endpoint, service.actionsAudience, { scope: "openid admin" }), { redirect: "manual" }),
+    400,
+    "invalid_scope",
+  );
+  assert.equal(scopeError.error_description, "scope is invalid");
+  assert.equal(JSON.stringify(scopeError).includes("admin"), false);
+  const authorization = await authorizeCode(service, as, service.actionsAudience);
+  const clientError = await expectOAuthError(
+    await tokenRequest(as.token_endpoint, service.actionsAudience, authorization.code, authorization.codeVerifier, "bad-secret"),
+    401,
+    "invalid_client",
+  );
+  assert.equal(clientError.error_description, "client authentication failed");
+  assert.equal(JSON.stringify(clientError).includes("bad-secret"), false);
+  const userinfoError = await expectOAuthError(await fetch(`${service.origin}/oauth/userinfo`), 401, "unauthorized");
+  assert.equal(userinfoError.error_description, "authorization required");
+  assert.equal(JSON.stringify(userinfoError).includes("bearer"), false);
+});
+
 async function tokenRequest(
   tokenEndpoint: string | undefined,
   resource: string,
