@@ -1,2 +1,44 @@
-console.error("OpenAPI export requires a running Encore service. Implement the export once action endpoints exist.");
-process.exit(1);
+#!/usr/bin/env node
+import { mkdir, writeFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { openApiDocument } from "./openapi-document.mjs";
+import { loadValidatedEncoreGraph } from "./openapi-graph.mjs";
+
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+const options = parseArgs(process.argv.slice(2));
+await loadValidatedEncoreGraph(root, options.build);
+const document = openApiDocument(options.baseUrl);
+const output = `${JSON.stringify(document, null, 2)}\n`;
+if (options.out) {
+  await mkdir(dirname(resolve(root, options.out)), { recursive: true });
+  await writeFile(resolve(root, options.out), output, { mode: 0o600 });
+} else {
+  process.stdout.write(output);
+}
+
+function parseArgs(args) {
+  const parsed = { baseUrl: process.env.PUBLIC_ISSUER_URL ?? "http://localhost:4000", out: "", build: true };
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--base-url") parsed.baseUrl = requiredArg(args, (index += 1), arg);
+    else if (arg === "--out") parsed.out = requiredArg(args, (index += 1), arg);
+    else if (arg === "--no-build") parsed.build = false;
+    else throw new Error(`unknown argument: ${arg}`);
+  }
+  parsed.baseUrl = normalizeBaseUrl(parsed.baseUrl);
+  return parsed;
+}
+
+function requiredArg(args, index, name) {
+  const value = args[index];
+  if (!value) throw new Error(`${name} requires a value`);
+  return value;
+}
+
+function normalizeBaseUrl(value) {
+  const url = new URL(value);
+  if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("base URL must use http or https");
+  return url.href.replace(/\/$/, "");
+}

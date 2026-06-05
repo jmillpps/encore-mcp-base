@@ -19,3 +19,8 @@ export function requireString(value: unknown, name: string): string {
   if (typeof value !== "string") assert.fail(`${name} must be a string`);
   return value;
 }
+
+export function requireRecord(value: unknown, name: string): Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) assert.fail(`${name} must be an object`);
+  return value as Record<string, unknown>;
+}
