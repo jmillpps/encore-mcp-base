@@ -67,7 +67,7 @@ function secretHash(value: string): string {
 }
 
 function redirectUrls(values: string[], production: boolean): string[] {
-  return rejectDuplicates(values.map((value) => parseHttpUrl(value, "redirectUris", production).toString()), "redirectUris");
+  return rejectDuplicates(values.map((value) => parseRedirectUrl(value, production)), "redirectUris");
 }
 
 function resourceUrls(values: string[], production: boolean): string[] {
@@ -75,13 +75,19 @@ function resourceUrls(values: string[], production: boolean): string[] {
 }
 
 function parseHttpUrl(value: string, key: string, production: boolean): URL {
-    if (value.includes("*")) throw new Error(`${key} cannot contain wildcards`);
-    const url = new URL(value);
-    if (url.protocol !== "https:" && url.protocol !== "http:") throw new Error(`${key} must use http or https`);
-    if (production && url.protocol !== "https:") throw new Error(`${key} must use https in production`);
-    if (url.username || url.password) throw new Error(`${key} cannot include credentials`);
-    if (url.hash) throw new Error(`${key} cannot include fragments`);
-    return url;
+  if (value !== value.trim()) throw new Error(`${key} cannot include surrounding whitespace`);
+  if (value.includes("*")) throw new Error(`${key} cannot contain wildcards`);
+  const url = new URL(value);
+  if (url.protocol !== "https:" && url.protocol !== "http:") throw new Error(`${key} must use http or https`);
+  if (production && url.protocol !== "https:") throw new Error(`${key} must use https in production`);
+  if (url.username || url.password) throw new Error(`${key} cannot include credentials`);
+  if (url.hash) throw new Error(`${key} cannot include fragments`);
+  return url;
+}
+
+function parseRedirectUrl(value: string, production: boolean): string {
+  parseHttpUrl(value, "redirectUris", production);
+  return value;
 }
 
 function scopes(values: string[]): string[] {
