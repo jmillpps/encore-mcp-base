@@ -43,8 +43,8 @@ export function authorizationCodeFromDisk(value: unknown): AuthorizationCodeReco
     codeChallenge: optionalHash(record, "code_challenge"),
     codeChallengeMethod: methodS256(record, "code_challenge_method"),
     userSub: text(record, "user_sub"),
-    expiresAt: seconds(record, "expires_at"),
-    consumedAt: optionalSeconds(record, "consumed_at"),
+    expiresAt: orderedSeconds(record, "expires_at", createdAt),
+    consumedAt: optionalOrderedSeconds(record, "consumed_at", createdAt),
     authTime: authTime(record, createdAt),
     createdAt,
   };
@@ -91,12 +91,12 @@ export function refreshTokenFromDisk(value: unknown): RefreshTokenRecord {
     userSub: text(record, "user_sub"),
     resource: text(record, "resource"),
     scopes: scopes(record),
-    expiresAt: seconds(record, "expires_at"),
+    expiresAt: orderedSeconds(record, "expires_at", createdAt),
     authTime: authTime(record, createdAt),
     rotatedFromHash: optionalHash(record, "rotated_from_hash"),
-    revokedAt: optionalSeconds(record, "revoked_at"),
+    revokedAt: optionalOrderedSeconds(record, "revoked_at", createdAt),
     createdAt,
-    lastUsedAt: optionalSeconds(record, "last_used_at"),
+    lastUsedAt: optionalOrderedSeconds(record, "last_used_at", createdAt),
   };
 }
 
@@ -119,14 +119,15 @@ export function refreshTokenToDisk(record: RefreshTokenRecord): DiskRow {
 
 export function mcpSessionFromDisk(value: unknown): McpSessionRecord {
   const record = row(value, ["session_id_hash", "client_id", "protocol_version", "created_at", "last_seen_at", "expires_at", "terminated_at"]);
+  const createdAt = seconds(record, "created_at");
   return {
     sessionIdHash: hash(record, "session_id_hash"),
     clientId: text(record, "client_id"),
     protocolVersion: text(record, "protocol_version"),
-    createdAt: seconds(record, "created_at"),
-    lastSeenAt: seconds(record, "last_seen_at"),
-    expiresAt: seconds(record, "expires_at"),
-    terminatedAt: optionalSeconds(record, "terminated_at"),
+    createdAt,
+    lastSeenAt: orderedSeconds(record, "last_seen_at", createdAt),
+    expiresAt: orderedSeconds(record, "expires_at", createdAt),
+    terminatedAt: optionalOrderedSeconds(record, "terminated_at", createdAt),
   };
 }
 
@@ -161,5 +162,18 @@ function optionalNonce(record: DiskRow, key: string): string | undefined {
 function authTime(record: DiskRow, createdAt: number): number {
   const value = seconds(record, "auth_time");
   if (value > createdAt) malformed();
+  return value;
+}
+
+function orderedSeconds(record: DiskRow, key: string, minimum: number): number {
+  const value = seconds(record, key);
+  if (value < minimum) malformed();
+  return value;
+}
+
+function optionalOrderedSeconds(record: DiskRow, key: string, minimum: number): number | undefined {
+  const value = optionalSeconds(record, key);
+  if (value === undefined) return undefined;
+  if (value < minimum) malformed();
   return value;
 }

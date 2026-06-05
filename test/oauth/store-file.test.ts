@@ -78,6 +78,14 @@ test("OAuth store rejects malformed JSON and unexpected record shapes", async (t
     "utf8",
   );
   await assert.rejects(() => new DiskOAuthStore(path).createRefreshToken(refreshInput()), /store file is malformed/);
+  await writeMalformedAndReject(path, { authorizationCodes: { [validHash]: authorizationCodeDiskRecord({ expires_at: 0, created_at: 1 }) } });
+  await writeMalformedAndReject(path, { authorizationCodes: { [validHash]: authorizationCodeDiskRecord({ consumed_at: 0, created_at: 1 }) } });
+  await writeMalformedAndReject(path, { refreshTokens: { [validHash]: refreshTokenDiskRecord({ expires_at: 0, created_at: 1 }) } });
+  await writeMalformedAndReject(path, { refreshTokens: { [validHash]: refreshTokenDiskRecord({ revoked_at: 0, created_at: 1 }) } });
+  await writeMalformedAndReject(path, { refreshTokens: { [validHash]: refreshTokenDiskRecord({ last_used_at: 0, created_at: 1 }) } });
+  await writeMalformedAndReject(path, { mcpSessions: { [validHash]: mcpSessionDiskRecord({ last_seen_at: 0, created_at: 1 }) } });
+  await writeMalformedAndReject(path, { mcpSessions: { [validHash]: mcpSessionDiskRecord({ expires_at: 0, created_at: 1 }) } });
+  await writeMalformedAndReject(path, { mcpSessions: { [validHash]: mcpSessionDiskRecord({ terminated_at: 0, created_at: 1 }) } });
 });
 
 test("OAuth store rejects traversal and non-json paths", () => {
@@ -125,4 +133,21 @@ function refreshTokenDiskRecord(overrides: Record<string, unknown> = {}): Record
     created_at: 1,
     ...overrides,
   };
+}
+
+function mcpSessionDiskRecord(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    session_id_hash: validHash,
+    client_id: "local-test",
+    protocol_version: "2025-11-25",
+    created_at: 1,
+    last_seen_at: 1,
+    expires_at: 9999999999,
+    ...overrides,
+  };
+}
+
+async function writeMalformedAndReject(path: string, value: Record<string, unknown>) {
+  await writeFile(path, JSON.stringify(value), "utf8");
+  await assert.rejects(() => new DiskOAuthStore(path).createRefreshToken(refreshInput()), /store file is malformed/);
 }
