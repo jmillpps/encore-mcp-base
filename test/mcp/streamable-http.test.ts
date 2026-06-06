@@ -11,6 +11,8 @@ test("MCP Streamable HTTP validates transport headers and session lifecycle", as
   const initializedStore = await readFile(service.storePath, "utf8");
   assert.match(initializedStore, /"mcpSessions"/);
   assert.match(initializedStore, /"session_id_hash"/);
+  assert.match(initializedStore, /"client_id": "test"/);
+  assert.equal(initializedStore.includes("anonymous"), false);
   assert.equal(initializedStore.includes(sessionId), false);
   const ping = await postMcp(service, { jsonrpc: "2.0", id: "ping", method: "ping" }, { sessionId });
   assert.equal(ping.status, 200);
@@ -21,6 +23,12 @@ test("MCP Streamable HTTP validates transport headers and session lifecycle", as
     { contentType: "application/json; charset=utf-8" },
   );
   assert.equal(charsetInitialize.status, 200);
+  const invalidClientInfo = await postMcp(
+    service,
+    { jsonrpc: "2.0", id: "bad-client-info", method: "initialize", params: { clientInfo: { name: "bad\nclient" } } },
+  );
+  assert.equal(invalidClientInfo.status, 400);
+  assert.equal(((await readJson(invalidClientInfo)).error as Record<string, unknown>).message, "clientInfo.name is invalid");
   await expectOAuthError(await postMcp(service, { jsonrpc: "2.0", id: "bad-origin", method: "initialize", params: {} }, { origin: "https://evil.test" }), 403, "forbidden");
   await expectOAuthError(await postMcp(service, { jsonrpc: "2.0", id: "bad-type", method: "initialize", params: {} }, { contentType: "text/plain" }), 415, "bad_request");
   await expectOAuthError(

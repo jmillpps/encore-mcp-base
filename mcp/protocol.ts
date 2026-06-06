@@ -3,7 +3,7 @@ import { ServiceError } from "../shared/errors.ts";
 import { asRecord } from "../shared/json.ts";
 import { extractWwwAuthenticate } from "./auth-challenge.ts";
 import { callTool, listTools } from "./tool-registry.ts";
-import { initializeResult } from "./lifecycle.ts";
+import { initializeClientId, initializeResult } from "./lifecycle.ts";
 import { jsonRpcError, jsonRpcSuccess, methodParamObject, methodParamString, parseJsonRpc, type JsonRpcRequest } from "./json-rpc.ts";
 
 export interface McpContext {
@@ -16,6 +16,7 @@ export interface McpResult {
   status: number;
   body?: Record<string, unknown>;
   initialized?: boolean;
+  clientId?: string;
   wwwAuthenticate?: string[];
 }
 
@@ -30,7 +31,13 @@ export async function handleMcpJson(context: McpContext, input: unknown): Promis
   if (request.id === undefined) return handleNotification(request);
   try {
     const result = await dispatch(context, request);
-    return { status: 200, body: jsonRpcSuccess(request.id, result), initialized: request.method === "initialize", wwwAuthenticate: extractWwwAuthenticate(result) };
+    return {
+      status: 200,
+      body: jsonRpcSuccess(request.id, result),
+      initialized: request.method === "initialize",
+      ...(request.method === "initialize" ? { clientId: initializeClientId(request.params) } : {}),
+      wwwAuthenticate: extractWwwAuthenticate(result),
+    };
   } catch (error) {
     if (error instanceof McpProtocolError) return { status: 200, body: jsonRpcError(request.id, error.rpcCode, error.message) };
     if (error instanceof ServiceError) return { status: error.status, body: jsonRpcError(request.id, -32000, error.message) };

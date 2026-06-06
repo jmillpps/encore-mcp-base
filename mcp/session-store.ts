@@ -3,12 +3,12 @@ import { randomToken, sha256Base64Url } from "../shared/crypto.ts";
 import { nowSeconds } from "../shared/time.ts";
 import { DiskOAuthStore } from "../auth/storage/disk-store.ts";
 
-export async function createMcpSession(config: ServiceConfig, protocolVersion: string): Promise<string> {
+export async function createMcpSession(config: ServiceConfig, protocolVersion: string, clientId: string): Promise<string> {
   const sessionId = randomToken(24);
   const now = nowSeconds();
   await new DiskOAuthStore(config.oauthStorePath).saveMcpSession({
     sessionIdHash: sha256Base64Url(sessionId),
-    clientId: "anonymous",
+    clientId,
     protocolVersion,
     createdAt: now,
     lastSeenAt: now,
