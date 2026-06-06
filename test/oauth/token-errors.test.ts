@@ -98,14 +98,16 @@ test("oauth endpoints return generic external error descriptions", async (t) => 
   assert.equal(scopeError.error_description, "scope is invalid");
   assert.equal(JSON.stringify(scopeError).includes("admin"), false);
   const authorization = await authorizeCode(service, as, service.actionsAudience);
-  const clientError = await expectOAuthError(
-    await tokenRequest(as.token_endpoint, service.actionsAudience, authorization.code, authorization.codeVerifier, "bad-secret"),
-    401,
-    "invalid_client",
-  );
+  const wrongSecret = await tokenRequest(as.token_endpoint, service.actionsAudience, authorization.code, authorization.codeVerifier, "bad-secret");
+  const clientError = await expectOAuthError(wrongSecret, 401, "invalid_client");
+  assert.equal(wrongSecret.headers.get("cache-control"), "no-store");
+  assert.equal(wrongSecret.headers.get("pragma"), "no-cache");
   assert.equal(clientError.error_description, "client authentication failed");
   assert.equal(JSON.stringify(clientError).includes("bad-secret"), false);
-  const userinfoError = await expectOAuthError(await fetch(`${service.origin}/oauth/userinfo`), 401, "unauthorized");
+  const missingUserinfo = await fetch(`${service.origin}/oauth/userinfo`);
+  const userinfoError = await expectOAuthError(missingUserinfo, 401, "unauthorized");
+  assert.equal(missingUserinfo.headers.get("cache-control"), "no-store");
+  assert.equal(missingUserinfo.headers.get("pragma"), "no-cache");
   assert.equal(userinfoError.error_description, "authorization required");
   assert.equal(JSON.stringify(userinfoError).includes("bearer"), false);
   const malformedUserinfoError = await expectOAuthError(

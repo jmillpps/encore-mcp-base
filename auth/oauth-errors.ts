@@ -14,6 +14,7 @@ export function oauthError(error: string, description: string): OAuthErrorBody {
 }
 
 export function writeOAuthError(res: ServerResponse, error: unknown, context?: ErrorContext): void {
+  const headers = { "cache-control": "no-store", pragma: "no-cache" };
   if (error instanceof ServiceError) {
     emitDiagnostic(error.status >= 500 ? "error" : "warn", "oauth_error", {
       endpoint: context?.endpoint,
@@ -23,7 +24,7 @@ export function writeOAuthError(res: ServerResponse, error: unknown, context?: E
       code: error.code,
       ...context?.fields,
     });
-    writeJson(res, error.status, oauthError(error.code, oauthErrorDescription(error.code)));
+    writeJson(res, error.status, oauthError(error.code, oauthErrorDescription(error.code)), headers);
     return;
   }
   emitDiagnostic("error", "oauth_unhandled_error", {
@@ -32,7 +33,7 @@ export function writeOAuthError(res: ServerResponse, error: unknown, context?: E
     subject: context?.subject,
     ...context?.fields,
   });
-  writeJson(res, 500, oauthError("server_error", oauthErrorDescription("server_error")));
+  writeJson(res, 500, oauthError("server_error", oauthErrorDescription("server_error")), headers);
 }
 
 function oauthErrorDescription(code: ErrorCode): string {
