@@ -1,9 +1,39 @@
 # MCP
 
-The service exposes MCP for GPT Apps through Streamable HTTP and SSE.
+The service exposes MCP for GPT Apps through Streamable HTTP and legacy HTTP/SSE.
 
 The first tool set includes a public health tool, a protected identity profile tool, and a protected auth session tool.
 
 Protected tools validate issuer, audience, expiry, client ID, and scopes on every call.
 
 When a protected tool needs authentication, it returns a ChatGPT-compatible `mcp/www_authenticate` challenge.
+
+## Streamable HTTP
+
+Streamable HTTP is served at `/mcp`.
+
+`POST /mcp` accepts one JSON-RPC request, notification, or response per HTTP request.
+
+Clients send `Accept: application/json, text/event-stream` and `Content-Type: application/json`.
+
+The initialize response includes `Mcp-Session-Id`. Clients send that session ID with `MCP-Protocol-Version` on later `/mcp` requests.
+
+Requests return JSON responses. Notifications and client responses return `202 Accepted` with an empty body.
+
+`GET /mcp` opens an SSE receive stream for a valid session. The stream sends heartbeat comments and stays available for later server-originated messages.
+
+`DELETE /mcp` terminates the session. Later requests for the terminated session return `404 not_found`.
+
+## Legacy HTTP/SSE
+
+Legacy HTTP/SSE is served through `/sse` and `/messages`.
+
+`GET /sse` validates the origin and keeps the receive stream open. The first event is `endpoint`, and the event data is the session-bound `/messages` URI for client POSTs.
+
+`POST /messages` requires the `sessionId` value from the endpoint event. Accepted JSON-RPC requests return `202 Accepted` with an empty body. The JSON-RPC response is delivered on the open SSE stream as a `message` event.
+
+JSON-RPC notifications and client responses return `202 Accepted` and do not create SSE response events.
+
+Malformed transport input returns an HTTP error from the POST request.
+
+Legacy HTTP/SSE sessions are bound to the active process and active stream. Production routing must keep `/messages` requests on the same service instance as the matching `/sse` connection.
