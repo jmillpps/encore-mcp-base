@@ -6,6 +6,7 @@ coverage/
 dist/
 tsconfig.tsbuildinfo
 *.log
+.DS_Store
 encore.gen.go
 encore.gen.cue
 /.encore
