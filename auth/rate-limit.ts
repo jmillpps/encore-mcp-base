@@ -1,6 +1,7 @@
 import type { ServiceConfig } from "../shared/config.ts";
 import { sha256Base64Url } from "../shared/crypto.ts";
 import { authorizationCredentials } from "./authorization-header.ts";
+import { decodeBasicCredentials } from "./basic-credentials.ts";
 import { DiskRateLimitStore } from "./storage/rate-limit-store.ts";
 
 export type RateLimitBucket = "oauth-authorize" | "oauth-token" | "oauth-userinfo" | "mcp-tool";
@@ -24,12 +25,5 @@ export function tokenRateSubject(form: URLSearchParams, authorization: string | 
 function basicClientId(authorization: string | undefined): string | undefined {
   const credentials = authorizationCredentials(authorization, "Basic");
   if (credentials === undefined) return undefined;
-  try {
-    const decoded = Buffer.from(credentials, "base64").toString("utf8");
-    const separator = decoded.indexOf(":");
-    if (separator < 1) return undefined;
-    return decodeURIComponent(decoded.slice(0, separator));
-  } catch {
-    return undefined;
-  }
+  return decodeBasicCredentials(credentials)?.clientId;
 }

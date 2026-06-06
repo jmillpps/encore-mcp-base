@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { assertClientSecret } from "../../auth/clients.ts";
+import { readClientCredentials } from "../../auth/client-auth.ts";
 import { handleTokenGrant } from "../../auth/token.ts";
 import { DiskOAuthStore } from "../../auth/storage/disk-store.ts";
 import type { OAuthClient, TokenEndpointAuthMethod } from "../../auth/client-types.ts";
@@ -40,6 +41,13 @@ test("authorization code grant rejects client_secret_basic for post clients", as
   const response = await handleTokenGrant(config, store, [client], postCredentials(form, client, "basic-secret"), undefined);
   assert.equal(response.token_type, "bearer");
   assert.doesNotThrow(() => assertClientSecret(client, "basic-secret"));
+});
+
+test("client_secret_basic rejects malformed credential encoding", () => {
+  assertInvalidClient(() => readClientCredentials(new URLSearchParams(), "Basic %%%"));
+  assertInvalidClient(() => readClientCredentials(new URLSearchParams(), "Basic abcd=="));
+  assertInvalidClient(() => readClientCredentials(new URLSearchParams(), `Basic ${Buffer.from([0xff, 0x3a, 0x78]).toString("base64")}`));
+  assertInvalidClient(() => readClientCredentials(new URLSearchParams(), `Basic ${Buffer.from("%E0%A4%A:secret").toString("base64")}`));
 });
 
 async function setup(t: TestContextLike, method: TokenEndpointAuthMethod): Promise<{ config: ServiceConfig; store: DiskOAuthStore; client: OAuthClient }> {
@@ -91,6 +99,10 @@ function postCredentials(form: URLSearchParams, client: OAuthClient, secret: str
 
 function basicCredentials(clientId: string, secret: string, scheme = "Basic"): string {
   return `${scheme} ${Buffer.from(`${encodeURIComponent(clientId)}:${encodeURIComponent(secret)}`).toString("base64")}`;
+}
+
+function assertInvalidClient(fn: () => unknown): void {
+  assert.throws(fn, (error) => error instanceof ServiceError && error.code === "invalid_client");
 }
 
 interface TestContextLike {
