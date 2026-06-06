@@ -1,6 +1,7 @@
 import { api } from "encore.dev/api";
 import { readConfig } from "../shared/config.ts";
 import { requestSubject, writeError, writeJson } from "../shared/http.ts";
+import { readLegacySseSessionId, runLegacySseSession, sendLegacySseMessage } from "./legacy-sse-session.ts";
 import { handleMcpJson } from "./protocol.ts";
 import { isMcpBodyResult, readMcpJsonBody } from "./request-body.ts";
 import { validateOrigin, validatePostContentType, validateSseAccept, writeCors } from "./transport-headers.ts";
@@ -11,10 +12,10 @@ export const sse = api.raw({ expose: true, method: "GET", path: "/sse" }, async 
     validateOrigin(config, req);
     validateSseAccept(req);
     writeCors(config, req, res);
-    res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-store" });
-    res.end(`event: endpoint\ndata: ${JSON.stringify({ endpoint: "/messages" })}\n\n`);
+    await runLegacySseSession(res);
   } catch (error) {
-    writeError(res, error, { endpoint: "mcp.sse", method: "GET", subject: requestSubject(req) });
+    if (res.headersSent) res.destroy();
+    else writeError(res, error, { endpoint: "mcp.sse", method: "GET", subject: requestSubject(req) });
   }
 });
 
@@ -24,6 +25,7 @@ export const messages = api.raw({ expose: true, method: "POST", path: "/messages
     validateOrigin(config, req);
     validatePostContentType(req);
     writeCors(config, req, res);
+    const sessionId = readLegacySseSessionId(req.url);
     const body = await readMcpJsonBody(req);
     if (isMcpBodyResult(body)) {
       writeJson(res, body.status, body.body);
@@ -31,12 +33,9 @@ export const messages = api.raw({ expose: true, method: "POST", path: "/messages
     }
     const result = await handleMcpJson({ config, authorization: String(req.headers.authorization ?? ""), rateLimitSubject: requestSubject(req) }, body);
     if (result.wwwAuthenticate) res.setHeader("www-authenticate", result.wwwAuthenticate);
-    if (!result.body) {
-      res.writeHead(result.status);
-      res.end();
-      return;
-    }
-    writeJson(res, result.status, result.body);
+    if (result.body) await sendLegacySseMessage(sessionId, result.body);
+    res.writeHead(202);
+    res.end();
   } catch (error) {
     writeError(res, error, { endpoint: "mcp.messages", method: "POST", subject: requestSubject(req) });
   }
