@@ -153,6 +153,12 @@ test("token endpoint validates form content types exactly", async (t) => {
   );
 });
 
+test("token endpoint rejects invalid utf-8 form bodies", async (t) => {
+  const service = await startService(t);
+  const as = await discover(service);
+  await expectOAuthError(await postTokenBytes(as.token_endpoint, Buffer.from([0xff])), 400, "bad_request");
+});
+
 async function tokenRequest(
   tokenEndpoint: string | undefined,
   resource: string,
@@ -174,6 +180,15 @@ function postTokenWithContentType(tokenEndpoint: string | undefined, body: URLSe
   return fetch(endpoint, {
     method: "POST",
     headers: { "content-type": contentType },
+    body,
+  });
+}
+
+function postTokenBytes(tokenEndpoint: string | undefined, body: Buffer): Promise<Response> {
+  const endpoint = requireString(tokenEndpoint, "token_endpoint");
+  return fetch(endpoint, {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
     body,
   });
 }

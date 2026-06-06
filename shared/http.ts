@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { TextDecoder } from "node:util";
 import { emitDiagnostic } from "./diagnostics.ts";
 import { ServiceError } from "./errors.ts";
 import { mediaType } from "./media-type.ts";
@@ -10,6 +11,8 @@ export interface ErrorContext {
   fields?: Record<string, unknown>;
 }
 
+const utf8Decoder = new TextDecoder("utf-8", { fatal: true });
+
 export async function readBody(req: IncomingMessage, limit = 32768): Promise<string> {
   const chunks: Buffer[] = [];
   let size = 0;
@@ -19,7 +22,11 @@ export async function readBody(req: IncomingMessage, limit = 32768): Promise<str
     if (size > limit) throw new ServiceError("bad_request", "request body too large", 413);
     chunks.push(buffer);
   }
-  return Buffer.concat(chunks).toString("utf8");
+  try {
+    return utf8Decoder.decode(Buffer.concat(chunks));
+  } catch {
+    throw new ServiceError("bad_request", "invalid utf-8", 400);
+  }
 }
 
 export async function readJsonBody(req: IncomingMessage, limit = 32768): Promise<unknown> {

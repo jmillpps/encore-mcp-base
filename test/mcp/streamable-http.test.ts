@@ -52,6 +52,9 @@ test("MCP Streamable HTTP validates transport headers and session lifecycle", as
   const malformed = await postRawMcp(service, "{");
   assert.equal(malformed.status, 400);
   assert.equal(((await readJson(malformed)).error as Record<string, unknown>).code, -32700);
+  const invalidUtf8 = await postRawMcp(service, Buffer.from([0xff]));
+  assert.equal(invalidUtf8.status, 400);
+  assert.equal(((await readJson(invalidUtf8)).error as Record<string, unknown>).message, "invalid utf-8");
   const oversized = await postRawMcp(service, JSON.stringify({ jsonrpc: "2.0", id: "oversized", method: "ping", params: { payload: "x".repeat(33000) } }));
   assert.equal(oversized.status, 413);
   assert.equal(((await readJson(oversized)).error as Record<string, unknown>).code, -32600);
@@ -87,7 +90,7 @@ function getMcp(service: { origin: string }, sessionId?: string, protocolVersion
   return fetch(`${service.origin}/mcp`, { method: "GET", headers });
 }
 
-function postRawMcp(service: { origin: string }, body: string): Promise<Response> {
+function postRawMcp(service: { origin: string }, body: string | Buffer): Promise<Response> {
   return fetch(`${service.origin}/mcp`, {
     method: "POST",
     headers: { accept: "application/json, text/event-stream", "content-type": "application/json", origin: "https://chatgpt.com" },
