@@ -78,7 +78,13 @@ export class DiskOAuthStore {
     return token;
   }
 
-  async rotateRefreshToken(token: string, clientId: string, ttlSeconds: number, expectedResource?: string): Promise<{ oldRecord: RefreshTokenRecord; newToken: string }> {
+  async rotateRefreshToken(
+    token: string,
+    clientId: string,
+    ttlSeconds: number,
+    expectedResource?: string,
+    allowedResources?: readonly string[],
+  ): Promise<{ oldRecord: RefreshTokenRecord; newToken: string }> {
     const oldHash = sha256Base64Url(token);
     const result = await this.file.update((state) => {
       const oldRecord = state.refreshTokens[oldHash];
@@ -88,6 +94,7 @@ export class DiskOAuthStore {
       }
       if (oldRecord.clientId !== clientId) throw new ServiceError("invalid_grant", "invalid grant", 400);
       if (expectedResource !== undefined && oldRecord.resource !== expectedResource) throw new ServiceError("invalid_grant", "invalid grant", 400);
+      if (allowedResources && !allowedResources.includes(oldRecord.resource)) throw new ServiceError("invalid_grant", "invalid grant", 400);
       if (Object.values(state.refreshTokens).some((record) => record.rotatedFromHash === oldHash)) {
         for (const record of Object.values(state.refreshTokens)) {
           if (record.familyId === oldRecord.familyId) record.revokedAt = now;

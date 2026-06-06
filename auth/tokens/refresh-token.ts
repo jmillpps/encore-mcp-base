@@ -6,7 +6,7 @@ import { issueTokenResponse, type TokenResponse } from "./token-response.ts";
 
 export async function refreshTokenGrant(config: ServiceConfig, store: DiskOAuthStore, client: OAuthClient, form: URLSearchParams): Promise<TokenResponse> {
   const token = requiredParameter(form, "refresh_token");
-  const rotated = await store.rotateRefreshToken(token, client.clientId, config.refreshTokenTtlSeconds, optionalParameter(form, "resource"));
+  const rotated = await store.rotateRefreshToken(token, client.clientId, config.refreshTokenTtlSeconds, optionalParameter(form, "resource"), client.allowedResources);
   return issueTokenResponse(config, {
     clientId: client.clientId,
     resource: rotated.oldRecord.resource,

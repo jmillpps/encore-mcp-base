@@ -1,10 +1,19 @@
 import assert from "node:assert/strict";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 import * as oauth from "oauth4webapi";
 import { completeAuthorizationCodeFlow, discover, localClient, refreshTokens } from "../support/oauth-client.ts";
 import { expectOAuthError, requireRecord, requireString } from "../support/http.ts";
 import { startService } from "../support/service-process.ts";
+import { refreshTokenGrant } from "../../auth/tokens/refresh-token.ts";
+import { DiskOAuthStore } from "../../auth/storage/disk-store.ts";
+import { readConfig } from "../../shared/config.ts";
+import { staticUser } from "../../auth/static-user.ts";
+import { ServiceError } from "../../shared/errors.ts";
+import type { OAuthClient } from "../../auth/client-types.ts";
 
 test("refresh token rotation revokes the token family on reuse", async (t) => {
   const service = await startService(t);
@@ -82,10 +91,48 @@ test("refresh token grant rejects arbitrary invalid tokens", async (t) => {
   await expectOAuthError(response, 400, "invalid_grant");
 });
 
+test("refresh token grant applies current client resource policy before rotating", async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), "mcp-refresh-policy-"));
+  t.after(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+  const config = readConfig({ PUBLIC_ISSUER_URL: "http://localhost:4000", OAUTH_STORE_PATH: join(dir, "store.json") });
+  const store = new DiskOAuthStore(config.oauthStorePath);
+  const refreshToken = await store.createRefreshToken({
+    clientId: "local-test",
+    userSub: staticUser.sub,
+    resource: config.actionsAudience,
+    scopes: ["openid"],
+    authTime: 1,
+    ttlSeconds: 300,
+  });
+  const form = new URLSearchParams({ refresh_token: refreshToken });
+  await assert.rejects(
+    () => refreshTokenGrant(config, store, clientWithResources([config.mcpResource]), form),
+    (error) => error instanceof ServiceError && error.code === "invalid_grant",
+  );
+  const response = await refreshTokenGrant(config, store, clientWithResources([config.actionsAudience]), form);
+  assert.equal(response.token_type, "bearer");
+});
+
 function decodeJwtPayload(token: string): Record<string, unknown> {
   const [, encodedPayload] = token.split(".");
   const json = Buffer.from(requireString(encodedPayload, "jwt payload"), "base64url").toString("utf8");
   return requireRecord(JSON.parse(json), "jwt payload");
+}
+
+function clientWithResources(allowedResources: string[]): OAuthClient {
+  return {
+    clientId: "local-test",
+    clientSecretHash: "a".repeat(43),
+    displayName: "Local Test",
+    redirectUris: ["http://localhost:4000/test/callback"],
+    allowedScopes: ["openid"],
+    allowedResources,
+    tokenEndpointAuthMethod: "client_secret_post" as const,
+    pkcePolicy: "optional" as const,
+    clientClass: "local-test",
+  };
 }
 
 function numberClaim(value: unknown, name: string): number {
