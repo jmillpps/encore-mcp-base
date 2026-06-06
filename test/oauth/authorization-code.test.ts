@@ -1,11 +1,19 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
 import * as oauth from "oauth4webapi";
 import { authorizeCode, completeAuthorizationCodeFlow, discover, exchangeCode, localClient, localRedirectUri } from "../support/oauth-client.ts";
 import { readJson, requireString } from "../support/http.ts";
 import { startService } from "../support/service-process.ts";
+import { authorizationCodeGrant } from "../../auth/tokens/authorization-code.ts";
+import { DiskOAuthStore } from "../../auth/storage/disk-store.ts";
+import { readConfig } from "../../shared/config.ts";
+import { staticUser } from "../../auth/static-user.ts";
+import { ServiceError } from "../../shared/errors.ts";
+import type { OAuthClient } from "../../auth/client-types.ts";
 
 test("authorization code flow issues externally processed OIDC tokens and userinfo", async (t) => {
   const service = await startService(t);
@@ -79,6 +87,21 @@ test("authorization endpoint rejects invalid state values before redirect", asyn
   }
 });
 
+test("authorization code grant applies current client policy before consuming", async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), "mcp-code-policy-"));
+  t.after(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+  const config = readConfig({ PUBLIC_ISSUER_URL: "http://localhost:4000", OAUTH_STORE_PATH: join(dir, "store.json") });
+  const store = new DiskOAuthStore(config.oauthStorePath);
+  const resourceCode = await createStoredCode(store, config, ["openid"]);
+  await assertInvalidGrant(() => authorizationCodeGrant(config, store, client(["openid"], [config.mcpResource]), tokenForm(config, resourceCode)));
+  assert.equal((await authorizationCodeGrant(config, store, client(["openid"], [config.actionsAudience]), tokenForm(config, resourceCode))).token_type, "bearer");
+  const scopeCode = await createStoredCode(store, config, ["openid", "email"]);
+  await assertInvalidGrant(() => authorizationCodeGrant(config, store, client(["openid"], [config.actionsAudience]), tokenForm(config, scopeCode)));
+  assert.equal((await authorizationCodeGrant(config, store, client(["openid", "email"], [config.actionsAudience]), tokenForm(config, scopeCode))).token_type, "bearer");
+});
+
 test("expired authorization code cannot be exchanged", async (t) => {
   const service = await startService(t, { AUTHORIZATION_CODE_TTL_SECONDS: "1" });
   const flow = await completeAuthorizationCodeFlow(service);
@@ -116,4 +139,41 @@ async function authorizationUrl(as: oauth.AuthorizationServer, resource: string,
   url.searchParams.set("code_challenge", await oauth.calculatePKCECodeChallenge(codeVerifier));
   url.searchParams.set("code_challenge_method", "S256");
   return url;
+}
+
+async function createStoredCode(store: DiskOAuthStore, config: ReturnType<typeof readConfig>, scopes: string[]): Promise<string> {
+  return store.createAuthorizationCode({
+    clientId: "local-test",
+    redirectUri: localRedirectUri,
+    resource: config.actionsAudience,
+    scopes,
+    userSub: staticUser.sub,
+    ttlSeconds: 300,
+  });
+}
+
+function tokenForm(config: ReturnType<typeof readConfig>, code: string): URLSearchParams {
+  return new URLSearchParams({
+    code,
+    redirect_uri: localRedirectUri,
+    resource: config.actionsAudience,
+  });
+}
+
+function client(allowedScopes: string[], allowedResources: string[]): OAuthClient {
+  return {
+    clientId: "local-test",
+    clientSecretHash: "a".repeat(43),
+    displayName: "Local Test",
+    redirectUris: [localRedirectUri],
+    allowedScopes,
+    allowedResources,
+    tokenEndpointAuthMethod: "client_secret_post",
+    pkcePolicy: "optional",
+    clientClass: "local-test",
+  };
+}
+
+async function assertInvalidGrant(fn: () => Promise<unknown>): Promise<void> {
+  await assert.rejects(fn, (error) => error instanceof ServiceError && error.code === "invalid_grant");
 }

@@ -1,5 +1,5 @@
 import type { ServiceConfig } from "../../shared/config.ts";
-import { assertResource, type OAuthClient } from "../clients.ts";
+import type { OAuthClient } from "../clients.ts";
 import { optionalParameter, requiredParameter } from "../oauth-parameters.ts";
 import type { DiskOAuthStore } from "../storage/disk-store.ts";
 import { issueTokenResponse, type TokenResponse } from "./token-response.ts";
@@ -12,9 +12,10 @@ export async function authorizationCodeGrant(config: ServiceConfig, store: DiskO
     clientId: client.clientId,
     redirectUri,
     ...(requestedResource !== undefined ? { resource: requestedResource } : {}),
+    allowedResources: client.allowedResources,
+    allowedScopes: client.allowedScopes,
   });
   const resource = requestedResource ?? record.resource;
-  assertResource(client, resource);
   const refreshToken = await store.createRefreshToken({
     clientId: client.clientId,
     resource,

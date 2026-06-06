@@ -49,6 +49,12 @@ export class DiskOAuthStore {
       if (expected.resource !== undefined && record.resource !== expected.resource) {
         throw new ServiceError("invalid_grant", "invalid grant", 400);
       }
+      if (expected.allowedResources && !expected.allowedResources.includes(record.resource)) {
+        throw new ServiceError("invalid_grant", "invalid grant", 400);
+      }
+      if (expected.allowedScopes && record.scopes.some((scope) => !expected.allowedScopes?.includes(scope))) {
+        throw new ServiceError("invalid_grant", "invalid grant", 400);
+      }
       if (record.codeChallenge) {
         const checkedVerifier = pkceVerifier(verifier);
         if (s256Challenge(checkedVerifier) !== record.codeChallenge) throw new ServiceError("invalid_grant", "invalid grant", 400);

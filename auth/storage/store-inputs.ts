@@ -14,6 +14,8 @@ export interface AuthorizationCodeExpectation {
   clientId: string;
   redirectUri: string;
   resource?: string;
+  allowedResources?: readonly string[];
+  allowedScopes?: readonly string[];
 }
 
 export interface RefreshTokenInput {
