@@ -29,6 +29,7 @@ function actionPaths() {
         responses: {
           200: jsonResponse("Static authenticated profile.", "StaticUser"),
           401: jsonResponse("Invalid bearer token.", "ErrorResponse"),
+          403: jsonResponse("Missing required scope.", "ErrorResponse"),
         },
       },
     },
@@ -40,6 +41,7 @@ function actionPaths() {
         responses: {
           200: jsonResponse("Authenticated session metadata.", "SessionResponse"),
           401: jsonResponse("Invalid bearer token.", "ErrorResponse"),
+          403: jsonResponse("Missing required scope.", "ErrorResponse"),
         },
       },
     },

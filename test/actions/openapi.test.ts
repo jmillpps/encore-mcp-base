@@ -18,6 +18,8 @@ test("OpenAPI export contains Actions endpoints and OAuth authorization code met
   const session = requireRecord(requireRecord(paths["/actions/session"], "/actions/session").get, "session get");
   assert.deepEqual(profile.security, [{ OAuth2: ["openid", "profile", "email"] }]);
   assert.deepEqual(session.security, [{ OAuth2: ["openid"] }]);
+  assert.ok(requireRecord(profile.responses, "profile responses")["403"]);
+  assert.ok(requireRecord(session.responses, "session responses")["403"]);
   const components = document.components as Record<string, unknown>;
   const securitySchemes = (components.securitySchemes as Record<string, unknown>);
   const oauth = securitySchemes.OAuth2 as Record<string, unknown>;
