@@ -2,9 +2,9 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, normalize } from "node:path";
 
 const roots = ["actions", "auth", "mcp", "shared"];
-const failures = [];
+const failures: string[] = [];
 
-function walk(dir) {
+function walk(dir: string): string[] {
   try {
     return readdirSync(dir).flatMap((entry) => {
       const path = join(dir, entry);
@@ -16,14 +16,14 @@ function walk(dir) {
   }
 }
 
-function rootOf(file) {
+function rootOf(file: string): string {
   return normalize(file).split("/")[0] ?? "";
 }
 
 for (const file of roots.flatMap(walk).filter((path) => path.endsWith(".ts"))) {
   const from = rootOf(file);
   const text = readFileSync(file, "utf8");
-  const imports = [...text.matchAll(/from\s+["']([^"']+)["']/g)].map((match) => match[1]);
+  const imports = [...text.matchAll(/from\s+["']([^"']+)["']/g)].flatMap((match) => (match[1] ? [match[1]] : []));
   for (const specifier of imports) {
     if (!specifier.startsWith("../")) continue;
     const target = normalize(join(file, "..", specifier));

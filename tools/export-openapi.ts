@@ -2,8 +2,14 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { openApiDocument } from "./openapi-document.mjs";
-import { loadValidatedEncoreGraph } from "./openapi-graph.mjs";
+import { openApiDocument } from "./openapi-document.ts";
+import { loadValidatedEncoreGraph } from "./openapi-graph.ts";
+
+interface ExportOptions {
+  baseUrl: string;
+  out: string;
+  build: boolean;
+}
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -18,10 +24,10 @@ if (options.out) {
   process.stdout.write(output);
 }
 
-function parseArgs(args) {
+function parseArgs(args: string[]): ExportOptions {
   const parsed = { baseUrl: process.env.PUBLIC_ISSUER_URL ?? "http://localhost:4000", out: "", build: true };
   for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
+    const arg = args[index] ?? "";
     if (arg === "--base-url") parsed.baseUrl = requiredArg(args, (index += 1), arg);
     else if (arg === "--out") parsed.out = requiredArg(args, (index += 1), arg);
     else if (arg === "--no-build") parsed.build = false;
@@ -31,13 +37,13 @@ function parseArgs(args) {
   return parsed;
 }
 
-function requiredArg(args, index, name) {
+function requiredArg(args: string[], index: number, name: string): string {
   const value = args[index];
   if (!value) throw new Error(`${name} requires a value`);
   return value;
 }
 
-function normalizeBaseUrl(value) {
+function normalizeBaseUrl(value: string): string {
   const url = new URL(value);
   if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("base URL must use http or https");
   if (url.username || url.password || url.search || url.hash) throw new Error("base URL contains unsupported URL parts");

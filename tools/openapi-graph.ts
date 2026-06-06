@@ -8,23 +8,23 @@ const actionRoutes = [
   { name: "session", method: "GET", path: "/actions/session" },
 ];
 
-export async function loadValidatedEncoreGraph(root, build) {
+export async function loadValidatedEncoreGraph(root: string, build: boolean): Promise<string> {
   if (build) ensureEncoreGraph(root);
   const graph = await readFile(resolve(root, ".encore/build/combined/combined/main.mjs"), "utf8");
   validateGeneratedActions(graph);
   return graph;
 }
 
-function ensureEncoreGraph(root) {
+function ensureEncoreGraph(root: string): void {
   const result = spawnSync("encore", ["check"], { cwd: root, encoding: "utf8" });
   if (result.status !== 0) {
-    process.stderr.write(result.stdout);
-    process.stderr.write(result.stderr);
+    process.stderr.write(String(result.stdout));
+    process.stderr.write(String(result.stderr));
     throw new Error("encore check failed");
   }
 }
 
-function validateGeneratedActions(graph) {
+function validateGeneratedActions(graph: string): void {
   for (const route of actionRoutes) {
     if (!graph.includes(`method: "${route.method}", path: "${route.path}"`)) {
       throw new Error(`generated Encore route missing: ${route.method} ${route.path}`);

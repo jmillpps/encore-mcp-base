@@ -22,5 +22,5 @@
     "target": "ES2023",
     "types": ["node"]
   },
-  "include": ["actions/**/*.ts", "auth/**/*.ts", "mcp/**/*.ts", "shared/**/*.ts", "test/**/*.ts"]
+  "include": ["actions/**/*.ts", "auth/**/*.ts", "mcp/**/*.ts", "shared/**/*.ts", "test/**/*.ts", "tools/**/*.ts"]
 }

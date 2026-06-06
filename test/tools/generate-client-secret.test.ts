@@ -8,7 +8,7 @@ import { requireString } from "../support/http.ts";
 const execFileAsync = promisify(execFile);
 
 test("client secret generator emits registry-ready metadata", async () => {
-  const { stdout } = await execFileAsync(process.execPath, ["tools/generate-client-secret.mjs"]);
+  const { stdout } = await execFileAsync(process.execPath, ["--experimental-strip-types", "tools/generate-client-secret.ts"]);
   const payload = JSON.parse(stdout) as Record<string, unknown>;
   const secret = requireString(payload.clientSecret, "clientSecret");
   const hash = requireString(payload.clientSecretHash, "clientSecretHash");

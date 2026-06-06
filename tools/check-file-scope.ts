@@ -1,13 +1,13 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-const runtimeRoots = ["actions", "auth", "mcp", "shared"];
+const codeRoots = ["actions", "auth", "mcp", "shared", "tools"];
 const testRoots = ["test"];
 const maxRuntime = 220;
 const maxTest = 300;
-const failures = [];
+const failures: string[] = [];
 
-function walk(dir) {
+function walk(dir: string): string[] {
   try {
     return readdirSync(dir).flatMap((entry) => {
       const path = join(dir, entry);
@@ -19,7 +19,7 @@ function walk(dir) {
   }
 }
 
-for (const root of runtimeRoots) {
+for (const root of codeRoots) {
   for (const file of walk(root).filter((path) => path.endsWith(".ts"))) {
     const lines = readFileSync(file, "utf8").split("\n").length;
     if (lines > maxRuntime) failures.push(`${file} has ${lines} lines`);

@@ -1,4 +1,6 @@
-export function openApiDocument(baseUrl) {
+type JsonObject = Record<string, unknown>;
+
+export function openApiDocument(baseUrl: string): JsonObject {
   return {
     openapi: "3.1.0",
     info: { title: "GPT MCP Service Actions API", version: "0.1.0" },
@@ -12,7 +14,7 @@ export function openApiDocument(baseUrl) {
   };
 }
 
-function actionPaths() {
+function actionPaths(): JsonObject {
   return {
     "/health": {
       get: {
@@ -48,7 +50,7 @@ function actionPaths() {
   };
 }
 
-function oauthScheme(baseUrl) {
+function oauthScheme(baseUrl: string): JsonObject {
   return {
     type: "oauth2",
     flows: {
@@ -65,7 +67,7 @@ function oauthScheme(baseUrl) {
   };
 }
 
-function schemas() {
+function schemas(): JsonObject {
   return {
     HealthResponse: objectSchema(["status", "time", "service"], {
       status: { type: "string", enum: ["ok"] },
@@ -96,13 +98,13 @@ function schemas() {
   };
 }
 
-function jsonResponse(description, schema) {
+function jsonResponse(description: string, schema: string): JsonObject {
   return {
     description,
     content: { "application/json": { schema: { $ref: `#/components/schemas/${schema}` } } },
   };
 }
 
-function objectSchema(required, properties) {
+function objectSchema(required: string[], properties: JsonObject): JsonObject {
   return { type: "object", additionalProperties: false, required, properties };
 }

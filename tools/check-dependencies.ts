@@ -1,6 +1,10 @@
 import { readFileSync } from "node:fs";
 
-const pkg = JSON.parse(readFileSync("package.json", "utf8"));
+interface PackageJson {
+  dependencies?: Record<string, string>;
+}
+
+const pkg = JSON.parse(readFileSync("package.json", "utf8")) as PackageJson;
 const runtime = Object.keys(pkg.dependencies ?? {});
 const allowed = new Set(["encore.dev"]);
 const unexpected = runtime.filter((name) => !allowed.has(name));

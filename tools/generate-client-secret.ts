@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 
-function base64url(buffer) {
+function base64url(buffer: Buffer): string {
   return buffer.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 

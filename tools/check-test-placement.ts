@@ -1,10 +1,10 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-const failures = [];
+const failures: string[] = [];
 const markdownPattern = /\.(md|mdx)(["'`)]|$)/i;
 
-function walk(dir) {
+function walk(dir: string): string[] {
   try {
     return readdirSync(dir).flatMap((entry) => {
       const path = join(dir, entry);

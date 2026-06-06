@@ -4,7 +4,7 @@ import test from "node:test";
 import { readJson, requireRecord, requireString } from "../support/http.ts";
 
 test("OpenAPI export contains Actions endpoints and OAuth authorization code metadata", () => {
-  const result = spawnSync(process.execPath, ["tools/export-openapi.mjs", "--base-url", "https://example.test"], {
+  const result = spawnSync(process.execPath, ["--experimental-strip-types", "tools/export-openapi.ts", "--base-url", "https://example.test"], {
     cwd: process.cwd(),
     encoding: "utf8",
   });
@@ -39,7 +39,7 @@ test("OpenAPI export can write a generated artifact", async (t) => {
   t.after(async () => {
     await import("node:fs/promises").then((fs) => fs.rm(out, { force: true }));
   });
-  const result = spawnSync(process.execPath, ["tools/export-openapi.mjs", "--base-url", "http://localhost:4000", "--out", out], {
+  const result = spawnSync(process.execPath, ["--experimental-strip-types", "tools/export-openapi.ts", "--base-url", "http://localhost:4000", "--out", out], {
     cwd: process.cwd(),
     encoding: "utf8",
   });
@@ -51,7 +51,7 @@ test("OpenAPI export can write a generated artifact", async (t) => {
 });
 
 test("OpenAPI export rejects base URLs with unsupported URL parts", () => {
-  const result = spawnSync(process.execPath, ["tools/export-openapi.mjs", "--base-url", "https://example.test?debug=true"], {
+  const result = spawnSync(process.execPath, ["--experimental-strip-types", "tools/export-openapi.ts", "--base-url", "https://example.test?debug=true"], {
     cwd: process.cwd(),
     encoding: "utf8",
   });

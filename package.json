@@ -6,13 +6,13 @@
   "type": "module",
   "scripts": {
     "dev": "encore run --browser=never --port=4000",
-    "openapi": "node tools/export-openapi.mjs",
+    "openapi": "node --experimental-strip-types tools/export-openapi.ts",
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test --test-concurrency=1 \"test/**/*.test.ts\"",
-    "check:architecture": "node tools/check-architecture.mjs",
-    "check:dependencies": "node tools/check-dependencies.mjs",
-    "check:file-scope": "node tools/check-file-scope.mjs",
-    "check:test-placement": "node tools/check-test-placement.mjs",
+    "check:architecture": "node --experimental-strip-types tools/check-architecture.ts",
+    "check:dependencies": "node --experimental-strip-types tools/check-dependencies.ts",
+    "check:file-scope": "node --experimental-strip-types tools/check-file-scope.ts",
+    "check:test-placement": "node --experimental-strip-types tools/check-test-placement.ts",
     "check": "npm run typecheck && npm run check:dependencies && npm run check:architecture && npm run check:file-scope && npm run check:test-placement && npm test"
   },
   "dependencies": {

@@ -35,7 +35,7 @@ Service URLs omit credentials, query strings, and fragments.
 
 ## Client Registry
 
-Use `node tools/generate-client-secret.mjs` to create a GPT client secret and registry hash.
+Use `node --experimental-strip-types tools/generate-client-secret.ts` to create a GPT client secret and registry hash.
 
 Place `clientSecret` in the GPT OAuth configuration.
 
