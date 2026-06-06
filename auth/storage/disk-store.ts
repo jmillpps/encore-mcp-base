@@ -139,7 +139,7 @@ export class DiskOAuthStore {
     await this.file.update((state) => {
       const record = state.mcpSessions[sessionIdHash];
       const now = nowSeconds();
-      if (!record || record.terminatedAt || isExpired(record.expiresAt, now)) throw new ServiceError("bad_request", "invalid mcp session", 400);
+      if (!record || record.terminatedAt || isExpired(record.expiresAt, now)) throw new ServiceError("not_found", "mcp session not found", 404);
       if (record.protocolVersion !== protocolVersion) throw new ServiceError("bad_request", "unsupported protocol version", 400);
       record.lastSeenAt = now;
     });
@@ -149,7 +149,7 @@ export class DiskOAuthStore {
     await this.file.update((state) => {
       const record = state.mcpSessions[sessionIdHash];
       const now = nowSeconds();
-      if (!record || record.terminatedAt || isExpired(record.expiresAt, now)) throw new ServiceError("bad_request", "invalid mcp session", 400);
+      if (!record || record.terminatedAt || isExpired(record.expiresAt, now)) throw new ServiceError("not_found", "mcp session not found", 404);
       record.terminatedAt = now;
       record.lastSeenAt = now;
     });

@@ -144,8 +144,8 @@ test("OAuth store rejects authorization, refresh, and MCP records at the expiry 
     lastSeenAt: now,
     expiresAt: now,
   });
-  await assertServiceError("bad_request", () => store.touchMcpSession(validHash, "2025-11-25"));
-  await assertServiceError("bad_request", () => store.terminateMcpSession(validHash));
+  await assertServiceError("not_found", () => store.touchMcpSession(validHash, "2025-11-25"));
+  await assertServiceError("not_found", () => store.terminateMcpSession(validHash));
 });
 
 test("OAuth store serializes updates across store instances for the same path", async (t) => {

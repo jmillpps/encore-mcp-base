@@ -4,6 +4,7 @@ import { ServiceError } from "../shared/errors.ts";
 import { requestSubject, writeError, writeJson, writeNoContent } from "../shared/http.ts";
 import { acceptsMediaType } from "../shared/media-type.ts";
 import { createMcpSession, terminateMcpSession, touchMcpSession } from "./session-store.ts";
+import { runStreamableGetStream } from "./streamable-get-stream.ts";
 import { handleMcpJson } from "./protocol.ts";
 import { negotiateProtocolVersion } from "./protocol-version.ts";
 import { isMcpBodyResult, readMcpJsonBody } from "./request-body.ts";
@@ -53,10 +54,10 @@ export const mcpGet = api.raw({ expose: true, method: "GET", path: "/mcp" }, asy
     const protocolVersion = negotiateProtocolVersion(readMcpProtocolVersion(req, true));
     await touchMcpSession(config, readMcpSessionId(req), protocolVersion);
     writeCors(config, req, res);
-    res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-store" });
-    res.end("event: message\ndata: {}\n\n");
+    await runStreamableGetStream(res);
   } catch (error) {
-    writeError(res, error, { endpoint: "mcp.get", method: "GET", subject: requestSubject(req) });
+    if (res.headersSent) res.destroy();
+    else writeError(res, error, { endpoint: "mcp.get", method: "GET", subject: requestSubject(req) });
   }
 });
 
