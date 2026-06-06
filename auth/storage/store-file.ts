@@ -1,9 +1,10 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { dirname } from "node:path";
 import { randomToken } from "../../shared/crypto.ts";
 import { emptyStoreState, type OAuthStoreState } from "./store-records.ts";
 import { normalizeStore, serializeStore } from "./store-codec.ts";
 import { withStoreLock } from "./store-lock.ts";
+import { resolveStorePath } from "./store-path.ts";
 
 const pathUpdates = new Map<string, Promise<void>>();
 
@@ -52,13 +53,6 @@ export class StoreFile {
     await writeFile(temp, `${JSON.stringify(serializeStore(state), null, 2)}\n`, { mode: 0o600 });
     await rename(temp, this.path);
   }
-}
-
-function resolveStorePath(path: string): string {
-  if (!path.trim()) throw new Error("store path is required");
-  if (path.split(/[\\/]/).includes("..")) throw new Error("store path cannot traverse upward");
-  if (!path.endsWith(".json")) throw new Error("store path must end with .json");
-  return resolve(process.cwd(), path);
 }
 
 function parseStoreJson(text: string): unknown {
