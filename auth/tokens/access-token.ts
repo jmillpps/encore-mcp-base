@@ -49,13 +49,23 @@ export function verifyAccessToken(config: ServiceConfig, token: string, audience
 
 function accessClaims(payload: Record<string, unknown>): AccessTokenClaims {
   const required = ["iss", "sub", "aud", "jti", "client_id", "scope"];
-  if (!required.every((key) => typeof payload[key] === "string")) throw new ServiceError("unauthorized", "invalid token", 401);
+  if (!required.every((key) => nonEmptyString(payload[key]))) throw new ServiceError("unauthorized", "invalid token", 401);
+  if (!validScopeString(payload.scope)) throw new ServiceError("unauthorized", "invalid token", 401);
   if (!isNumericDate(payload.exp) || !isNumericDate(payload.iat) || !isNumericDate(payload.nbf)) {
     throw new ServiceError("unauthorized", "invalid token", 401);
   }
   return payload as unknown as AccessTokenClaims;
 }
 
+function nonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim() === value && value !== "";
+}
+
 function isNumericDate(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
+function validScopeString(value: unknown): boolean {
+  if (typeof value !== "string" || value.trim() !== value) return false;
+  return value.split(" ").every((scope) => /^[A-Za-z0-9:_./-]+$/.test(scope));
 }

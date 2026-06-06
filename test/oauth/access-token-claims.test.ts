@@ -18,6 +18,21 @@ test("access token verifier rejects non-integer NumericDate values", () => {
   assertRejectsToken(config, { nbf: 0.5 });
 });
 
+test("access token verifier rejects empty string claims", () => {
+  const config = testConfig();
+  assertRejectsToken(config, { sub: "" });
+  assertRejectsToken(config, { client_id: " " });
+  assertRejectsToken(config, { jti: "" });
+});
+
+test("access token verifier rejects malformed scope strings", () => {
+  const config = testConfig();
+  assertRejectsToken(config, { scope: "" });
+  assertRejectsToken(config, { scope: "openid\nprofile" });
+  assertRejectsToken(config, { scope: "openid profile " });
+  assertRejectsToken(config, { scope: "openid bad!scope" });
+});
+
 test("access token verifier rejects malformed JWT input as unauthorized", () => {
   const config = testConfig();
   assertRejectsRawToken(config, "not-a-jwt");
