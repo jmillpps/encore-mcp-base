@@ -7,6 +7,7 @@ import test from "node:test";
 import { DiskOAuthStore } from "../../auth/storage/disk-store.ts";
 import { DiskRateLimitStore } from "../../auth/storage/rate-limit-store.ts";
 import { StoreFile } from "../../auth/storage/store-file.ts";
+import { spawnStoreWorker, waitForStoreWorker, waitForStoreWorkerMarker } from "../support/store-worker.ts";
 
 const validHash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const secondValidHash = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
@@ -97,6 +98,17 @@ test("OAuth store rejects traversal and non-json paths", () => {
   assert.throws(() => new DiskOAuthStore("oauth-store.txt"), /store path must end with .json/);
 });
 
+test("OAuth store creates parent directories before locked writes", async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), "mcp-oauth-store-directory-"));
+  t.after(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+  const path = join(dir, "nested", "store.json");
+  await new DiskOAuthStore(path).createRefreshToken(refreshInput());
+  const persisted = await readFile(path, "utf8");
+  assert.match(persisted, /"refreshTokens"/);
+});
+
 test("OAuth store serializes updates across store instances for the same path", async (t) => {
   const dir = await mkdtemp(join(tmpdir(), "mcp-oauth-store-concurrent-"));
   t.after(async () => {
@@ -119,6 +131,22 @@ test("OAuth store serializes updates across store instances for the same path", 
   await delay(25);
   release.resolve();
   await Promise.all([firstUpdate, secondUpdate]);
+  const state = await new StoreFile(path).read();
+  assert.deepEqual(Object.keys(state.rateLimits).sort(), [validHash, secondValidHash].sort());
+});
+
+test("OAuth store serializes updates across processes for the same path", async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), "mcp-oauth-store-process-"));
+  t.after(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+  const path = join(dir, "store.json");
+  const marker = join(dir, "entered");
+  const first = spawnStoreWorker(path, validHash, 1, 10, 150, marker);
+  await waitForStoreWorkerMarker(marker);
+  const second = spawnStoreWorker(path, secondValidHash, 2, 20, 0);
+  await waitForStoreWorker(second);
+  await waitForStoreWorker(first);
   const state = await new StoreFile(path).read();
   assert.deepEqual(Object.keys(state.rateLimits).sort(), [validHash, secondValidHash].sort());
 });
