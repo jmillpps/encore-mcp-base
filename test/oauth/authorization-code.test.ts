@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
 import * as oauth from "oauth4webapi";
-import { authorizeCode, completeAuthorizationCodeFlow, discover, exchangeCode, localClient } from "../support/oauth-client.ts";
+import { authorizeCode, completeAuthorizationCodeFlow, discover, exchangeCode, localClient, localRedirectUri } from "../support/oauth-client.ts";
 import { readJson, requireString } from "../support/http.ts";
 import { startService } from "../support/service-process.ts";
 
@@ -68,6 +68,17 @@ test("authorization code flow preserves authentication time across delayed excha
   assert.ok(numberClaim(idClaims.auth_time, "auth_time") < numberClaim(idClaims.iat, "iat"));
 });
 
+test("authorization endpoint rejects invalid state values before redirect", async (t) => {
+  const service = await startService(t);
+  const as = await discover(service);
+  for (const state of ["a".repeat(513), "valid-prefix\ninvalid-suffix"]) {
+    const response = await fetch(await authorizationUrl(as, service.actionsAudience, state), { redirect: "manual" });
+    assert.equal(response.status, 400);
+    assert.equal((await readJson(response)).error, "bad_request");
+    assert.equal(response.headers.get("location"), null);
+  }
+});
+
 test("expired authorization code cannot be exchanged", async (t) => {
   const service = await startService(t, { AUTHORIZATION_CODE_TTL_SECONDS: "1" });
   const flow = await completeAuthorizationCodeFlow(service);
@@ -91,4 +102,18 @@ test("expired authorization code cannot be exchanged", async (t) => {
 function numberClaim(value: unknown, name: string): number {
   if (typeof value !== "number") assert.fail(`${name} must be a number`);
   return value;
+}
+
+async function authorizationUrl(as: oauth.AuthorizationServer, resource: string, state: string): Promise<URL> {
+  const codeVerifier = oauth.generateRandomCodeVerifier();
+  const url = new URL(requireString(as.authorization_endpoint, "authorization_endpoint"));
+  url.searchParams.set("response_type", "code");
+  url.searchParams.set("client_id", localClient.client_id);
+  url.searchParams.set("redirect_uri", localRedirectUri);
+  url.searchParams.set("scope", "openid profile email");
+  url.searchParams.set("state", state);
+  url.searchParams.set("resource", resource);
+  url.searchParams.set("code_challenge", await oauth.calculatePKCECodeChallenge(codeVerifier));
+  url.searchParams.set("code_challenge_method", "S256");
+  return url;
 }

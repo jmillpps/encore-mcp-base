@@ -4,6 +4,7 @@ import { DiskOAuthStore } from "./storage/disk-store.ts";
 import { assertAllowedScopes, parseScopes } from "./scopes.ts";
 import { assertRedirectUri, assertResource, findClient, type OAuthClient } from "./clients.ts";
 import { oidcNonce } from "./nonce.ts";
+import { oauthState } from "./oauth-state.ts";
 import { pkceInput } from "./pkce.ts";
 import { staticUser } from "./static-user.ts";
 
@@ -26,7 +27,7 @@ export async function createAuthorizationRedirect(
   request: AuthorizationRequest,
 ): Promise<string> {
   if (request.responseType !== "code") throw new ServiceError("unsupported_response_type", "unsupported response_type", 400);
-  if (!request.state) throw new ServiceError("bad_request", "state is required", 400);
+  const state = oauthState(request.state);
   const client = findClient(clients, request.clientId);
   assertRedirectUri(client, request.redirectUri);
   const resource = request.resource ?? config.actionsAudience;
@@ -47,6 +48,6 @@ export async function createAuthorizationRedirect(
   });
   const redirect = new URL(request.redirectUri);
   redirect.searchParams.set("code", code);
-  redirect.searchParams.set("state", request.state);
+  redirect.searchParams.set("state", state);
   return redirect.toString();
 }
