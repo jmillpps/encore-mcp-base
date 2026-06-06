@@ -1,9 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { completeAuthorizationCodeFlow } from "../support/oauth-client.ts";
+import * as oauth from "oauth4webapi";
+import { completeAuthorizationCodeFlow, discover } from "../support/oauth-client.ts";
 import { callTool, initializeMcp, postMcp, bearer } from "../support/mcp.ts";
-import { readJson } from "../support/http.ts";
-import { startService } from "../support/service-process.ts";
+import { readJson, requireString } from "../support/http.ts";
+import { startService, type TestService } from "../support/service-process.ts";
+
+const gptAppsMcpClient: oauth.Client = { client_id: "gpt-apps-mcp" };
+const gptAppsMcpSecret = "gpt-apps-secret";
+const gptAppsMcpRedirectUri = "https://chatgpt.com/connector/oauth/local-callback";
 
 test("MCP tools expose metadata and protected tools return auth challenges", async (t) => {
   const service = await startService(t);
@@ -55,6 +60,17 @@ test("MCP protected tools enforce audience and scopes", async (t) => {
   assert.equal(missingScopes.isError, true);
 });
 
+test("MCP protected tools accept the GPT Apps client required-PKCE token flow", async (t) => {
+  const service = await startService(t);
+  const sessionId = await initializeMcp(service);
+  const { tokens, idClaims } = await completeGptAppsMcpFlow(service);
+  assert.equal(idClaims.aud, gptAppsMcpClient.client_id);
+  const profile = await callTool(service, sessionId, "identity.profile", bearer(tokens.access_token));
+  assert.equal((profile.structuredContent as Record<string, unknown>).email, "jmiller@inifnitedevlab.com");
+  const session = await callTool(service, sessionId, "auth.session", bearer(tokens.access_token));
+  assert.equal((session.structuredContent as Record<string, unknown>).clientId, gptAppsMcpClient.client_id);
+});
+
 test("MCP tools reject arguments outside their input schemas", async (t) => {
   const service = await startService(t);
   const sessionId = await initializeMcp(service);
@@ -67,3 +83,43 @@ test("MCP tools reject arguments outside their input schemas", async (t) => {
   const body = await readJson(response);
   assert.equal((body.error as Record<string, unknown>).message, "invalid tool arguments");
 });
+
+async function completeGptAppsMcpFlow(service: TestService): Promise<{ tokens: oauth.TokenEndpointResponse; idClaims: oauth.IDToken }> {
+  const as = await discover(service);
+  const codeVerifier = oauth.generateRandomCodeVerifier();
+  const codeChallenge = await oauth.calculatePKCECodeChallenge(codeVerifier);
+  const state = oauth.generateRandomState();
+  const url = new URL(requireString(as.authorization_endpoint, "authorization_endpoint"));
+  url.searchParams.set("response_type", "code");
+  url.searchParams.set("client_id", gptAppsMcpClient.client_id);
+  url.searchParams.set("redirect_uri", gptAppsMcpRedirectUri);
+  url.searchParams.set("scope", "openid profile email");
+  url.searchParams.set("state", state);
+  url.searchParams.set("resource", service.mcpResource);
+  url.searchParams.set("code_challenge", codeChallenge);
+  url.searchParams.set("code_challenge_method", "S256");
+  const authorization = await fetch(url, { redirect: "manual" });
+  assert.equal(authorization.status, 302);
+  const callback = new URL(requireString(authorization.headers.get("location"), "location"));
+  const callbackParameters = oauth.validateAuthResponse(as, gptAppsMcpClient, callback, state);
+  const tokenResponse = await oauth.authorizationCodeGrantRequest(
+    as,
+    gptAppsMcpClient,
+    oauth.ClientSecretPost(gptAppsMcpSecret),
+    callbackParameters,
+    gptAppsMcpRedirectUri,
+    codeVerifier,
+    {
+      additionalParameters: new URLSearchParams([["resource", service.mcpResource]]),
+      [oauth.allowInsecureRequests]: true,
+    },
+  );
+  const tokens = await oauth.processAuthorizationCodeResponse(as, gptAppsMcpClient, tokenResponse, {
+    requireIdToken: true,
+    expectedNonce: oauth.expectNoNonce,
+  });
+  await oauth.validateApplicationLevelSignature(as, tokenResponse, { [oauth.allowInsecureRequests]: true });
+  const idClaims = oauth.getValidatedIdTokenClaims(tokens);
+  assert.ok(idClaims);
+  return { tokens, idClaims };
+}
