@@ -2,6 +2,7 @@ import { randomToken, s256Challenge, sha256Base64Url } from "../../shared/crypto
 import { ServiceError } from "../../shared/errors.ts";
 import { nowSeconds } from "../../shared/time.ts";
 import { pkceVerifier } from "../pkce.ts";
+import { isExpired } from "./expiration.ts";
 import { StoreFile } from "./store-file.ts";
 import type { AuthorizationCodeExpectation, AuthorizationCodeInput, RefreshTokenInput } from "./store-inputs.ts";
 import type { AuthorizationCodeRecord, McpSessionRecord, RefreshTokenRecord } from "./store-records.ts";
@@ -42,7 +43,7 @@ export class DiskOAuthStore {
       const record = state.authorizationCodes[hash];
       if (!record) throw new ServiceError("invalid_grant", "invalid grant", 400);
       const now = nowSeconds();
-      if (record.consumedAt || record.expiresAt < now) throw new ServiceError("invalid_grant", "invalid grant", 400);
+      if (record.consumedAt || isExpired(record.expiresAt, now)) throw new ServiceError("invalid_grant", "invalid grant", 400);
       if (record.clientId !== expected.clientId || record.redirectUri !== expected.redirectUri) {
         throw new ServiceError("invalid_grant", "invalid grant", 400);
       }
@@ -95,7 +96,7 @@ export class DiskOAuthStore {
     const result = await this.file.update((state) => {
       const oldRecord = state.refreshTokens[oldHash];
       const now = nowSeconds();
-      if (!oldRecord || oldRecord.revokedAt || oldRecord.expiresAt < now) {
+      if (!oldRecord || oldRecord.revokedAt || isExpired(oldRecord.expiresAt, now)) {
         throw new ServiceError("invalid_grant", "invalid grant", 400);
       }
       if (oldRecord.clientId !== clientId) throw new ServiceError("invalid_grant", "invalid grant", 400);
@@ -138,7 +139,7 @@ export class DiskOAuthStore {
     await this.file.update((state) => {
       const record = state.mcpSessions[sessionIdHash];
       const now = nowSeconds();
-      if (!record || record.terminatedAt || record.expiresAt < now) throw new ServiceError("bad_request", "invalid mcp session", 400);
+      if (!record || record.terminatedAt || isExpired(record.expiresAt, now)) throw new ServiceError("bad_request", "invalid mcp session", 400);
       if (record.protocolVersion !== protocolVersion) throw new ServiceError("bad_request", "unsupported protocol version", 400);
       record.lastSeenAt = now;
     });
@@ -148,7 +149,7 @@ export class DiskOAuthStore {
     await this.file.update((state) => {
       const record = state.mcpSessions[sessionIdHash];
       const now = nowSeconds();
-      if (!record || record.terminatedAt || record.expiresAt < now) throw new ServiceError("bad_request", "invalid mcp session", 400);
+      if (!record || record.terminatedAt || isExpired(record.expiresAt, now)) throw new ServiceError("bad_request", "invalid mcp session", 400);
       record.terminatedAt = now;
       record.lastSeenAt = now;
     });

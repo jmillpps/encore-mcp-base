@@ -3,10 +3,11 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-import test from "node:test";
+import test, { type TestContext } from "node:test";
 import { DiskOAuthStore } from "../../auth/storage/disk-store.ts";
 import { DiskRateLimitStore } from "../../auth/storage/rate-limit-store.ts";
 import { StoreFile } from "../../auth/storage/store-file.ts";
+import { ServiceError } from "../../shared/errors.ts";
 import { spawnStoreWorker, waitForStoreWorker, waitForStoreWorkerMarker } from "../support/store-worker.ts";
 
 const validHash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -109,6 +110,44 @@ test("OAuth store creates parent directories before locked writes", async (t) =>
   assert.match(persisted, /"refreshTokens"/);
 });
 
+test("OAuth store rejects authorization, refresh, and MCP records at the expiry instant", async (t) => {
+  const now = 1_800_000_000;
+  freezeUnixSecond(t, now);
+  const dir = await mkdtemp(join(tmpdir(), "mcp-oauth-store-expiry-"));
+  t.after(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+  const path = join(dir, "store.json");
+  const store = new DiskOAuthStore(path);
+  const code = await store.createAuthorizationCode({
+    clientId: "local-test",
+    redirectUri: "http://localhost:4000/callback",
+    resource: "http://localhost:4000/actions",
+    scopes: ["openid"],
+    userSub: "user_justin_miller",
+    ttlSeconds: 0,
+  });
+  await assertServiceError("invalid_grant", () =>
+    store.consumeAuthorizationCode(code, undefined, {
+      clientId: "local-test",
+      redirectUri: "http://localhost:4000/callback",
+      resource: "http://localhost:4000/actions",
+    }),
+  );
+  const refreshToken = await store.createRefreshToken({ ...refreshInput(), ttlSeconds: 0 });
+  await assertServiceError("invalid_grant", () => store.rotateRefreshToken(refreshToken, "local-test", 300));
+  await store.saveMcpSession({
+    sessionIdHash: validHash,
+    clientId: "local-test",
+    protocolVersion: "2025-11-25",
+    createdAt: now,
+    lastSeenAt: now,
+    expiresAt: now,
+  });
+  await assertServiceError("bad_request", () => store.touchMcpSession(validHash, "2025-11-25"));
+  await assertServiceError("bad_request", () => store.terminateMcpSession(validHash));
+});
+
 test("OAuth store serializes updates across store instances for the same path", async (t) => {
   const dir = await mkdtemp(join(tmpdir(), "mcp-oauth-store-concurrent-"));
   t.after(async () => {
@@ -207,6 +246,18 @@ function mcpSessionDiskRecord(overrides: Record<string, unknown> = {}): Record<s
 async function writeMalformedAndReject(path: string, value: Record<string, unknown>) {
   await writeFile(path, JSON.stringify(value), "utf8");
   await assert.rejects(() => new DiskOAuthStore(path).createRefreshToken(refreshInput()), /store file is malformed/);
+}
+
+async function assertServiceError(code: string, fn: () => Promise<unknown>): Promise<void> {
+  await assert.rejects(fn, (error) => error instanceof ServiceError && error.code === code);
+}
+
+function freezeUnixSecond(t: TestContext, seconds: number): void {
+  const original = Date.now;
+  Date.now = () => seconds * 1000;
+  t.after(() => {
+    Date.now = original;
+  });
 }
 
 function deferred(): { promise: Promise<void>; resolve: () => void } {
