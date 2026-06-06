@@ -3,12 +3,13 @@ import { readConfig } from "../shared/config.ts";
 import { requestSubject, writeError, writeJson } from "../shared/http.ts";
 import { handleMcpJson } from "./protocol.ts";
 import { isMcpBodyResult, readMcpJsonBody } from "./request-body.ts";
-import { validateOrigin, validatePostContentType, writeCors } from "./transport-headers.ts";
+import { validateOrigin, validatePostContentType, validateSseAccept, writeCors } from "./transport-headers.ts";
 
 export const sse = api.raw({ expose: true, method: "GET", path: "/sse" }, async (req, res) => {
   try {
     const config = readConfig();
     validateOrigin(config, req);
+    validateSseAccept(req);
     writeCors(config, req, res);
     res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-store" });
     res.end(`event: endpoint\ndata: ${JSON.stringify({ endpoint: "/messages" })}\n\n`);

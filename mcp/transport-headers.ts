@@ -24,6 +24,13 @@ export function validatePostContentType(req: IncomingMessage): void {
   }
 }
 
+export function validateSseAccept(req: IncomingMessage): void {
+  const accept = String(req.headers.accept ?? "");
+  if (!acceptsMediaType(accept, "text/event-stream")) {
+    throw new ServiceError("bad_request", "invalid accept header", 400);
+  }
+}
+
 export function readMcpSessionId(req: IncomingMessage): string {
   const value = String(req.headers["mcp-session-id"] ?? "");
   if (!/^[A-Za-z0-9_-]{16,256}$/.test(value)) throw new ServiceError("bad_request", "invalid mcp session", 400);

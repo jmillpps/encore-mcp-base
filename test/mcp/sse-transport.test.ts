@@ -25,6 +25,11 @@ test("SSE transport announces the messages endpoint and accepts JSON-RPC message
 test("SSE transport rejects invalid origins and malformed message requests", async (t) => {
   const service = await startService(t);
   await expectOAuthError(await fetch(`${service.origin}/sse`, { headers: { origin: "https://evil.test" } }), 403, "forbidden");
+  await expectOAuthError(
+    await fetch(`${service.origin}/sse`, { headers: { accept: "application/json", origin: "https://chatgpt.com" } }),
+    400,
+    "bad_request",
+  );
   await expectOAuthError(await postMessage(service.origin, { jsonrpc: "2.0", id: "type", method: "ping" }, "text/plain"), 415, "bad_request");
   await expectOAuthError(
     await postMessage(service.origin, { jsonrpc: "2.0", id: "type-suffix", method: "ping" }, "application/json-seq"),
