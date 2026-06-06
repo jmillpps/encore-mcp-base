@@ -25,6 +25,14 @@ The local development profile may generate signing keys and use local test clien
 
 Production startup must fail when required security configuration is missing.
 
+## Service URLs
+
+`PUBLIC_ISSUER_URL`, `MCP_RESOURCE_URL`, and `ACTIONS_AUDIENCE` use `http` or `https`.
+
+Production values use `https`.
+
+Service URLs omit credentials, query strings, and fragments.
+
 ## Client Registry
 
 Use `node tools/generate-client-secret.mjs` to create a GPT client secret and registry hash.
