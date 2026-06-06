@@ -87,10 +87,11 @@ function schemas() {
       audience: { type: "string" },
       scopes: { type: "array", items: { type: "string" } },
     }),
-    ErrorResponse: objectSchema(["code", "message"], {
+    ErrorResponse: objectSchema(["code", "message", "details", "internal_message"], {
       code: { type: "string" },
       message: { type: "string" },
       details: {},
+      internal_message: { type: ["string", "null"] },
     }),
   };
 }

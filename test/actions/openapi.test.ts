@@ -28,6 +28,10 @@ test("OpenAPI export contains Actions endpoints and OAuth authorization code met
   assert.equal(flow.authorizationUrl, "https://example.test/oauth/authorize");
   assert.equal(flow.tokenUrl, "https://example.test/oauth/token");
   assert.deepEqual(Object.keys(flow.scopes as Record<string, string>).sort(), ["email", "openid", "profile"]);
+  const schemas = requireRecord(components.schemas, "schemas");
+  const errorResponse = requireRecord(schemas.ErrorResponse, "ErrorResponse");
+  assert.deepEqual(errorResponse.required, ["code", "message", "details", "internal_message"]);
+  assert.ok(requireRecord(errorResponse.properties, "ErrorResponse properties").internal_message);
 });
 
 test("OpenAPI export can write a generated artifact", async (t) => {
