@@ -13,6 +13,10 @@ test("production signing key lookup fails closed without configured key material
   assert.throws(() => getSigningKey(productionConfig(), {}), /OAUTH_PRIVATE_KEY_PEM is required/);
 });
 
+test("production signing key lookup requires an explicit key id", () => {
+  assert.throws(() => getSigningKey(productionConfig(), { OAUTH_PRIVATE_KEY_PEM: privateKeyPem() }), /OAUTH_KEY_ID is required/);
+});
+
 test("configured production signing keys are isolated by source and key id", () => {
   const config = productionConfig();
   const first = getSigningKey(config, { OAUTH_PRIVATE_KEY_PEM: privateKeyPem(), OAUTH_KEY_ID: "prod-key-1" });
@@ -50,6 +54,27 @@ test("production signing key ids must be unique across active and previous keys"
         OAUTH_PREVIOUS_PUBLIC_KEYS_JSON: JSON.stringify([{ kid: "duplicate-key", publicKeyPem: publicKeyPem(previous) }]),
       }),
     /signing key ids must be unique/,
+  );
+});
+
+test("production signing key ids reject unsafe characters", () => {
+  const previous = keyPair();
+  assert.throws(
+    () =>
+      getSigningKey(productionConfig(), {
+        OAUTH_PRIVATE_KEY_PEM: privateKeyPem(),
+        OAUTH_KEY_ID: "bad key",
+      }),
+    /safe key id characters/,
+  );
+  assert.throws(
+    () =>
+      getSigningKey(productionConfig(), {
+        OAUTH_PRIVATE_KEY_PEM: privateKeyPem(),
+        OAUTH_KEY_ID: "active-key",
+        OAUTH_PREVIOUS_PUBLIC_KEYS_JSON: JSON.stringify([{ kid: "bad key", publicKeyPem: publicKeyPem(previous) }]),
+      }),
+    /safe key id characters/,
   );
 });
 

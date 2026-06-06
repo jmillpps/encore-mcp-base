@@ -6,12 +6,13 @@ import { sha256Base64Url } from "../../shared/crypto.ts";
 import { expectServiceStartupFailure } from "../support/service-process.ts";
 
 test("startup validation accepts complete production OAuth configuration", () => {
-  assert.doesNotThrow(() => validateStartup(productionEnv({ OAUTH_PRIVATE_KEY_PEM: privateKeyPem() })));
+  assert.doesNotThrow(() => validateStartup(productionEnv({ OAUTH_PRIVATE_KEY_PEM: privateKeyPem(), OAUTH_KEY_ID: "prod-key-1" })));
 });
 
 test("startup validation rejects incomplete production OAuth configuration", () => {
   assert.throws(() => validateStartup(productionEnv({ OAUTH_CLIENTS_JSON: "" })), /OAUTH_CLIENTS_JSON is required/);
   assert.throws(() => validateStartup(productionEnv({ OAUTH_PRIVATE_KEY_PEM: "" })), /OAUTH_PRIVATE_KEY_PEM is required/);
+  assert.throws(() => validateStartup(productionEnv({ OAUTH_PRIVATE_KEY_PEM: privateKeyPem(), OAUTH_KEY_ID: "" })), /OAUTH_KEY_ID is required/);
 });
 
 test("Encore production startup fails closed when signing key material is missing", async (t) => {

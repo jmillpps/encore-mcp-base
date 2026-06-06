@@ -16,6 +16,7 @@ interface KeySet {
 }
 
 let cached: { source: string; keySet: KeySet } | undefined;
+const keyIdPattern = /^[A-Za-z0-9._-]{1,128}$/;
 
 export function getSigningKey(config: ServiceConfig, env: NodeJS.ProcessEnv = process.env): SigningKey {
   return getKeySet(config, env).active;
@@ -31,7 +32,7 @@ function getKeySet(config: ServiceConfig, env: NodeJS.ProcessEnv): KeySet {
     if (cached?.source === source) return cached.keySet;
     const privateKey = createPrivateKey(env.OAUTH_PRIVATE_KEY_PEM);
     const publicKey = createPublicKey(privateKey);
-    const active = { kid: env.OAUTH_KEY_ID ?? keyId(publicKey), privateKey, publicKey };
+    const active = { kid: activeKeyId(config, env, publicKey), privateKey, publicKey };
     const verificationKeys = [active, ...previousKeys(env.OAUTH_PREVIOUS_PUBLIC_KEYS_JSON)];
     rejectDuplicateKids(verificationKeys);
     const keySet = { active, verificationKeys };
@@ -64,7 +65,7 @@ function previousKey(value: unknown): VerificationKey {
   const record = value as Record<string, unknown>;
   if (typeof record.kid !== "string" || record.kid.trim() === "") throw new Error("previous signing key kid is required");
   if (typeof record.publicKeyPem !== "string" || record.publicKeyPem.trim() === "") throw new Error("previous signing key publicKeyPem is required");
-  return { kid: record.kid, publicKey: createPublicKey(record.publicKeyPem) };
+  return { kid: validatedKeyId(record.kid, "previous signing key kid"), publicKey: createPublicKey(record.publicKeyPem) };
 }
 
 function rejectDuplicateKids(keys: VerificationKey[]): void {
@@ -73,6 +74,19 @@ function rejectDuplicateKids(keys: VerificationKey[]): void {
 
 function hashSource(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("base64url");
+}
+
+function activeKeyId(config: ServiceConfig, env: NodeJS.ProcessEnv, publicKey: KeyObject): string {
+  if (!env.OAUTH_KEY_ID?.trim()) {
+    if (config.production) throw new Error("OAUTH_KEY_ID is required");
+    return keyId(publicKey);
+  }
+  return validatedKeyId(env.OAUTH_KEY_ID, "OAUTH_KEY_ID");
+}
+
+function validatedKeyId(value: string, name: string): string {
+  if (!keyIdPattern.test(value)) throw new Error(`${name} must use 1-128 safe key id characters`);
+  return value;
 }
 
 function keyId(publicKey: KeyObject): string {
