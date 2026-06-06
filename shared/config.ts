@@ -48,7 +48,7 @@ function readHttpUrl(env: NodeJS.ProcessEnv, key: string, fallback: string, prod
   const url = new URL(value);
   if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error(`${key} must use http or https`);
   if (production && url.protocol !== "https:") throw new Error(`${key} must use https in production`);
-  if (url.username || url.password || url.hash) throw new Error(`${key} contains unsupported URL parts`);
+  if (url.username || url.password || url.search || url.hash) throw new Error(`${key} contains unsupported URL parts`);
   return url.href.replace(/\/$/, "");
 }
 

@@ -40,5 +40,6 @@ function requiredArg(args, index, name) {
 function normalizeBaseUrl(value) {
   const url = new URL(value);
   if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("base URL must use http or https");
+  if (url.username || url.password || url.search || url.hash) throw new Error("base URL contains unsupported URL parts");
   return url.href.replace(/\/$/, "");
 }

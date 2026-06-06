@@ -19,8 +19,10 @@ test("production config requires explicit secure public URLs and origins", () =>
 
 test("production config rejects insecure or ambiguous deployment inputs", () => {
   assert.throws(() => readConfig(productionEnv({ PUBLIC_ISSUER_URL: "http://issuer.example.test" })), /https/);
+  assert.throws(() => readConfig(productionEnv({ PUBLIC_ISSUER_URL: "https://issuer.example.test?debug=true" })), /unsupported URL parts/);
   assert.throws(() => readConfig(productionEnv({ MCP_RESOURCE_URL: "" })), /MCP_RESOURCE_URL is required/);
   assert.throws(() => readConfig(productionEnv({ ACTIONS_AUDIENCE: "ftp://api.example.test/actions" })), /http or https/);
+  assert.throws(() => readConfig(productionEnv({ ACTIONS_AUDIENCE: "https://user:pass@api.example.test/actions" })), /unsupported URL parts/);
   assert.throws(() => readConfig(productionEnv({ ALLOWED_ORIGINS: "https://*.example.test" })), /wildcards/);
   assert.throws(() => readConfig(productionEnv({ ALLOWED_ORIGINS: "https://chatgpt.com/path" })), /must be origins/);
   assert.throws(() => readConfig(productionEnv({ OAUTH_STORE_PATH: "" })), /OAUTH_STORE_PATH is required/);

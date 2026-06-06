@@ -43,3 +43,12 @@ test("OpenAPI export can write a generated artifact", async (t) => {
   const document = await readJson(response);
   assert.equal(requireString((document.servers as Record<string, unknown>[])[0]?.url, "server url"), "http://localhost:4000");
 });
+
+test("OpenAPI export rejects base URLs with unsupported URL parts", () => {
+  const result = spawnSync(process.execPath, ["tools/export-openapi.mjs", "--base-url", "https://example.test?debug=true"], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /unsupported URL parts/);
+});
