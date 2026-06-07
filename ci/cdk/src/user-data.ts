@@ -59,6 +59,7 @@ function runScript(input: UserDataInput): string {
     'PARAMETER_FILE="/run/gpt-mcp-service/parameters.json"',
     'ENV_FILE="/run/gpt-mcp-service/service.env"',
     'PRIVATE_KEY_FILE="/run/gpt-mcp-service/oauth-private-key.pem"',
+    "mkdir -p /run/gpt-mcp-service /var/lib/gpt-mcp-service",
     'aws ssm get-parameters-by-path --path "$PARAMETER_PREFIX" --recursive --with-decryption --region "$AWS_REGION" --output json > "$PARAMETER_FILE"',
     ': > "$ENV_FILE"',
     "printf 'NODE_ENV=production\\n' >> \"$ENV_FILE\"",
