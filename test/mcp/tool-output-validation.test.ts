@@ -5,6 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 import type { ServiceConfig } from "../../shared/config.ts";
 import { ServiceError } from "../../shared/errors.ts";
+import { readOnlyToolAnnotations } from "../../mcp/tool-annotations.ts";
 import { callTool, tools, type McpTool } from "../../mcp/tool-registry.ts";
 import { emptyInputSchema, objectSchema, stringSchema } from "../../mcp/tool-schemas.ts";
 
@@ -16,7 +17,7 @@ test("callTool rejects successful results that violate the tool output schema", 
     description: "Return invalid output for validator testing.",
     inputSchema: emptyInputSchema(),
     outputSchema: objectSchema({ status: stringSchema() }),
-    annotations: { readOnlyHint: true },
+    annotations: readOnlyToolAnnotations(),
     requiredScopes: [],
     run: async () => ({ content: [{ type: "text", text: "bad" }], structuredContent: { status: 1 } }),
   };
@@ -61,7 +62,7 @@ test("callTool rejects malformed tool result envelopes", async () => {
       description: "Return invalid result envelope for validator testing.",
       inputSchema: emptyInputSchema(),
       outputSchema: objectSchema({ status: stringSchema() }),
-      annotations: { readOnlyHint: true },
+      annotations: readOnlyToolAnnotations(),
       requiredScopes: [],
       run: async () => result,
     };
@@ -86,7 +87,7 @@ test("callTool accepts valid text content metadata", async () => {
     description: "Return content metadata for validator testing.",
     inputSchema: emptyInputSchema(),
     outputSchema: objectSchema({ status: stringSchema() }),
-    annotations: { readOnlyHint: true },
+    annotations: readOnlyToolAnnotations(),
     requiredScopes: [],
     run: async () => ({
       content: [
@@ -118,7 +119,7 @@ test("callTool accepts valid binary and resource content", async () => {
     description: "Return binary and resource content for validator testing.",
     inputSchema: emptyInputSchema(),
     outputSchema: objectSchema({ status: stringSchema() }),
-    annotations: { readOnlyHint: true },
+    annotations: readOnlyToolAnnotations(),
     requiredScopes: [],
     run: async () => ({
       content: [
