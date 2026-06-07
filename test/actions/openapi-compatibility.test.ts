@@ -36,6 +36,15 @@ test("OpenAPI Actions compatibility enforces ChatGPT production limits", () => {
     delete object(profileOperation(document).responses, "profile responses")["403"];
   }, /OAuth2 error responses/);
   assertRejects((document) => {
+    profileOperation(document).security = [{ OAuth2: ["openid", "admin:read"] }];
+  }, /undeclared OAuth2 scope admin:read/);
+  assertRejects((document) => {
+    delete object(oauthFlow(document).scopes, "OAuth2 scopes").email;
+  }, /undeclared OAuth2 scope email/);
+  assertRejects((document) => {
+    object(oauthFlow(document).scopes, "OAuth2 scopes").profile = "";
+  }, /OAuth2 scope profile description/);
+  assertRejects((document) => {
     profileOperation(document).parameters = [{ in: "header", name: "X-Custom", schema: { type: "string" }, description: "custom header" }];
   }, /custom headers/);
   assertRejects((document) => {

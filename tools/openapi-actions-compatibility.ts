@@ -9,7 +9,7 @@ export function assertChatGptActionsOpenApi(document: JsonObject): void {
   if (document.openapi !== "3.1.0") throw new Error("OpenAPI document must use version 3.1.0");
   assertInfo(document);
   const serverOrigin = readServerOrigin(document);
-  assertOAuthOrigin(document, serverOrigin);
+  const declaredOAuthScopes = readDeclaredOAuthScopes(document, serverOrigin);
   assertComponentSchemas(document);
   const foundOperations = operations(document);
   assertOperationIds(foundOperations);
@@ -19,7 +19,7 @@ export function assertChatGptActionsOpenApi(document: JsonObject): void {
     if (typeof operation.operation["x-openai-isConsequential"] !== "boolean") {
       throw new Error(`${operation.name} must set x-openai-isConsequential`);
     }
-    assertOperationSecurity(operation);
+    assertOperationSecurity(operation, declaredOAuthScopes);
     assertParameters(operation);
     assertJsonContent(operation);
   }
@@ -44,7 +44,7 @@ function readServerOrigin(document: JsonObject): string {
   return new URL(text(first.url, "servers[0].url")).origin;
 }
 
-function assertOAuthOrigin(document: JsonObject, serverOrigin: string): void {
+function readDeclaredOAuthScopes(document: JsonObject, serverOrigin: string): Set<string> {
   const components = object(document.components, "components");
   const securitySchemes = object(components.securitySchemes, "components.securitySchemes");
   const oauth2 = object(securitySchemes.OAuth2, "components.securitySchemes.OAuth2");
@@ -54,6 +54,15 @@ function assertOAuthOrigin(document: JsonObject, serverOrigin: string): void {
     const origin = new URL(text(authorizationCode[key], `OAuth2 ${key}`)).origin;
     if (origin !== serverOrigin) throw new Error(`OAuth2 ${key} must share the server origin`);
   }
+  const scopes = object(authorizationCode.scopes, "components.securitySchemes.OAuth2.flows.authorizationCode.scopes");
+  const declared = new Set<string>();
+  for (const [scope, description] of Object.entries(scopes)) {
+    if (scope.length === 0) throw new Error("OAuth2 scope name is required");
+    assertTextLimit(description, parameterDescriptionLimit, `OAuth2 scope ${scope} description`);
+    declared.add(scope);
+  }
+  if (declared.size === 0) throw new Error("OAuth2 flow must declare scopes");
+  return declared;
 }
 
 function assertComponentSchemas(document: JsonObject): void {
@@ -94,10 +103,13 @@ function assertOperationIds(foundOperations: Operation[]): void {
   }
 }
 
-function assertOperationSecurity(operation: Operation): void {
+function assertOperationSecurity(operation: Operation, declaredOAuthScopes: Set<string>): void {
   if (!operation.path.startsWith("/actions/")) return;
   const scopes = oauth2Scopes(operation);
   if (scopes.length === 0) throw new Error(`${operation.name} must declare OAuth2 security`);
+  for (const scope of scopes) {
+    if (!declaredOAuthScopes.has(scope)) throw new Error(`${operation.name} uses undeclared OAuth2 scope ${scope}`);
+  }
   const responses = object(operation.operation.responses, `${operation.name} responses`);
   if (!responses["401"] || !responses["403"]) throw new Error(`${operation.name} must declare OAuth2 error responses`);
 }
