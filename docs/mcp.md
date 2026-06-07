@@ -58,6 +58,8 @@ Clients send `Accept: application/json, text/event-stream` and `Content-Type: ap
 
 JSON request bodies use UTF-8.
 
+Client JSON objects must pass JSON-RPC message validation to reach transport response handling.
+
 The initialize response includes `MCP-Session-Id`. Clients send that session ID with `MCP-Protocol-Version` on later `/mcp` requests.
 
 Initialize requests start a new MCP session and do not include `MCP-Session-Id`.
