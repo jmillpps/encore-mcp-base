@@ -41,10 +41,12 @@ export const mcpPost = api.raw({ expose: true, method: "POST", path: "/mcp" }, a
     }
     const method = typeof body === "object" && body !== null && !Array.isArray(body) ? (body as Record<string, unknown>).method : undefined;
     if (method === "initialize") validateNoMcpSessionId(req);
+    const sessionId = method === "initialize" ? undefined : readMcpSessionId(req);
     const protocolVersion = method === "initialize" ? negotiateProtocolVersion(readMcpProtocolVersion(req, false)) : readMcpProtocolVersion(req, false);
-    const session = method === "initialize" ? { initialized: true } : await touchMcpSession(config, readMcpSessionId(req), protocolVersion, method === "notifications/initialized");
+    const session = sessionId === undefined ? { initialized: false } : await touchMcpSession(config, sessionId, protocolVersion);
     const result = await handleMcpJson({ config, authorization: String(req.headers.authorization ?? ""), rateLimitSubject: requestSubject(req), sessionInitialized: session.initialized }, body);
     if (result.initialized) res.setHeader("MCP-Session-Id", await createMcpSession(config, protocolVersion ?? negotiateProtocolVersion(undefined), result.clientId ?? "unknown-mcp-client"));
+    if (method === "notifications/initialized" && result.status === 202 && !result.body && sessionId !== undefined) await touchMcpSession(config, sessionId, protocolVersion, true);
     if (result.wwwAuthenticate) res.setHeader("www-authenticate", result.wwwAuthenticate);
     if (!result.body) writeNoContent(res, result.status);
     else writeJson(res, result.status, result.body);

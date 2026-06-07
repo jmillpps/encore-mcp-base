@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { readJson, requireRecord } from "../support/http.ts";
 import { initializeMcp, postMcp } from "../support/mcp.ts";
@@ -56,3 +57,18 @@ async function expectInvalidNotification(response: Response): Promise<void> {
   assert.equal(requireRecord(body.error, "json-rpc error").code, -32600);
   assert.equal(Object.hasOwn(body, "id"), false);
 }
+
+test("MCP Streamable HTTP initializes sessions only after a valid initialized notification", async (t) => {
+  const service = await startService(t);
+  const sessionId = await initializeMcp(service, { sendInitialized: false });
+  assert.equal((await readFile(service.storePath, "utf8")).includes("initialized_at"), false);
+  const invalidRequest = await postMcp(service, { jsonrpc: "2.0", id: "invalid-initialized", method: "notifications/initialized" }, { sessionId });
+  assert.equal(invalidRequest.status, 200);
+  assert.equal(requireRecord((await readJson(invalidRequest)).error, "json-rpc error").code, -32601);
+  assert.equal((await readFile(service.storePath, "utf8")).includes("initialized_at"), false);
+  const invalidParams = await postMcp(service, { jsonrpc: "2.0", method: "notifications/initialized", params: [] }, { sessionId });
+  assert.equal(invalidParams.status, 400);
+  assert.equal((await readFile(service.storePath, "utf8")).includes("initialized_at"), false);
+  const blocked = await postMcp(service, { jsonrpc: "2.0", id: "blocked-tools", method: "tools/list" }, { sessionId });
+  assert.equal(requireRecord((await readJson(blocked)).error, "json-rpc error").code, -32002);
+});
