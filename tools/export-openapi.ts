@@ -46,6 +46,11 @@ function requiredArg(args: string[], index: number, name: string): string {
 function normalizeBaseUrl(value: string): string {
   const url = new URL(value);
   if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("base URL must use http or https");
+  if (url.protocol === "http:" && !isLocalHttpHost(url.hostname)) throw new Error("public base URL must use https");
   if (url.username || url.password || url.search || url.hash) throw new Error("base URL contains unsupported URL parts");
   return url.href.replace(/\/$/, "");
+}
+
+function isLocalHttpHost(hostname: string): boolean {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1" || hostname === "[::1]";
 }

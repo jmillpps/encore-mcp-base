@@ -61,3 +61,12 @@ test("OpenAPI export rejects base URLs with unsupported URL parts", () => {
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /unsupported URL parts/);
 });
+
+test("OpenAPI export rejects public HTTP base URLs", () => {
+  const result = spawnSync(process.execPath, ["--experimental-strip-types", "tools/export-openapi.ts", "--base-url", "http://example.test"], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /public base URL must use https/);
+});

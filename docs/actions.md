@@ -10,6 +10,8 @@ Protected Actions endpoints require bearer access tokens issued by this service.
 
 The OpenAPI export must describe the protected action endpoints and OAuth authorization code flow.
 
+OpenAPI exports use HTTPS for public URLs. Localhost development exports may use HTTP.
+
 The OpenAPI export marks current read-only operations with `x-openai-isConsequential: false`.
 
 GPT Actions account linking uses the registered `gpt-actions` OAuth client.
