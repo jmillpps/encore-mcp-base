@@ -14,9 +14,18 @@ test("OpenAPI export contains Actions endpoints and OAuth authorization code met
   assert.equal(document["x-generated-from"], "encore-compiled-route-graph");
   const paths = document.paths as Record<string, Record<string, unknown>>;
   const health = requireRecord(requireRecord(paths["/health"], "/health").get, "health get");
+  assert.equal(health.operationId, "getServiceHealth");
+  assert.equal(health.summary, "Check service health");
+  assert.match(requireString(health.description, "health description"), /service is reachable/);
   assert.equal(health["x-openai-isConsequential"], false);
   const profile = requireRecord(requireRecord(paths["/actions/profile"], "/actions/profile").get, "profile get");
   const session = requireRecord(requireRecord(paths["/actions/session"], "/actions/session").get, "session get");
+  assert.equal(profile.operationId, "getAuthenticatedProfile");
+  assert.equal(profile.summary, "Get authenticated profile");
+  assert.match(requireString(profile.description, "profile description"), /OpenID Connect profile/);
+  assert.equal(session.operationId, "getAuthenticatedSession");
+  assert.equal(session.summary, "Get authenticated session");
+  assert.match(requireString(session.description, "session description"), /OAuth token session/);
   assert.equal(profile["x-openai-isConsequential"], false);
   assert.equal(session["x-openai-isConsequential"], false);
   assert.deepEqual(profile.security, [{ OAuth2: ["openid", "profile", "email"] }]);

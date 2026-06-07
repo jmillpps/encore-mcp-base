@@ -18,7 +18,9 @@ function actionPaths(): JsonObject {
   return {
     "/health": {
       get: {
-        operationId: "health",
+        operationId: "getServiceHealth",
+        summary: "Check service health",
+        description: "Return service health status so ChatGPT can verify the service is reachable before protected calls.",
         tags: ["Actions"],
         "x-openai-isConsequential": false,
         responses: { 200: jsonResponse("Service health.", "HealthResponse") },
@@ -26,7 +28,9 @@ function actionPaths(): JsonObject {
     },
     "/actions/profile": {
       get: {
-        operationId: "getActionProfile",
+        operationId: "getAuthenticatedProfile",
+        summary: "Get authenticated profile",
+        description: "Return the signed-in user's OpenID Connect profile fields for identity-aware GPT Actions.",
         tags: ["Actions"],
         security: [{ OAuth2: ["openid", "profile", "email"] }],
         "x-openai-isConsequential": false,
@@ -39,7 +43,9 @@ function actionPaths(): JsonObject {
     },
     "/actions/session": {
       get: {
-        operationId: "getActionSession",
+        operationId: "getAuthenticatedSession",
+        summary: "Get authenticated session",
+        description: "Return OAuth token session metadata, including subject, client ID, audience, and granted scopes.",
         tags: ["Actions"],
         security: [{ OAuth2: ["openid"] }],
         "x-openai-isConsequential": false,
