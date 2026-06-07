@@ -17,7 +17,7 @@ export interface ServiceConfig {
 
 export function readConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig {
   const production = env.NODE_ENV === "production";
-  const issuer = readHttpUrl(env, "PUBLIC_ISSUER_URL", "http://localhost:4000", production);
+  const issuer = readIssuerUrl(env, production);
   const mcpResource = readHttpUrl(env, "MCP_RESOURCE_URL", issuer, production);
   const actionsAudience = readHttpUrl(env, "ACTIONS_AUDIENCE", `${issuer}/actions`, production);
   const oauthStorePath = env.OAUTH_STORE_PATH ?? (production ? "" : resolve(process.cwd(), "var/oauth-store.json"));
@@ -50,6 +50,13 @@ function readHttpUrl(env: NodeJS.ProcessEnv, key: string, fallback: string, prod
   if (production && url.protocol !== "https:") throw new Error(`${key} must use https in production`);
   if (url.username || url.password || url.search || url.hash) throw new Error(`${key} contains unsupported URL parts`);
   return url.href.replace(/\/$/, "");
+}
+
+function readIssuerUrl(env: NodeJS.ProcessEnv, production: boolean): string {
+  const issuer = readHttpUrl(env, "PUBLIC_ISSUER_URL", "http://localhost:4000", production);
+  const url = new URL(issuer);
+  if (url.pathname !== "/") throw new Error("PUBLIC_ISSUER_URL must not include a path");
+  return issuer;
 }
 
 function readAllowedOrigins(env: NodeJS.ProcessEnv, production: boolean): string[] {

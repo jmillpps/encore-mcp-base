@@ -33,6 +33,10 @@ Production values use `https`.
 
 Service URLs omit credentials, query strings, and fragments.
 
+`PUBLIC_ISSUER_URL` uses the origin root.
+
+OAuth endpoints are mounted at root paths under the issuer origin.
+
 ## Client Registry
 
 Use `node --experimental-strip-types tools/generate-client-secret.ts` to create a GPT client secret and registry hash.
