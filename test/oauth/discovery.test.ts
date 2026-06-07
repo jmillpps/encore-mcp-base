@@ -15,14 +15,14 @@ test("OAuth discovery is processable by oauth4webapi", async (t) => {
   assert.equal(metadata.token_endpoint, `${service.origin}/oauth/token`);
   assert.equal(metadata.jwks_uri, `${service.origin}/oauth/jwks`);
   assert.deepEqual(metadata.grant_types_supported, ["authorization_code", "refresh_token"]);
-  assert.deepEqual(metadata.token_endpoint_auth_methods_supported, ["client_secret_post", "client_secret_basic", "none"]);
+  assert.deepEqual(metadata.token_endpoint_auth_methods_supported, ["client_secret_post", "client_secret_basic", "none", "private_key_jwt"]);
   assert.deepEqual(metadata.code_challenge_methods_supported, ["S256"]);
   assert.deepEqual(metadata.scopes_supported, ["openid", "profile", "email"]);
   assert.ok(metadata.claims_supported?.includes("nonce"));
   assert.ok(metadata.claims_supported?.includes("auth_time"));
   const authorizationServer = await readJson(await fetch(`${service.origin}/.well-known/oauth-authorization-server`));
   assert.equal(authorizationServer.client_id_metadata_document_supported, true);
-  assert.deepEqual(authorizationServer.token_endpoint_auth_methods_supported, ["client_secret_post", "client_secret_basic", "none"]);
+  assert.deepEqual(authorizationServer.token_endpoint_auth_methods_supported, ["client_secret_post", "client_secret_basic", "none", "private_key_jwt"]);
   const protectedResource = await readJson(await fetch(`${service.origin}/.well-known/oauth-protected-resource`));
   assert.equal(protectedResource.resource, service.mcpResource);
   assert.deepEqual(protectedResource.scopes_supported, ["openid", "profile", "email"]);

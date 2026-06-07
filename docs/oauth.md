@@ -40,13 +40,15 @@ Metadata documents must contain `client_id`, `client_name`, and `redirect_uris`.
 
 The metadata `client_id` value must match the document URL exactly.
 
-Metadata-document clients use `token_endpoint_auth_method` value `none`.
+Metadata-document clients may use `token_endpoint_auth_method` value `none` or `private_key_jwt`.
+
+Metadata-document clients that use `private_key_jwt` must publish a same-origin `jwks_uri`.
 
 Metadata-document clients always require PKCE.
 
 Metadata-document clients receive the default `openid`, `profile`, and `email` scopes and the MCP resource audience.
 
-Confidential token authentication is rejected for metadata-document clients.
+Metadata-document client assertions are verified before authorization codes are consumed.
 
 OIDC discovery metadata advertises the ID token and profile claims supported by the service.
 

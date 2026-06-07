@@ -1,6 +1,7 @@
 import type { ServiceConfig } from "../shared/config.ts";
 import { invalidMetadataClient } from "./client-metadata-error.ts";
-import type { OAuthClient } from "./client-types.ts";
+import { parseClientIdUrl } from "./client-metadata-network.ts";
+import type { OAuthClient, TokenEndpointAuthMethod } from "./client-types.ts";
 import { defaultScopes } from "./scopes.ts";
 
 export function parseMetadataClient(config: ServiceConfig, clientId: string, body: unknown): OAuthClient {
@@ -13,14 +14,15 @@ export function parseMetadataClient(config: ServiceConfig, clientId: string, bod
   validateOptionalString(record, "logo_uri");
   validateGrantTypes(record);
   validateResponseTypes(record);
-  validateTokenEndpointAuthMethod(record);
+  const tokenAuth = tokenEndpointAuth(config, clientId, record);
   return {
     clientId,
     displayName,
     redirectUris: rejectDuplicates(redirectUris),
     allowedScopes: [...defaultScopes],
     allowedResources: [config.mcpResource],
-    tokenEndpointAuthMethod: "none",
+    tokenEndpointAuthMethod: tokenAuth.method,
+    ...(tokenAuth.jwksUri ? { jwksUri: tokenAuth.jwksUri } : {}),
     pkcePolicy: "required",
     clientClass: "client-id-metadata-document",
   };
@@ -64,10 +66,19 @@ function validateResponseTypes(record: Record<string, unknown>): void {
   if (!responseTypes.includes("code")) throw invalidMetadataClient();
 }
 
-function validateTokenEndpointAuthMethod(record: Record<string, unknown>): void {
+function tokenEndpointAuth(config: ServiceConfig, clientId: string, record: Record<string, unknown>): { method: TokenEndpointAuthMethod; jwksUri?: string } {
   const value = record.token_endpoint_auth_method;
-  if (value === undefined || value === "none") return;
+  if (value === undefined || value === "none") return { method: "none" };
+  if (value === "private_key_jwt") return { method: "private_key_jwt", jwksUri: validatedJwksUri(config, clientId, record) };
   throw invalidMetadataClient();
+}
+
+function validatedJwksUri(config: ServiceConfig, clientId: string, record: Record<string, unknown>): string {
+  const jwksUri = requiredString(record, "jwks_uri");
+  const clientUrl = parseClientIdUrl(clientId, config.production);
+  const jwksUrl = parseClientIdUrl(jwksUri, config.production);
+  if (jwksUrl.origin !== clientUrl.origin) throw invalidMetadataClient();
+  return jwksUrl.href;
 }
 
 function optionalStringArray(value: unknown): string[] {

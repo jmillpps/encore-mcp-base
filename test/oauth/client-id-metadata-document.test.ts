@@ -1,16 +1,13 @@
 import assert from "node:assert/strict";
-import { once } from "node:events";
-import { createServer, type Server } from "node:http";
-import type { AddressInfo } from "node:net";
 import test from "node:test";
 import * as oauth from "oauth4webapi";
 import { resolveClientIdMetadataDocument } from "../../auth/client-id-metadata-document.ts";
 import { ServiceError } from "../../shared/errors.ts";
 import { readConfig } from "../../shared/config.ts";
 import { callTool, initializeMcp, bearer } from "../support/mcp.ts";
-import { discover } from "../support/oauth-client.ts";
-import { readJson, requireString } from "../support/http.ts";
+import { readJson } from "../support/http.ts";
 import { startService, type TestService } from "../support/service-process.ts";
+import { authorizeMetadataDocumentClient, fetchAuthorizationUrl, startMetadataServer } from "../support/client-metadata.ts";
 
 test("Client ID Metadata Document clients complete OAuth and call protected MCP tools", async (t) => {
   const service = await startService(t);
@@ -121,97 +118,6 @@ async function completeMetadataDocumentFlow(
   const idClaims = oauth.getValidatedIdTokenClaims(tokens);
   assert.ok(idClaims);
   return { tokens, idClaims };
-}
-
-async function authorizeMetadataDocumentClient(
-  service: TestService,
-  clientId: string,
-  redirectUri: string,
-): Promise<{ as: oauth.AuthorizationServer; callbackParameters: URLSearchParams; codeVerifier: string }> {
-  const as = await discover(service);
-  const codeVerifier = oauth.generateRandomCodeVerifier();
-  const codeChallenge = await oauth.calculatePKCECodeChallenge(codeVerifier);
-  const state = oauth.generateRandomState();
-  const response = await fetchAuthorizationUrl(service, clientId, redirectUri, state, codeChallenge);
-  assert.equal(response.status, 302);
-  const callback = new URL(requireString(response.headers.get("location"), "location"));
-  return {
-    as,
-    callbackParameters: oauth.validateAuthResponse(as, { client_id: clientId }, callback, state),
-    codeVerifier,
-  };
-}
-
-async function fetchAuthorizationUrl(
-  service: TestService,
-  clientId: string,
-  redirectUri: string,
-  state = oauth.generateRandomState(),
-  codeChallenge = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
-): Promise<Response> {
-  const as = await discover(service);
-  const url = new URL(requireString(as.authorization_endpoint, "authorization_endpoint"));
-  url.searchParams.set("response_type", "code");
-  url.searchParams.set("client_id", clientId);
-  url.searchParams.set("redirect_uri", redirectUri);
-  url.searchParams.set("scope", "openid profile email");
-  url.searchParams.set("state", state);
-  url.searchParams.set("resource", service.mcpResource);
-  url.searchParams.set("code_challenge", codeChallenge);
-  url.searchParams.set("code_challenge_method", "S256");
-  return fetch(url, { redirect: "manual" });
-}
-
-async function startMetadataServer(
-  t: TestContextLike,
-  resource: string,
-  options: { clientIdOverride?: string; tokenEndpointAuthMethod?: string } = {},
-): Promise<{ clientId: string; redirectUri: string }> {
-  let clientId = "";
-  let redirectUri = "";
-  const server = createServer((req, res) => {
-    if (req.url !== "/client.json") {
-      res.writeHead(404);
-      res.end();
-      return;
-    }
-    res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
-    res.end(JSON.stringify({
-      client_id: options.clientIdOverride ?? clientId,
-      client_name: "Metadata Test Client",
-      redirect_uris: [redirectUri],
-      grant_types: ["authorization_code"],
-      response_types: ["code"],
-      token_endpoint_auth_method: options.tokenEndpointAuthMethod ?? "none",
-      resource,
-    }));
-  });
-  await listen(server);
-  const address = server.address();
-  assertAddressInfo(address);
-  clientId = `http://127.0.0.1:${address.port}/client.json`;
-  redirectUri = `http://127.0.0.1:${address.port}/callback`;
-  t.after(async () => close(server));
-  return { clientId, redirectUri };
-}
-
-async function listen(server: Server): Promise<void> {
-  server.listen(0, "127.0.0.1");
-  await once(server, "listening");
-}
-
-async function close(server: Server): Promise<void> {
-  server.close();
-  await once(server, "close");
-}
-
-interface TestContextLike {
-  after(fn: () => Promise<void>): void;
-}
-
-function assertAddressInfo(value: string | AddressInfo | null): asserts value is AddressInfo {
-  assert.equal(typeof value, "object");
-  assert.ok(value);
 }
 
 function productionConfig() {
