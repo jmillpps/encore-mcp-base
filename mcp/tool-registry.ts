@@ -1,5 +1,6 @@
 import { enforceRateLimit } from "../auth/rate-limit.ts";
 import { ServiceError } from "../shared/errors.ts";
+import { isIconSizes, isIconSource, isOptionalIconMimeType } from "./media-validation.ts";
 import { authChallengeResult } from "./auth-challenge.ts";
 import { McpProtocolError } from "./protocol-error.ts";
 import { assertMatchesSchema, matchesSchema } from "./schema-validation.ts";
@@ -57,6 +58,7 @@ function assertToolDefinitions(): void {
 function assertToolDescriptor(tool: McpTool): void {
   if (typeof tool.title !== "string" || tool.title.length === 0) throw invalidToolDescriptor();
   if (typeof tool.description !== "string" || tool.description.length === 0) throw invalidToolDescriptor();
+  if (!isOptionalIcons(tool.icons)) throw invalidToolDescriptor();
   if (!isObjectSchema(tool.inputSchema)) throw invalidToolDescriptor();
   if (!isObjectSchema(tool.outputSchema)) throw invalidToolDescriptor();
   if (!isToolAnnotations(tool.annotations)) throw invalidToolDescriptor();
@@ -72,6 +74,7 @@ function toolDescriptor(tool: McpTool): Record<string, unknown> {
     name: tool.name,
     title: tool.title,
     description: tool.description,
+    ...(tool.icons ? { icons: tool.icons } : {}),
     inputSchema: tool.inputSchema,
     execution: toolExecution(),
     outputSchema: tool.outputSchema,
@@ -134,6 +137,25 @@ function isToolInvocationStatus(value: unknown): boolean {
   const record = value as Record<string, unknown>;
   if (Object.keys(record).some((key) => !["invoking", "invoked"].includes(key))) return false;
   return isStatusText(record.invoking) && isStatusText(record.invoked);
+}
+
+function isOptionalIcons(value: unknown): boolean {
+  return value === undefined || (Array.isArray(value) && value.every(isIcon));
+}
+
+function isIcon(value: unknown): boolean {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const record = value as Record<string, unknown>;
+  if (Object.keys(record).some((key) => !["src", "mimeType", "sizes", "theme"].includes(key))) return false;
+  return isIconSource(record.src) && isOptionalIconMimeType(record.mimeType) && isOptionalIconSizes(record.sizes) && isOptionalIconTheme(record.theme);
+}
+
+function isOptionalIconSizes(value: unknown): boolean {
+  return value === undefined || isIconSizes(value);
+}
+
+function isOptionalIconTheme(value: unknown): boolean {
+  return value === undefined || value === "light" || value === "dark";
 }
 
 function isStatusText(value: unknown): boolean {

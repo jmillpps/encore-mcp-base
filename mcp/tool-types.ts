@@ -4,6 +4,7 @@ export interface McpTool {
   name: string;
   title: string;
   description: string;
+  icons?: Record<string, unknown>[];
   inputSchema: Record<string, unknown>;
   outputSchema: Record<string, unknown>;
   annotations: Record<string, unknown>;

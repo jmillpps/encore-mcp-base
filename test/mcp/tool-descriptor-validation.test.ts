@@ -18,6 +18,7 @@ test("listTools rejects malformed tool descriptors before exposure", () => {
     { invocation: { invoking: "Running", invoked: "Done", extra: true } },
     { inputSchema: { type: "string" } },
     { outputSchema: { type: "array" } },
+    { icons: [{ src: "javascript:alert(1)" }] },
     { run: "not-a-function" },
   ].entries()) {
     const tool = { ...baseTool(index), ...patch } as unknown as McpTool;
@@ -30,6 +31,18 @@ test("listTools rejects malformed tool descriptors before exposure", () => {
     } finally {
       tools.splice(tools.indexOf(tool), 1);
     }
+  }
+});
+
+test("listTools exposes valid tool descriptor icons", () => {
+  const tool = { ...baseTool(1000), icons: [{ src: "data:image/png;base64,AQID", mimeType: "image/png", sizes: ["48x48"], theme: "light" }] } as McpTool;
+  tools.push(tool);
+  try {
+    const listed = listTools().tools as Record<string, unknown>[];
+    const descriptor = listed.find((candidate) => candidate.name === tool.name);
+    assert.deepEqual(descriptor?.icons, tool.icons);
+  } finally {
+    tools.splice(tools.indexOf(tool), 1);
   }
 });
 
