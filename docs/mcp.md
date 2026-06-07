@@ -22,6 +22,8 @@ The current tool list is returned as a single page. `tools/list` accepts request
 
 Tool argument validation failures return tool execution errors with `isError: true`. Malformed `tools/call` request shapes and unknown tools return JSON-RPC protocol errors.
 
+Task-augmented tool calls are rejected because the service does not advertise task support.
+
 Tool results with structured content include the same payload as serialized JSON text.
 
 ## Streamable HTTP

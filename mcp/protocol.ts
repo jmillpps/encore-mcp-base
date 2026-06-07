@@ -85,6 +85,10 @@ function validateListParams(params: unknown): void {
 function toolCallParams(params: unknown): { name: string; args: Record<string, unknown> } {
   if (typeof params !== "object" || params === null || Array.isArray(params)) throw new McpProtocolError(-32602, "tools/call params must be an object");
   const record = params as Record<string, unknown>;
+  if (record._meta !== undefined && (typeof record._meta !== "object" || record._meta === null || Array.isArray(record._meta))) {
+    throw new McpProtocolError(-32602, "tools/call _meta must be an object");
+  }
+  if (record.task !== undefined) throw new McpProtocolError(-32602, "task-augmented tool calls are unsupported");
   if (typeof record.name !== "string" || record.name.length === 0) throw new McpProtocolError(-32602, "tools/call name must be a string");
   const args = record.arguments;
   if (args === undefined) return { name: record.name, args: {} };

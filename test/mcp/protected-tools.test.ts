@@ -115,11 +115,27 @@ test("MCP tools return protocol errors for malformed tool requests and unknown t
   );
   assert.equal(malformed.status, 200);
   assert.equal(((await readJson(malformed)).error as Record<string, unknown>).code, -32602);
+  const malformedMeta = await postMcp(
+    service,
+    { jsonrpc: "2.0", id: "malformed-meta", method: "tools/call", params: { name: "health.check", _meta: [] } },
+    { sessionId },
+  );
+  assert.equal(malformedMeta.status, 200);
+  assert.equal(((await readJson(malformedMeta)).error as Record<string, unknown>).code, -32602);
   const unknown = await postMcp(service, { jsonrpc: "2.0", id: "unknown-tool", method: "tools/call", params: { name: "missing.tool" } }, { sessionId });
   assert.equal(unknown.status, 200);
   const error = (await readJson(unknown)).error as Record<string, unknown>;
   assert.equal(error.code, -32602);
   assert.match(requireString(error.message, "error message"), /Unknown tool/);
+  const taskAugmented = await postMcp(
+    service,
+    { jsonrpc: "2.0", id: "task-tool", method: "tools/call", params: { name: "health.check", task: { id: "task-1" } } },
+    { sessionId },
+  );
+  assert.equal(taskAugmented.status, 200);
+  const taskError = (await readJson(taskAugmented)).error as Record<string, unknown>;
+  assert.equal(taskError.code, -32602);
+  assert.match(requireString(taskError.message, "task error message"), /task/);
 });
 
 async function completeGptAppsMcpFlow(service: TestService): Promise<{ tokens: oauth.TokenEndpointResponse; idClaims: oauth.IDToken }> {
