@@ -20,6 +20,7 @@ export function isJsonRpcResponse(value: unknown): boolean {
   if (hasResult === hasError) throw new ServiceError("bad_request", "invalid json-rpc response", 400);
   if (hasResult && !Object.hasOwn(record, "id")) throw new ServiceError("bad_request", "invalid json-rpc response", 400);
   if (Object.hasOwn(record, "id")) validateJsonRpcId(record.id);
+  if (hasResult) validateJsonRpcResult(record.result);
   if (hasError) validateJsonRpcError(record.error);
   return true;
 }
@@ -61,6 +62,10 @@ function validateJsonRpcError(value: unknown): void {
   const record = asRecord(value, "error");
   if (!Number.isInteger(record.code)) throw new ServiceError("bad_request", "invalid json-rpc error", 400);
   if (typeof record.message !== "string") throw new ServiceError("bad_request", "invalid json-rpc error", 400);
+}
+
+function validateJsonRpcResult(value: unknown): void {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) throw new ServiceError("bad_request", "invalid json-rpc response", 400);
 }
 
 function jsonRpcParams(value: unknown): Record<string, unknown> {

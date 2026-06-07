@@ -114,6 +114,9 @@ test("SSE transport rejects invalid origins and malformed message requests", asy
   const badParams = await postMessage(service.origin, endpoint, { jsonrpc: "2.0", id: "bad-params", method: "ping", params: [] });
   assert.equal(badParams.status, 202);
   assert.equal(requireRecord(JSON.parse((await events.readEvent()).data).error, "json-rpc error").code, -32600);
+  const badResult = await postMessage(service.origin, endpoint, { jsonrpc: "2.0", id: "bad-result", result: [] });
+  assert.equal(badResult.status, 202);
+  assert.equal(requireRecord(JSON.parse((await events.readEvent()).data).error, "json-rpc error").code, -32600);
   const recovery = await postMessage(service.origin, endpoint, { jsonrpc: "2.0", id: "recovery", method: "ping" });
   assert.equal(recovery.status, 202);
   assert.deepEqual(JSON.parse((await events.readEvent()).data).result, {});

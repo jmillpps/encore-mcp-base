@@ -196,6 +196,18 @@ test("MCP Streamable HTTP rejects unsafe numeric JSON-RPC ids", async (t) => {
   }
 });
 
+test("MCP Streamable HTTP rejects non-object JSON-RPC response results", async (t) => {
+  const service = await startService(t);
+  const sessionId = await initializeMcp(service);
+  for (const result of [null, [], "ok"]) {
+    const response = await postMcp(service, { jsonrpc: "2.0", id: "server-request", result }, { sessionId });
+    assert.equal(response.status, 400);
+    const body = await readJson(response);
+    assert.equal((body.error as Record<string, unknown>).code, -32600);
+    assert.equal(Object.hasOwn(body, "id"), false);
+  }
+});
+
 test("MCP Streamable HTTP rejects non-object JSON-RPC params", async (t) => {
   const service = await startService(t);
   const sessionId = await initializeMcp(service);
