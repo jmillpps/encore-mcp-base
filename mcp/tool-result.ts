@@ -1,5 +1,10 @@
 import { ServiceError } from "../shared/errors.ts";
 
+const base64Pattern = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+const dataUrlPattern = /^data:image\/[A-Za-z0-9.+-]+(?:;[A-Za-z0-9!#$&^_.+-]+=[A-Za-z0-9!#$&^_.+-]+)*;base64,([A-Za-z0-9+/]*={0,2})$/i;
+const iconSizePattern = /^(?:any|[1-9][0-9]*x[1-9][0-9]*)$/;
+const blockedResourceUriProtocols = new Set(["data:", "javascript:", "vbscript:"]);
+
 export function assertCallToolResult(result: Record<string, unknown>): void {
   if (!Array.isArray(result.content) || !result.content.every(isContentBlock)) {
     throw new ServiceError("server_error", "invalid tool result", 500);
@@ -31,7 +36,7 @@ function isTextContent(value: Record<string, unknown>): boolean {
 function isBinaryContent(value: Record<string, unknown>): boolean {
   return (
     hasOnlyKeys(value, ["type", "data", "mimeType", "annotations", "_meta"]) &&
-    typeof value.data === "string" &&
+    isBase64(value.data) &&
     typeof value.mimeType === "string" &&
     optionalAnnotations(value.annotations) &&
     optionalRecord(value._meta)
@@ -43,7 +48,7 @@ function isResourceLink(value: Record<string, unknown>): boolean {
     hasOnlyKeys(value, ["type", "icons", "name", "title", "uri", "description", "mimeType", "annotations", "size", "_meta"]) &&
     optionalIcons(value.icons) &&
     typeof value.name === "string" &&
-    typeof value.uri === "string" &&
+    isUri(value.uri) &&
     optionalString(value.title) &&
     optionalString(value.description) &&
     optionalString(value.mimeType) &&
@@ -62,9 +67,10 @@ function isEmbeddedResource(value: Record<string, unknown>): boolean {
   if (hasText === hasBlob) return false;
   return (
     hasOnlyKeys(resource, hasText ? ["uri", "mimeType", "_meta", "text"] : ["uri", "mimeType", "_meta", "blob"]) &&
-    typeof resource.uri === "string" &&
+    isUri(resource.uri) &&
     optionalString(resource.mimeType) &&
     optionalRecord(resource._meta) &&
+    (hasText || isBase64(resource.blob)) &&
     optionalAnnotations(value.annotations) &&
     optionalRecord(value._meta)
   );
@@ -97,15 +103,41 @@ function optionalIcons(value: unknown): boolean {
 
 function isIcon(value: unknown): boolean {
   if (!isRecord(value) || !hasOnlyKeys(value, ["src", "mimeType", "sizes", "theme"])) return false;
-  return typeof value.src === "string" && optionalString(value.mimeType) && optionalStringArray(value.sizes) && optionalTheme(value.theme);
+  return isIconSrc(value.src) && optionalString(value.mimeType) && optionalIconSizes(value.sizes) && optionalTheme(value.theme);
 }
 
-function optionalStringArray(value: unknown): boolean {
-  return value === undefined || (Array.isArray(value) && value.every((entry) => typeof entry === "string"));
+function optionalIconSizes(value: unknown): boolean {
+  return value === undefined || (Array.isArray(value) && value.every((entry) => typeof entry === "string" && iconSizePattern.test(entry)));
 }
 
 function optionalTheme(value: unknown): boolean {
   return value === undefined || value === "light" || value === "dark";
+}
+
+function isBase64(value: unknown): value is string {
+  return typeof value === "string" && value.length % 4 === 0 && base64Pattern.test(value);
+}
+
+function isUri(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  try {
+    const url = new URL(value);
+    return !blockedResourceUriProtocols.has(url.protocol);
+  } catch {
+    return false;
+  }
+}
+
+function isIconSrc(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const dataUrl = dataUrlPattern.exec(value);
+  if (dataUrl) return isBase64(dataUrl[1] ?? "");
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 function hasOnlyKeys(record: Record<string, unknown>, allowed: readonly string[]): boolean {

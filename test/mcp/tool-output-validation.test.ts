@@ -40,7 +40,15 @@ test("callTool rejects malformed tool result envelopes", async () => {
     { content: [{ type: "text", text: "ok", secret: "leak" }], structuredContent: { status: "ok" } },
     { content: [{ type: "text", text: "ok", annotations: { audience: ["system"] } }], structuredContent: { status: "ok" } },
     { content: [{ type: "resource_link", name: "resource", uri: "https://example.test/resource", secret: "leak" }], structuredContent: { status: "ok" } },
+    { content: [{ type: "resource_link", name: "resource", uri: "not a uri" }], structuredContent: { status: "ok" } },
+    { content: [{ type: "resource_link", name: "resource", uri: "javascript:alert(1)" }], structuredContent: { status: "ok" } },
+    { content: [{ type: "resource_link", name: "resource", uri: "https://example.test/resource", icons: [{ src: "javascript:alert(1)" }] }], structuredContent: { status: "ok" } },
+    { content: [{ type: "resource_link", name: "resource", uri: "https://example.test/resource", icons: [{ src: "data:image/png;base64,AQID", sizes: ["48 by 48"] }] }], structuredContent: { status: "ok" } },
     { content: [{ type: "resource", resource: { uri: "https://example.test/resource", text: "ok", blob: "b2s=" } }], structuredContent: { status: "ok" } },
+    { content: [{ type: "resource", resource: { uri: "not a uri", text: "ok" } }], structuredContent: { status: "ok" } },
+    { content: [{ type: "resource", resource: { uri: "data:text/plain;base64,b2s=", text: "ok" } }], structuredContent: { status: "ok" } },
+    { content: [{ type: "resource", resource: { uri: "https://example.test/resource", blob: "not base64!" } }], structuredContent: { status: "ok" } },
+    { content: [{ type: "image", data: "not base64!", mimeType: "image/png" }], structuredContent: { status: "ok" } },
     { content: [{ type: "text", text: "ok" }], structuredContent: [], isError: false },
     { content: [{ type: "text", text: "ok" }], structuredContent: { status: "ok" }, isError: "false" },
     { content: [{ type: "text", text: "ok" }], structuredContent: { status: "ok" }, _meta: [] },
@@ -93,6 +101,41 @@ test("callTool accepts valid text content metadata", async () => {
   tools.push(tool);
   try {
     const result = await callTool({ config: testConfig(join(dir, "store.json")), rateLimitSubject: "content-validation" }, tool.name, {});
+    assert.equal((result.structuredContent as Record<string, unknown>).status, "ok");
+  } finally {
+    tools.splice(tools.indexOf(tool), 1);
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("callTool accepts valid binary and resource content", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "mcp-binary-content-validation-"));
+  const tool: McpTool = {
+    name: "test.valid-binary-resource-content",
+    title: "Valid Binary Resource Content",
+    description: "Return binary and resource content for validator testing.",
+    inputSchema: emptyInputSchema(),
+    outputSchema: objectSchema({ status: stringSchema() }),
+    annotations: { readOnlyHint: true },
+    requiredScopes: [],
+    run: async () => ({
+      content: [
+        { type: "image", data: "AQID", mimeType: "image/png" },
+        {
+          type: "resource_link",
+          name: "resource",
+          uri: "https://example.test/resource",
+          icons: [{ src: "data:image/png;base64,AQID", mimeType: "image/png", sizes: ["48x48", "any"], theme: "light" }],
+          size: 3,
+        },
+        { type: "resource", resource: { uri: "ui://widget/data", mimeType: "application/octet-stream", blob: "AQID" } },
+      ],
+      structuredContent: { status: "ok" },
+    }),
+  };
+  tools.push(tool);
+  try {
+    const result = await callTool({ config: testConfig(join(dir, "store.json")), rateLimitSubject: "binary-content-validation" }, tool.name, {});
     assert.equal((result.structuredContent as Record<string, unknown>).status, "ok");
   } finally {
     tools.splice(tools.indexOf(tool), 1);
