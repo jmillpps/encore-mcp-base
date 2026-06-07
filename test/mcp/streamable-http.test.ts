@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { expectOAuthError, readJson } from "../support/http.ts";
+import { expectOAuthError, readJson, requireString } from "../support/http.ts";
 import { deleteSession, initializeMcp, postMcp } from "../support/mcp.ts";
 import { startService } from "../support/service-process.ts";
 import { assertSseOpen, SseReader } from "../support/sse.ts";
@@ -16,6 +16,14 @@ test("MCP Streamable HTTP validates transport headers and session lifecycle", as
   assert.equal(initializedStore.includes("initialized_at"), false);
   assert.equal(initializedStore.includes("anonymous"), false);
   assert.equal(initializedStore.includes(sessionId), false);
+  const init = await postMcp(service, { jsonrpc: "2.0", id: "init-instructions", method: "initialize", params: initializeParams({ clientInfo: { name: "instruction-test", version: "0.1.0" } }) });
+  assert.equal(init.status, 200);
+  const initInstructions = requireString(((await readJson(init)).result as Record<string, unknown>).instructions, "instructions");
+  assert.ok(initInstructions.length > 0);
+  assert.ok(initInstructions.length <= 512);
+  assert.match(initInstructions, /health\.check/);
+  assert.match(initInstructions, /identity\.profile/);
+  assert.match(initInstructions, /auth\.session/);
   const ping = await postMcp(service, { jsonrpc: "2.0", id: "ping", method: "ping" }, { sessionId });
   assert.equal(ping.status, 200);
   assert.deepEqual((await readJson(ping)).result, {});

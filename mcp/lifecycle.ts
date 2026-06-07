@@ -2,6 +2,7 @@ import { asRecord, requiredString } from "../shared/json.ts";
 import { badRequest } from "../shared/errors.ts";
 import { serviceName, serviceTitle, serviceVersion } from "../shared/service-info.ts";
 import { supportedProtocolVersion } from "./protocol-version.ts";
+import { serverInstructions } from "./server-instructions.ts";
 
 const implementationNamePattern = /^[A-Za-z0-9._:/ -]{1,128}$/;
 const implementationVersionPattern = /^[\x20-\x7E]{1,128}$/;
@@ -17,6 +18,7 @@ export function initializeResult(params: unknown): Record<string, unknown> {
       title: serviceTitle,
       version: serviceVersion,
     },
+    instructions: serverInstructions,
   };
 }
 

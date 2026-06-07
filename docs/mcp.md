@@ -50,6 +50,8 @@ The initialize response includes `MCP-Session-Id`. Clients send that session ID 
 
 Initialize requests must include `protocolVersion`, `capabilities`, and `clientInfo`.
 
+Initialize responses include server instructions for ChatGPT tool selection and OAuth scope expectations.
+
 Clients send `notifications/initialized` before normal operation.
 
 The service negotiates unsupported declared protocol versions to `2025-11-25`.
