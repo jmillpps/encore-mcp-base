@@ -11,6 +11,7 @@ export interface McpContext {
   config: ServiceConfig;
   authorization?: string;
   rateLimitSubject?: string;
+  sessionInitialized?: boolean;
 }
 
 export interface McpResult {
@@ -29,6 +30,9 @@ export async function handleMcpJson(context: McpContext, input: unknown): Promis
   } catch (error) {
     if (error instanceof ServiceError) return { status: error.status, body: jsonRpcError(undefined, -32600, error.message) };
     throw error;
+  }
+  if (context.sessionInitialized === false && !["initialize", "ping", "notifications/initialized"].includes(request.method)) {
+    return { status: request.id === undefined ? 400 : 200, body: jsonRpcError(request.id, -32002, "session is not initialized") };
   }
   if (request.id === undefined) return handleNotification(request);
   try {

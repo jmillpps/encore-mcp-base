@@ -135,13 +135,15 @@ export class DiskOAuthStore {
     });
   }
 
-  async touchMcpSession(sessionIdHash: string, protocolVersion: string): Promise<void> {
-    await this.file.update((state) => {
+  async touchMcpSession(sessionIdHash: string, protocolVersion: string, markInitialized = false): Promise<{ initialized: boolean }> {
+    return this.file.update((state) => {
       const record = state.mcpSessions[sessionIdHash];
       const now = nowSeconds();
       if (!record || record.terminatedAt || isExpired(record.expiresAt, now)) throw new ServiceError("not_found", "mcp session not found", 404);
       if (record.protocolVersion !== protocolVersion) throw new ServiceError("bad_request", "unsupported protocol version", 400);
       record.lastSeenAt = now;
+      if (markInitialized && !record.initializedAt) record.initializedAt = now;
+      return { initialized: record.initializedAt !== undefined };
     });
   }
 

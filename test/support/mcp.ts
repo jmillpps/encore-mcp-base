@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import type { TestService } from "./service-process.ts";
 import { readJson, requireString } from "./http.ts";
 
-export async function initializeMcp(service: TestService): Promise<string> {
+export async function initializeMcp(service: TestService, options: { sendInitialized?: boolean } = {}): Promise<string> {
   const response = await postMcp(service, {
     jsonrpc: "2.0",
     id: "init",
@@ -14,6 +14,11 @@ export async function initializeMcp(service: TestService): Promise<string> {
   const body = await readJson(response);
   const result = body.result as Record<string, unknown>;
   assert.equal(result.protocolVersion, "2025-11-25");
+  if (options.sendInitialized !== false) {
+    const initialized = await postMcp(service, { jsonrpc: "2.0", method: "notifications/initialized" }, { sessionId });
+    assert.equal(initialized.status, 202);
+    assert.equal(await initialized.text(), "");
+  }
   return sessionId;
 }
 

@@ -90,6 +90,7 @@ test("OAuth store rejects malformed JSON and unexpected record shapes", async (t
   await writeMalformedAndReject(path, { refreshTokens: { [validHash]: refreshTokenDiskRecord({ last_used_at: 0, created_at: 1 }) } });
   await writeMalformedAndReject(path, { mcpSessions: { [validHash]: mcpSessionDiskRecord({ last_seen_at: 0, created_at: 1 }) } });
   await writeMalformedAndReject(path, { mcpSessions: { [validHash]: mcpSessionDiskRecord({ expires_at: 0, created_at: 1 }) } });
+  await writeMalformedAndReject(path, { mcpSessions: { [validHash]: mcpSessionDiskRecord({ initialized_at: 0, created_at: 1 }) } });
   await writeMalformedAndReject(path, { mcpSessions: { [validHash]: mcpSessionDiskRecord({ terminated_at: 0, created_at: 1 }) } });
 });
 
@@ -146,6 +147,29 @@ test("OAuth store rejects authorization, refresh, and MCP records at the expiry 
   });
   await assertServiceError("not_found", () => store.touchMcpSession(validHash, "2025-11-25"));
   await assertServiceError("not_found", () => store.terminateMcpSession(validHash));
+});
+
+test("OAuth store persists MCP session initialization state", async (t) => {
+  const now = 1_800_000_100;
+  freezeUnixSecond(t, now);
+  const dir = await mkdtemp(join(tmpdir(), "mcp-oauth-store-session-init-"));
+  t.after(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+  const path = join(dir, "store.json");
+  const store = new DiskOAuthStore(path);
+  await store.saveMcpSession({
+    sessionIdHash: validHash,
+    clientId: "local-test",
+    protocolVersion: "2025-11-25",
+    createdAt: now,
+    lastSeenAt: now,
+    expiresAt: now + 300,
+  });
+  assert.deepEqual(await store.touchMcpSession(validHash, "2025-11-25"), { initialized: false });
+  assert.deepEqual(await store.touchMcpSession(validHash, "2025-11-25", true), { initialized: true });
+  const persisted = await readFile(path, "utf8");
+  assert.match(persisted, /"initialized_at"/);
 });
 
 test("OAuth store serializes updates across store instances for the same path", async (t) => {

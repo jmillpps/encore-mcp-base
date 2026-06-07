@@ -8,22 +8,28 @@ import { assertSseOpen, SseReader } from "../support/sse.ts";
 
 test("MCP Streamable HTTP validates transport headers and session lifecycle", async (t) => {
   const service = await startService(t);
-  const sessionId = await initializeMcp(service);
+  const sessionId = await initializeMcp(service, { sendInitialized: false });
   const initializedStore = await readFile(service.storePath, "utf8");
   assert.match(initializedStore, /"mcpSessions"/);
   assert.match(initializedStore, /"session_id_hash"/);
   assert.match(initializedStore, /"client_id": "test"/);
+  assert.equal(initializedStore.includes("initialized_at"), false);
   assert.equal(initializedStore.includes("anonymous"), false);
   assert.equal(initializedStore.includes(sessionId), false);
   const ping = await postMcp(service, { jsonrpc: "2.0", id: "ping", method: "ping" }, { sessionId });
   assert.equal(ping.status, 200);
   assert.deepEqual((await readJson(ping)).result, {});
+  const blockedBeforeInitialized = await postMcp(service, { jsonrpc: "2.0", id: "pre-init-tools", method: "tools/list" }, { sessionId });
+  assert.equal(blockedBeforeInitialized.status, 200);
+  const blockedBeforeInitializedError = (await readJson(blockedBeforeInitialized)).error as Record<string, unknown>;
+  assert.equal(blockedBeforeInitializedError.code, -32002);
   const clientResponse = await postMcp(service, { jsonrpc: "2.0", id: "server-request", result: { accepted: true } }, { sessionId });
   assert.equal(clientResponse.status, 202);
   assert.equal(await clientResponse.text(), "");
   const initializedNotification = await postMcp(service, { jsonrpc: "2.0", method: "notifications/initialized" }, { sessionId });
   assert.equal(initializedNotification.status, 202);
   assert.equal(await initializedNotification.text(), "");
+  assert.match(await readFile(service.storePath, "utf8"), /"initialized_at"/);
   const oldVersionInitialize = await postMcp(
     service,
     { jsonrpc: "2.0", id: "old-version-init", method: "initialize", params: initializeParams({ protocolVersion: "2025-06-18", clientInfo: { name: "old-test", version: "0.1.0" } }) },

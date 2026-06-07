@@ -40,6 +40,8 @@ The initialize response includes `MCP-Session-Id`. Clients send that session ID 
 
 Initialize requests must include `protocolVersion`, `capabilities`, and `clientInfo`.
 
+Clients send `notifications/initialized` before normal operation.
+
 The service negotiates unsupported declared protocol versions to `2025-11-25`.
 
 Requests return JSON responses. Notifications and client responses return `202 Accepted` with an empty body.
