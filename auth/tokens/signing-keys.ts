@@ -31,6 +31,7 @@ function getKeySet(config: ServiceConfig, env: NodeJS.ProcessEnv): KeySet {
     const source = `pem:${hashSource(env.OAUTH_PRIVATE_KEY_PEM)}:${env.OAUTH_KEY_ID ?? ""}:${hashSource(env.OAUTH_PREVIOUS_PUBLIC_KEYS_JSON ?? "")}`;
     if (cached?.source === source) return cached.keySet;
     const privateKey = createPrivateKey(env.OAUTH_PRIVATE_KEY_PEM);
+    assertRsaKey(privateKey, "OAUTH_PRIVATE_KEY_PEM");
     const publicKey = createPublicKey(privateKey);
     const active = { kid: activeKeyId(config, env, publicKey), privateKey, publicKey };
     const verificationKeys = [active, ...previousKeys(env.OAUTH_PREVIOUS_PUBLIC_KEYS_JSON)];
@@ -65,7 +66,9 @@ function previousKey(value: unknown): VerificationKey {
   const record = value as Record<string, unknown>;
   if (typeof record.kid !== "string" || record.kid.trim() === "") throw new Error("previous signing key kid is required");
   if (typeof record.publicKeyPem !== "string" || record.publicKeyPem.trim() === "") throw new Error("previous signing key publicKeyPem is required");
-  return { kid: validatedKeyId(record.kid, "previous signing key kid"), publicKey: createPublicKey(record.publicKeyPem) };
+  const publicKey = createPublicKey(record.publicKeyPem);
+  assertRsaKey(publicKey, "previous signing key publicKeyPem");
+  return { kid: validatedKeyId(record.kid, "previous signing key kid"), publicKey };
 }
 
 function rejectDuplicateKids(keys: VerificationKey[]): void {
@@ -92,4 +95,10 @@ function validatedKeyId(value: string, name: string): string {
 function keyId(publicKey: KeyObject): string {
   const der = publicKey.export({ type: "spki", format: "der" });
   return createHash("sha256").update(der).digest("base64url").slice(0, 24);
+}
+
+function assertRsaKey(key: KeyObject, name: string): void {
+  if (key.asymmetricKeyType !== "rsa") throw new Error(`${name} must be RSA`);
+  const modulusLength = key.asymmetricKeyDetails?.modulusLength;
+  if (typeof modulusLength !== "number" || modulusLength < 2048) throw new Error(`${name} must be at least 2048-bit RSA`);
 }

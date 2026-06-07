@@ -78,6 +78,28 @@ test("production signing key ids reject unsafe characters", () => {
   );
 });
 
+test("production signing keys reject weak RSA material", () => {
+  const weak = keyPair(1024);
+  const strong = keyPair();
+  assert.throws(
+    () =>
+      getSigningKey(productionConfig(), {
+        OAUTH_PRIVATE_KEY_PEM: privateKeyPem(weak),
+        OAUTH_KEY_ID: "weak-active-key",
+      }),
+    /2048-bit RSA/,
+  );
+  assert.throws(
+    () =>
+      getSigningKey(productionConfig(), {
+        OAUTH_PRIVATE_KEY_PEM: privateKeyPem(strong),
+        OAUTH_KEY_ID: "active-key",
+        OAUTH_PREVIOUS_PUBLIC_KEYS_JSON: JSON.stringify([{ kid: "weak-previous-key", publicKeyPem: publicKeyPem(weak) }]),
+      }),
+    /2048-bit RSA/,
+  );
+});
+
 function productionConfig() {
   return readConfig({
     NODE_ENV: "production",
@@ -106,8 +128,8 @@ interface TestKeyPair {
   publicKey: KeyObject;
 }
 
-function keyPair(): TestKeyPair {
-  return generateKeyPairSync("rsa", { modulusLength: 2048 }) as TestKeyPair;
+function keyPair(modulusLength = 2048): TestKeyPair {
+  return generateKeyPairSync("rsa", { modulusLength }) as TestKeyPair;
 }
 
 function privateKeyPem(pair = keyPair()): string {
