@@ -12,6 +12,11 @@ export function verifyBearer(config: ServiceConfig, header: string | undefined, 
   return verifyAccessToken(config, readBearer(header), audience, scopes);
 }
 
+export function verifyPresentedBearer(config: ServiceConfig, header: string | undefined, audience: string): void {
+  if (header === undefined || header === "") return;
+  verifyAccessToken(config, readBearer(header), audience);
+}
+
 export function verifyBearerAnyAudience(config: ServiceConfig, header: string | undefined, audiences: readonly string[], scopes: readonly string[] = []): AccessTokenClaims {
   const token = readBearer(header);
   let scopeError: ServiceError | undefined;

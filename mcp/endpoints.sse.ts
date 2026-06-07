@@ -1,30 +1,36 @@
 import { api } from "encore.dev/api";
+import { verifyPresentedBearer } from "../auth/bearer.ts";
 import { readConfig } from "../shared/config.ts";
-import { requestSubject, writeError, writeJson } from "../shared/http.ts";
+import { requestSubject, writeJson } from "../shared/http.ts";
 import { readLegacySseSessionId, runLegacySseSession, sendLegacySseMessage } from "./legacy-sse-session.ts";
 import { handleMcpJson } from "./protocol.ts";
 import { isMcpBodyResult, readMcpJsonBody } from "./request-body.ts";
 import { validateNoAccessTokenQuery, validateOrigin, validatePostContentType, validateSseAccept, writeCors } from "./transport-headers.ts";
+import { writeMcpTransportError } from "./transport-error.ts";
 
 export const sse = api.raw({ expose: true, method: "GET", path: "/sse" }, async (req, res) => {
+  let config: ReturnType<typeof readConfig> | undefined;
   try {
-    const config = readConfig();
+    config = readConfig();
     validateOrigin(config, req);
     validateNoAccessTokenQuery(req);
+    verifyPresentedBearer(config, req.headers.authorization, config.mcpResource);
     validateSseAccept(req);
     writeCors(config, req, res);
     await runLegacySseSession(res, config.mcpSseMaxConnections);
   } catch (error) {
     if (res.headersSent) res.destroy();
-    else writeError(res, error, { endpoint: "mcp.sse", method: "GET", subject: requestSubject(req) });
+    else writeMcpTransportError(config, res, error, { endpoint: "mcp.sse", method: "GET", subject: requestSubject(req) });
   }
 });
 
 export const messages = api.raw({ expose: true, method: "POST", path: "/messages" }, async (req, res) => {
+  let config: ReturnType<typeof readConfig> | undefined;
   try {
-    const config = readConfig();
+    config = readConfig();
     validateOrigin(config, req);
     validateNoAccessTokenQuery(req);
+    verifyPresentedBearer(config, req.headers.authorization, config.mcpResource);
     validatePostContentType(req);
     writeCors(config, req, res);
     const sessionId = readLegacySseSessionId(req.url);
@@ -39,6 +45,6 @@ export const messages = api.raw({ expose: true, method: "POST", path: "/messages
     res.writeHead(202);
     res.end();
   } catch (error) {
-    writeError(res, error, { endpoint: "mcp.messages", method: "POST", subject: requestSubject(req) });
+    writeMcpTransportError(config, res, error, { endpoint: "mcp.messages", method: "POST", subject: requestSubject(req) });
   }
 });

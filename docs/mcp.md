@@ -68,6 +68,8 @@ JSON request bodies use UTF-8.
 
 Bearer tokens use the `Authorization` header. MCP routes reject `access_token` URI query parameters.
 
+MCP routes validate every presented bearer token for the MCP resource audience before request handling.
+
 Client JSON objects must pass JSON-RPC message validation to reach transport response handling.
 
 The initialize response includes `MCP-Session-Id`. Clients send that session ID with `MCP-Protocol-Version` on later `/mcp` requests.

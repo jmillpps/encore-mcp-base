@@ -3,7 +3,7 @@ import test from "node:test";
 import * as oauth from "oauth4webapi";
 import { completeAuthorizationCodeFlow, discover } from "../support/oauth-client.ts";
 import { callTool, initializeMcp, postMcp, bearer } from "../support/mcp.ts";
-import { assertExposesHeader, readJson, requireRecord, requireString } from "../support/http.ts";
+import { assertExposesHeader, expectOAuthError, readJson, requireRecord, requireString } from "../support/http.ts";
 import { startService, type TestService } from "../support/service-process.ts";
 
 const gptAppsMcpClient: oauth.Client = { client_id: "gpt-apps-mcp" };
@@ -69,8 +69,13 @@ test("MCP protected tools enforce audience and scopes", async (t) => {
   const profile = await callTool(service, sessionId, "identity.profile", bearer(validFlow.tokens.access_token));
   assert.equal((profile.structuredContent as Record<string, unknown>).email, "jmiller@inifnitedevlab.com");
   const actionsFlow = await completeAuthorizationCodeFlow(service, service.actionsAudience);
-  const wrongAudience = await callTool(service, sessionId, "identity.profile", bearer(actionsFlow.tokens.access_token));
-  assert.equal(wrongAudience.isError, true);
+  const wrongAudience = await postMcp(
+    service,
+    { jsonrpc: "2.0", id: "identity.profile", method: "tools/call", params: { name: "identity.profile", arguments: {} } },
+    { sessionId, authorization: bearer(actionsFlow.tokens.access_token) },
+  );
+  await expectOAuthError(wrongAudience, 401, "unauthorized");
+  assert.match(wrongAudience.headers.get("www-authenticate") ?? "", resourceMetadataPattern(service));
   const narrowFlow = await completeAuthorizationCodeFlow(service, service.mcpResource, "openid");
   const missingScopeResponse = await postMcp(
     service,

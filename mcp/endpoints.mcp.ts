@@ -1,4 +1,5 @@
 import { api } from "encore.dev/api";
+import { verifyPresentedBearer } from "../auth/bearer.ts";
 import { readConfig } from "../shared/config.ts";
 import { ServiceError } from "../shared/errors.ts";
 import { requestSubject, writeError, writeJson, writeNoContent } from "../shared/http.ts";
@@ -9,6 +10,7 @@ import { handleMcpJson } from "./protocol.ts";
 import { negotiateProtocolVersion } from "./protocol-version.ts";
 import { isMcpBodyResult, readMcpJsonBody } from "./request-body.ts";
 import { readMcpProtocolVersion, readMcpSessionId, validateNoAccessTokenQuery, validateNoMcpSessionId, validateOrigin, validatePostAccept, validatePostContentType, writeCors } from "./transport-headers.ts";
+import { writeMcpTransportError } from "./transport-error.ts";
 
 export const mcpOptions = api.raw({ expose: true, method: "OPTIONS", path: "/mcp" }, async (req, res) => {
   try {
@@ -23,10 +25,12 @@ export const mcpOptions = api.raw({ expose: true, method: "OPTIONS", path: "/mcp
 });
 
 export const mcpPost = api.raw({ expose: true, method: "POST", path: "/mcp" }, async (req, res) => {
+  let config: ReturnType<typeof readConfig> | undefined;
   try {
-    const config = readConfig();
+    config = readConfig();
     validateOrigin(config, req);
     validateNoAccessTokenQuery(req);
+    verifyPresentedBearer(config, req.headers.authorization, config.mcpResource);
     validatePostAccept(req);
     validatePostContentType(req);
     writeCors(config, req, res);
@@ -45,15 +49,17 @@ export const mcpPost = api.raw({ expose: true, method: "POST", path: "/mcp" }, a
     if (!result.body) writeNoContent(res, result.status);
     else writeJson(res, result.status, result.body);
   } catch (error) {
-    writeError(res, error, { endpoint: "mcp.post", method: "POST", subject: requestSubject(req) });
+    writeMcpTransportError(config, res, error, { endpoint: "mcp.post", method: "POST", subject: requestSubject(req) });
   }
 });
 
 export const mcpGet = api.raw({ expose: true, method: "GET", path: "/mcp" }, async (req, res) => {
+  let config: ReturnType<typeof readConfig> | undefined;
   try {
-    const config = readConfig();
+    config = readConfig();
     validateOrigin(config, req);
     validateNoAccessTokenQuery(req);
+    verifyPresentedBearer(config, req.headers.authorization, config.mcpResource);
     const accept = String(req.headers.accept ?? "");
     if (!acceptsMediaType(accept, "text/event-stream")) throw new ServiceError("bad_request", "invalid accept header", 400);
     const protocolVersion = negotiateProtocolVersion(readMcpProtocolVersion(req, true));
@@ -62,21 +68,23 @@ export const mcpGet = api.raw({ expose: true, method: "GET", path: "/mcp" }, asy
     await runStreamableGetStream(res, config.mcpSseMaxConnections);
   } catch (error) {
     if (res.headersSent) res.destroy();
-    else writeError(res, error, { endpoint: "mcp.get", method: "GET", subject: requestSubject(req) });
+    else writeMcpTransportError(config, res, error, { endpoint: "mcp.get", method: "GET", subject: requestSubject(req) });
   }
 });
 
 export const mcpDelete = api.raw({ expose: true, method: "DELETE", path: "/mcp" }, async (req, res) => {
+  let config: ReturnType<typeof readConfig> | undefined;
   try {
-    const config = readConfig();
+    config = readConfig();
     validateOrigin(config, req);
     validateNoAccessTokenQuery(req);
+    verifyPresentedBearer(config, req.headers.authorization, config.mcpResource);
     const protocolVersion = negotiateProtocolVersion(readMcpProtocolVersion(req, true));
     await touchMcpSession(config, readMcpSessionId(req), protocolVersion);
     await terminateMcpSession(config, readMcpSessionId(req));
     writeCors(config, req, res);
     writeNoContent(res);
   } catch (error) {
-    writeError(res, error, { endpoint: "mcp.delete", method: "DELETE", subject: requestSubject(req) });
+    writeMcpTransportError(config, res, error, { endpoint: "mcp.delete", method: "DELETE", subject: requestSubject(req) });
   }
 });
