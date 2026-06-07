@@ -1,5 +1,6 @@
 import { badRequest } from "../shared/errors.ts";
 import { asRecord, optionalString, requiredString } from "../shared/json.ts";
+import { isIconSizes, isIconSource, isOptionalIconMimeType } from "./media-validation.ts";
 
 const implementationNamePattern = /^[A-Za-z0-9._:/ -]{1,128}$/;
 const implementationVersionPattern = /^[\x20-\x7E]{1,128}$/;
@@ -43,15 +44,15 @@ function validateIcon(value: unknown): void {
   const record = asRecord(value, "icon");
   assertKeys(record, ["src", "mimeType", "sizes", "theme"], "icon");
   const src = requiredString(record, "src");
-  validateUrl(src, "src", ["http:", "https:", "data:"]);
-  optionalString(record, "mimeType");
+  if (!isIconSource(src)) throw badRequest("src must be a valid icon URL");
+  if (!isOptionalIconMimeType(record.mimeType)) throw badRequest("mimeType must be an image MIME type");
   validateSizes(record.sizes);
   validateTheme(record.theme);
 }
 
 function validateSizes(value: unknown): void {
   if (value === undefined) return;
-  if (!Array.isArray(value) || value.some((size) => typeof size !== "string")) throw badRequest("sizes must be a string array");
+  if (!isIconSizes(value)) throw badRequest("sizes must be valid icon sizes");
 }
 
 function validateTheme(value: unknown): void {

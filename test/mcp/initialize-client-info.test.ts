@@ -12,8 +12,13 @@ test("MCP initialize rejects malformed optional client implementation metadata",
     { name: "test", version: "0.1.0", websiteUrl: 1 },
     { name: "test", version: "0.1.0", icons: "invalid" },
     { name: "test", version: "0.1.0", icons: [{ src: 1 }] },
+    { name: "test", version: "0.1.0", icons: [{ src: "data:image/png,not-base64" }] },
+    { name: "test", version: "0.1.0", icons: [{ src: "data:image/png;base64,not-base64!" }] },
+    { name: "test", version: "0.1.0", icons: [{ src: "data:text/html;base64,PGgxPkJhZDwvaDE+" }] },
     { name: "test", version: "0.1.0", icons: [{ src: "https://example.test/icon.png", mimeType: 1 }] },
+    { name: "test", version: "0.1.0", icons: [{ src: "https://example.test/icon.png", mimeType: "text/html" }] },
     { name: "test", version: "0.1.0", icons: [{ src: "https://example.test/icon.png", sizes: [1] }] },
+    { name: "test", version: "0.1.0", icons: [{ src: "https://example.test/icon.png", sizes: ["48 by 48"] }] },
     { name: "test", version: "0.1.0", icons: [{ src: "https://example.test/icon.png", theme: "solarized" }] },
   ]) {
     const response = await postMcp(service, {
@@ -43,7 +48,10 @@ test("MCP initialize accepts valid optional client implementation metadata", asy
         version: "0.1.0",
         description: "Test MCP client.",
         websiteUrl: "https://example.test",
-        icons: [{ src: "https://example.test/icon.png", mimeType: "image/png", sizes: ["48x48"], theme: "light" }],
+        icons: [
+          { src: "https://example.test/icon.png", mimeType: "image/png", sizes: ["48x48"], theme: "light" },
+          { src: "data:image/png;base64,AQID", mimeType: "image/png", sizes: ["any"], theme: "dark" },
+        ],
       },
     },
   });

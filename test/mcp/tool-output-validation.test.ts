@@ -49,6 +49,8 @@ test("callTool rejects malformed tool result envelopes", async () => {
     { content: [{ type: "resource", resource: { uri: "data:text/plain;base64,b2s=", text: "ok" } }], structuredContent: { status: "ok" } },
     { content: [{ type: "resource", resource: { uri: "https://example.test/resource", blob: "not base64!" } }], structuredContent: { status: "ok" } },
     { content: [{ type: "image", data: "not base64!", mimeType: "image/png" }], structuredContent: { status: "ok" } },
+    { content: [{ type: "image", data: "AQID", mimeType: "text/html" }], structuredContent: { status: "ok" } },
+    { content: [{ type: "audio", data: "AQID", mimeType: "image/png" }], structuredContent: { status: "ok" } },
     { content: [{ type: "text", text: "ok" }], structuredContent: [], isError: false },
     { content: [{ type: "text", text: "ok" }], structuredContent: { status: "ok" }, isError: "false" },
     { content: [{ type: "text", text: "ok" }], structuredContent: { status: "ok" }, _meta: [] },
@@ -121,6 +123,7 @@ test("callTool accepts valid binary and resource content", async () => {
     run: async () => ({
       content: [
         { type: "image", data: "AQID", mimeType: "image/png" },
+        { type: "audio", data: "AQID", mimeType: "audio/mpeg" },
         {
           type: "resource_link",
           name: "resource",
