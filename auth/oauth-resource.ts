@@ -27,8 +27,23 @@ function defaultActionsResource(client: OAuthClient): string | undefined {
 }
 
 function resolveAllowedResource(client: OAuthClient, resource: string): string {
-  if (!client.allowedResources.includes(resource)) throw invalidTarget("resource is not allowed");
-  return resource;
+  const canonical = canonicalResource(resource);
+  const allowed = client.allowedResources.find((allowedResource) => canonicalResource(allowedResource) === canonical);
+  if (!allowed) throw invalidTarget("resource is not allowed");
+  return allowed;
+}
+
+function canonicalResource(resource: string): string {
+  let url: URL;
+  try {
+    url = new URL(resource);
+  } catch {
+    throw invalidTarget("resource is invalid");
+  }
+  if (url.protocol !== "https:" && url.protocol !== "http:") throw invalidTarget("resource is invalid");
+  if (url.username || url.password || url.hash) throw invalidTarget("resource is invalid");
+  if (resource.includes("*")) throw invalidTarget("resource is invalid");
+  return url.href.replace(/\/$/, "");
 }
 
 function invalidTarget(message: string): ServiceError {

@@ -26,6 +26,8 @@ The GPT Actions client must have exactly one allowed audience when `resource` is
 
 Issued access tokens use the resolved `resource` value as the token audience.
 
+Resource matching accepts uppercase URI scheme and host values and stores the configured audience form.
+
 Resource indicator failures return OAuth error code `invalid_target`.
 
 Resource error descriptions stay generic and do not expose configured audience values.

@@ -40,6 +40,12 @@ test("authorization code flow preserves requested scope order while deduplicatin
   assert.equal(flow.tokens.scope, "profile openid email");
 });
 
+test("authorization code flow accepts uppercase resource scheme", async (t) => {
+  const service = await startService(t);
+  const flow = await completeAuthorizationCodeFlow(service, uppercaseScheme(service.actionsAudience));
+  assert.equal(readJwtPayload(requireString(flow.tokens.access_token, "access_token")).aud, service.actionsAudience);
+});
+
 test("authorization code cannot be reused after token exchange", async (t) => {
   const service = await startService(t);
   const flow = await completeAuthorizationCodeFlow(service);
@@ -164,6 +170,16 @@ test("expired authorization code cannot be exchanged", async (t) => {
 function numberClaim(value: unknown, name: string): number {
   if (typeof value !== "number") assert.fail(`${name} must be a number`);
   return value;
+}
+
+function uppercaseScheme(resource: string): string {
+  const url = new URL(resource);
+  return `${url.protocol.toUpperCase()}//${url.host}${url.pathname}${url.search}`;
+}
+
+function readJwtPayload(token: string): Record<string, unknown> {
+  const [, encodedPayload] = token.split(".");
+  return JSON.parse(Buffer.from(requireString(encodedPayload, "jwt payload"), "base64url").toString("utf8")) as Record<string, unknown>;
 }
 
 async function authorizationUrl(as: oauth.AuthorizationServer, resource: string, state: string): Promise<URL> {
