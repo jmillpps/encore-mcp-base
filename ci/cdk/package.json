@@ -1,0 +1,25 @@
+{
+  "name": "gpt-mcp-service-cdk",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "cdk": "cdk",
+    "synth": "cdk synth",
+    "deploy": "cdk deploy",
+    "destroy": "cdk destroy",
+    "seed:parameters": "node --experimental-strip-types scripts/put-runtime-parameters.ts",
+    "build:image": "node --experimental-strip-types scripts/upload-source-and-build.ts",
+    "test": "node --experimental-strip-types --test ../../test/cdk/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "2.258.0",
+    "constructs": "10.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.0",
+    "aws-cdk": "2.1126.0",
+    "typescript": "^5.9.3"
+  }
+}

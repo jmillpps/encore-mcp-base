@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { createHash, createPrivateKey, createPublicKey, generateKeyPairSync, type KeyObject } from "node:crypto";
 import type { ServiceConfig } from "../../shared/config.ts";
 
@@ -27,10 +28,11 @@ export function getVerificationKeys(config: ServiceConfig, env: NodeJS.ProcessEn
 }
 
 function getKeySet(config: ServiceConfig, env: NodeJS.ProcessEnv): KeySet {
-  if (env.OAUTH_PRIVATE_KEY_PEM) {
-    const source = `pem:${hashSource(env.OAUTH_PRIVATE_KEY_PEM)}:${env.OAUTH_KEY_ID ?? ""}:${hashSource(env.OAUTH_PREVIOUS_PUBLIC_KEYS_JSON ?? "")}`;
+  const privateKeyPem = privateKeyPemValue(env);
+  if (privateKeyPem) {
+    const source = `pem:${hashSource(privateKeyPem)}:${env.OAUTH_KEY_ID ?? ""}:${hashSource(env.OAUTH_PREVIOUS_PUBLIC_KEYS_JSON ?? "")}`;
     if (cached?.source === source) return cached.keySet;
-    const privateKey = createPrivateKey(env.OAUTH_PRIVATE_KEY_PEM);
+    const privateKey = createPrivateKey(privateKeyPem);
     assertRsaKey(privateKey, "OAUTH_PRIVATE_KEY_PEM");
     const publicKey = createPublicKey(privateKey);
     const active = { kid: activeKeyId(config, env, publicKey), privateKey, publicKey };
@@ -47,6 +49,12 @@ function getKeySet(config: ServiceConfig, env: NodeJS.ProcessEnv): KeySet {
   const keySet = { active, verificationKeys: [active] };
   cached = { source: "local", keySet };
   return keySet;
+}
+
+function privateKeyPemValue(env: NodeJS.ProcessEnv): string | undefined {
+  if (env.OAUTH_PRIVATE_KEY_PEM) return env.OAUTH_PRIVATE_KEY_PEM;
+  if (!env.OAUTH_PRIVATE_KEY_PEM_FILE) return undefined;
+  return readFileSync(env.OAUTH_PRIVATE_KEY_PEM_FILE, "utf8");
 }
 
 function previousKeys(value: string | undefined): VerificationKey[] {

@@ -11,9 +11,9 @@ import { startService } from "../support/service-process.ts";
 import { authorizationCodeGrant } from "../../auth/tokens/authorization-code.ts";
 import { DiskOAuthStore } from "../../auth/storage/disk-store.ts";
 import { readConfig } from "../../shared/config.ts";
-import { staticUser } from "../../auth/static-user.ts";
 import { ServiceError, type ErrorCode } from "../../shared/errors.ts";
 import type { OAuthClient } from "../../auth/client-types.ts";
+import { testStaticUser } from "../support/static-user.ts";
 
 test("authorization code flow issues externally processed OIDC tokens and userinfo", async (t) => {
   const service = await startService(t);
@@ -22,13 +22,13 @@ test("authorization code flow issues externally processed OIDC tokens and userin
   assert.equal(flow.tokens.scope, "openid profile email");
   assert.equal(flow.idClaims.iss, service.origin);
   assert.equal(flow.idClaims.aud, localClient.client_id);
-  assert.equal(flow.idClaims.email, "jmiller@inifnitedevlab.com");
-  assert.equal(flow.idClaims.name, "Justin Miller");
+  assert.equal(flow.idClaims.email, testStaticUser.email);
+  assert.equal(flow.idClaims.name, testStaticUser.name);
   const userInfoResponse = await oauth.userInfoRequest(flow.as, localClient, flow.tokens.access_token, {
     [oauth.allowInsecureRequests]: true,
   });
   const userInfo = await oauth.processUserInfoResponse(flow.as, localClient, flow.idClaims.sub, userInfoResponse);
-  assert.equal(userInfo.email, "jmiller@inifnitedevlab.com");
+  assert.equal(userInfo.email, testStaticUser.email);
   const store = await readFile(service.storePath, "utf8");
   assert.equal(store.includes(flow.code), false);
   assert.equal(store.includes(requireString(flow.tokens.refresh_token, "refresh_token")), false);
@@ -202,7 +202,7 @@ async function createStoredCode(store: DiskOAuthStore, config: ReturnType<typeof
     redirectUri: localRedirectUri,
     resource: config.actionsAudience,
     scopes,
-    userSub: staticUser.sub,
+    userSub: testStaticUser.sub,
     ttlSeconds: 300,
   });
 }

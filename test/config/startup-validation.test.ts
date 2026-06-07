@@ -4,6 +4,7 @@ import test from "node:test";
 import { validateStartup } from "../../auth/startup.ts";
 import { sha256Base64Url } from "../../shared/crypto.ts";
 import { expectServiceStartupFailure } from "../support/service-process.ts";
+import { testStaticUserEnv } from "../support/static-user.ts";
 
 test("startup validation accepts complete production OAuth configuration", () => {
   assert.doesNotThrow(() => validateStartup(productionEnv({ OAUTH_PRIVATE_KEY_PEM: privateKeyPem(), OAUTH_KEY_ID: "prod-key-1" })));
@@ -16,6 +17,8 @@ test("startup validation rejects incomplete production OAuth configuration", () 
   assert.throws(() => validateStartup(productionEnv({ OAUTH_STORE_PATH: " oauth-store.json" })), /store path cannot include surrounding whitespace/);
   assert.throws(() => validateStartup(productionEnv({ OAUTH_STORE_PATH: "oauth-store.txt" })), /store path must end with .json/);
   assert.throws(() => validateStartup(productionEnv({ OAUTH_STORE_PATH: "../oauth-store.json" })), /store path cannot traverse upward/);
+  assert.throws(() => validateStartup(productionEnv({ STATIC_USER_EMAIL: "" })), /STATIC_USER_EMAIL is required/);
+  assert.throws(() => validateStartup(productionEnv({ STATIC_USER_EMAIL_VERIFIED: "" })), /STATIC_USER_EMAIL_VERIFIED is required/);
 });
 
 test("Encore production startup fails closed when signing key material is missing", async (t) => {
@@ -39,6 +42,7 @@ function productionEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
     RATE_LIMIT_MAX_REQUESTS: "120",
     MCP_SSE_MAX_CONNECTIONS: "1024",
     OAUTH_CLIENTS_JSON: JSON.stringify([clientRecord()]),
+    ...testStaticUserEnv,
     ...overrides,
   };
 }

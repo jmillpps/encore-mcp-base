@@ -12,6 +12,7 @@ import { readConfig } from "../../shared/config.ts";
 import { callTool, initializeMcp, bearer } from "../support/mcp.ts";
 import { readJson } from "../support/http.ts";
 import { startService, type TestService } from "../support/service-process.ts";
+import { testStaticUser } from "../support/static-user.ts";
 import { authorizeMetadataDocumentClient, fetchAuthorizationUrl, startInvalidUtf8MetadataServer, startMetadataServer } from "../support/client-metadata.ts";
 
 test("Client ID Metadata Document clients complete OAuth and call protected MCP tools", async (t) => {
@@ -21,7 +22,7 @@ test("Client ID Metadata Document clients complete OAuth and call protected MCP 
   const { tokens, idClaims } = await completeMetadataDocumentFlow(service, metadata.clientId, metadata.redirectUri);
   assert.equal(idClaims.aud, metadata.clientId);
   const profile = await callTool(service, sessionId, "identity.profile", bearer(tokens.access_token));
-  assert.equal((profile.structuredContent as Record<string, unknown>).email, "jmiller@inifnitedevlab.com");
+  assert.equal((profile.structuredContent as Record<string, unknown>).email, testStaticUser.email);
   const session = await callTool(service, sessionId, "auth.session", bearer(tokens.access_token));
   assert.equal((session.structuredContent as Record<string, unknown>).clientId, metadata.clientId);
 });

@@ -7,6 +7,7 @@ import { dirname, join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import type { TestContext } from "node:test";
+import { testStaticUserEnv } from "./static-user.ts";
 
 export interface TestService {
   origin: string;
@@ -79,6 +80,7 @@ export async function expectServiceStartupFailure(t: TestContext, envOverrides: 
 function serviceEnv(origin: string, storePath: string, envOverrides: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {
     ...process.env,
+    ...testStaticUserEnv,
     PUBLIC_ISSUER_URL: origin,
     MCP_RESOURCE_URL: `${origin}/mcp`,
     ACTIONS_AUDIENCE: `${origin}/actions`,

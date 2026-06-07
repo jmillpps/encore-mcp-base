@@ -1,6 +1,6 @@
 import { verifyBearer } from "../../auth/bearer.ts";
 import { identityProfileScopes } from "../../auth/scopes.ts";
-import { staticUser } from "../../auth/static-user.ts";
+import { readStaticUser } from "../../auth/static-user.ts";
 import { readOnlyToolAnnotations } from "../tool-annotations.ts";
 import { booleanSchema, emptyInputSchema, objectSchema, stringSchema } from "../tool-schemas.ts";
 import type { McpTool, ToolContext } from "../tool-types.ts";
@@ -27,5 +27,6 @@ export const identityProfileTool: McpTool = {
 
 async function identityProfile(context: ToolContext): Promise<Record<string, unknown>> {
   verifyBearer(context.config, context.authorization, context.config.mcpResource, identityProfileScopes);
-  return { content: [{ type: "text", text: JSON.stringify(staticUser) }], structuredContent: staticUser };
+  const user = readStaticUser();
+  return { content: [{ type: "text", text: JSON.stringify(user) }], structuredContent: user };
 }

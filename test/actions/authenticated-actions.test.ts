@@ -5,6 +5,7 @@ import { completeAuthorizationCodeFlow } from "../support/oauth-client.ts";
 import { readJson, requireString } from "../support/http.ts";
 import { bearer } from "../support/mcp.ts";
 import { startService, type TestService } from "../support/service-process.ts";
+import { testStaticUser } from "../support/static-user.ts";
 
 const gptActionsClient: oauth.Client = { client_id: "gpt-actions" };
 const gptActionsClientSecret = "gpt-actions-secret";
@@ -20,10 +21,10 @@ test("Actions endpoints reject missing tokens and accept scoped Actions tokens",
   const flow = await completeAuthorizationCodeFlow(service, service.actionsAudience);
   const profile = await fetch(`${service.origin}/actions/profile`, { headers: { authorization: bearer(flow.tokens.access_token) } });
   assert.equal(profile.status, 200);
-  assert.equal((await readJson(profile)).email, "jmiller@inifnitedevlab.com");
+  assert.equal((await readJson(profile)).email, testStaticUser.email);
   const lowerCaseProfile = await fetch(`${service.origin}/actions/profile`, { headers: { authorization: `bearer ${flow.tokens.access_token}` } });
   assert.equal(lowerCaseProfile.status, 200);
-  assert.equal((await readJson(lowerCaseProfile)).email, "jmiller@inifnitedevlab.com");
+  assert.equal((await readJson(lowerCaseProfile)).email, testStaticUser.email);
   const session = await fetch(`${service.origin}/actions/session`, { headers: { authorization: bearer(flow.tokens.access_token) } });
   assert.equal(session.status, 200);
   assert.equal((await readJson(session)).audience, service.actionsAudience);
@@ -40,7 +41,7 @@ test("GPT Actions OAuth can link and refresh without resource parameters", async
   const flow = await completeGptActionsFlowWithoutResource(service);
   const profile = await fetch(`${service.origin}/actions/profile`, { headers: { authorization: bearer(flow.tokens.access_token) } });
   assert.equal(profile.status, 200);
-  assert.equal((await readJson(profile)).email, "jmiller@inifnitedevlab.com");
+  assert.equal((await readJson(profile)).email, testStaticUser.email);
   const session = await fetch(`${service.origin}/actions/session`, { headers: { authorization: bearer(flow.tokens.access_token) } });
   assert.equal(session.status, 200);
   assert.equal((await readJson(session)).audience, service.actionsAudience);

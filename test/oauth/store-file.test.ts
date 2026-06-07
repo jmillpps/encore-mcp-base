@@ -9,6 +9,7 @@ import { DiskRateLimitStore } from "../../auth/storage/rate-limit-store.ts";
 import { StoreFile } from "../../auth/storage/store-file.ts";
 import { ServiceError } from "../../shared/errors.ts";
 import { spawnStoreWorker, waitForStoreWorker, waitForStoreWorkerMarker } from "../support/store-worker.ts";
+import { testStaticUser } from "../support/static-user.ts";
 
 const validHash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const secondValidHash = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
@@ -25,7 +26,7 @@ test("OAuth store persists PRD field names and reloads records through the stric
     resource: "http://localhost:4000/actions",
     scopes: ["openid", "profile", "email"],
     nonce: "nonce-value",
-    userSub: "user_justin_miller",
+    userSub: testStaticUser.sub,
     ttlSeconds: 300,
   });
   await new DiskOAuthStore(path).consumeAuthorizationCode(code, undefined, {
@@ -35,7 +36,7 @@ test("OAuth store persists PRD field names and reloads records through the stric
   });
   const refreshToken = await new DiskOAuthStore(path).createRefreshToken({
     clientId: "local-test",
-    userSub: "user_justin_miller",
+    userSub: testStaticUser.sub,
     resource: "http://localhost:4000/actions",
     scopes: ["openid"],
     authTime: 1,
@@ -115,7 +116,7 @@ test("OAuth store rejects authorization, refresh, and MCP records at the expiry 
     redirectUri: "http://localhost:4000/callback",
     resource: "http://localhost:4000/actions",
     scopes: ["openid"],
-    userSub: "user_justin_miller",
+    userSub: testStaticUser.sub,
     ttlSeconds: 0,
   });
   await assertServiceError("invalid_grant", () =>
@@ -209,7 +210,7 @@ test("OAuth store serializes updates across processes for the same path", async 
 function refreshInput() {
   return {
     clientId: "local-test",
-    userSub: "user_justin_miller",
+    userSub: testStaticUser.sub,
     resource: "http://localhost:4000/actions",
     scopes: ["openid"],
     authTime: 1,
@@ -224,7 +225,7 @@ function authorizationCodeDiskRecord(overrides: Record<string, unknown> = {}): R
     redirect_uri: "http://localhost:4000/callback",
     resource: "http://localhost:4000/actions",
     scopes_json: JSON.stringify(["openid"]),
-    user_sub: "user_justin_miller",
+    user_sub: testStaticUser.sub,
     expires_at: 9999999999,
     auth_time: 1,
     created_at: 1,
@@ -237,7 +238,7 @@ function refreshTokenDiskRecord(overrides: Record<string, unknown> = {}): Record
     token_hash: validHash,
     family_id: validHash,
     client_id: "local-test",
-    user_sub: "user_justin_miller",
+    user_sub: testStaticUser.sub,
     resource: "http://localhost:4000/actions",
     scopes_json: JSON.stringify(["openid"]),
     expires_at: 9999999999,

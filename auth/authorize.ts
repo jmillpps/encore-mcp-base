@@ -9,7 +9,7 @@ import { oidcNonce } from "./nonce.ts";
 import { resolveOAuthAuthorizationResource } from "./oauth-resource.ts";
 import { oauthState } from "./oauth-state.ts";
 import { pkceInput } from "./pkce.ts";
-import { staticUser } from "./static-user.ts";
+import { readStaticUser } from "./static-user.ts";
 
 export interface AuthorizationRequest {
   responseType: string;
@@ -40,12 +40,13 @@ export async function createAuthorizationRedirect(
   assertAllowedScopes(scopes, client.allowedScopes);
   const pkce = pkceInput(client.pkcePolicy, request.codeChallenge, request.codeChallengeMethod);
   const nonce = oidcNonce(request.nonce);
+  const user = readStaticUser();
   const code = await store.createAuthorizationCode({
     clientId: client.clientId,
     redirectUri: request.redirectUri,
     resource,
     scopes,
-    userSub: staticUser.sub,
+    userSub: user.sub,
     ttlSeconds: config.authorizationCodeTtlSeconds,
     ...pkce,
     ...(nonce ? { nonce } : {}),

@@ -7,6 +7,17 @@ dist/
 tsconfig.tsbuildinfo
 *.log
 .DS_Store
+*.pem
+*.key
+*.p12
+*.pfx
+.env
+.env.*
+!.env.example
+ci/cdk/cdk.out/
+ci/cdk/node_modules/
+ci/cdk/.source/
+ci/cdk/*.context.json
 encore.gen.go
 encore.gen.cue
 /.encore

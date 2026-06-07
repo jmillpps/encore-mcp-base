@@ -1,18 +1,20 @@
 # Identity Profile
 
-The current service identity is a static OpenID Connect user. This keeps OAuth, MCP, and Actions behavior deterministic while the future external identity provider remains out of scope.
+The current service identity is a configured static OpenID Connect user. Production deployments supply the identity through environment variables or the deployment secret store.
 
 ## Profile Fields
 
 | Claim | Value |
 | --- | --- |
-| `sub` | `user_justin_miller` |
-| `given_name` | `Justin` |
-| `family_name` | `Miller` |
-| `name` | `Justin Miller` |
-| `preferred_username` | `jmiller` |
-| `email` | `jmiller@inifnitedevlab.com` |
+| `sub` | `user_example` |
+| `given_name` | `Example` |
+| `family_name` | `User` |
+| `name` | `Example User` |
+| `preferred_username` | `example.user` |
+| `email` | `user@example.test` |
 | `email_verified` | `true` |
+
+These values are local examples. Production values come from `STATIC_USER_*` configuration.
 
 ## Surfaces
 

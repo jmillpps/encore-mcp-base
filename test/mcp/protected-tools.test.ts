@@ -5,6 +5,7 @@ import { completeAuthorizationCodeFlow, discover } from "../support/oauth-client
 import { callTool, initializeMcp, postMcp, bearer } from "../support/mcp.ts";
 import { assertExposesHeader, expectOAuthError, readJson, requireRecord, requireString } from "../support/http.ts";
 import { startService, type TestService } from "../support/service-process.ts";
+import { testStaticUser } from "../support/static-user.ts";
 
 const gptAppsMcpClient: oauth.Client = { client_id: "gpt-apps-mcp" };
 const gptAppsMcpSecret = "gpt-apps-secret";
@@ -77,7 +78,7 @@ test("MCP tools return structured content that matches advertised output schemas
   const validFlow = await completeAuthorizationCodeFlow(service, service.mcpResource);
   const session = await callTool(service, sessionId, "auth.session", bearer(validFlow.tokens.access_token));
   const sessionContent = session.structuredContent as Record<string, unknown>;
-  assert.equal(sessionContent.subject, "user_justin_miller");
+  assert.equal(sessionContent.subject, testStaticUser.sub);
   assert.equal(sessionContent.clientId, "local-test");
   assert.ok(Array.isArray(sessionContent.scopes));
   assert.deepEqual(readToolTextJson(session), session.structuredContent);
@@ -88,7 +89,7 @@ test("MCP protected tools enforce audience and scopes", async (t) => {
   const sessionId = await initializeMcp(service);
   const validFlow = await completeAuthorizationCodeFlow(service, service.mcpResource);
   const profile = await callTool(service, sessionId, "identity.profile", bearer(validFlow.tokens.access_token));
-  assert.equal((profile.structuredContent as Record<string, unknown>).email, "jmiller@inifnitedevlab.com");
+  assert.equal((profile.structuredContent as Record<string, unknown>).email, testStaticUser.email);
   const actionsFlow = await completeAuthorizationCodeFlow(service, service.actionsAudience);
   const wrongAudience = await postMcp(
     service,
@@ -121,7 +122,7 @@ test("MCP protected tools accept the GPT Apps client required-PKCE token flow", 
   const { tokens, idClaims } = await completeGptAppsMcpFlow(service);
   assert.equal(idClaims.aud, gptAppsMcpClient.client_id);
   const profile = await callTool(service, sessionId, "identity.profile", bearer(tokens.access_token));
-  assert.equal((profile.structuredContent as Record<string, unknown>).email, "jmiller@inifnitedevlab.com");
+  assert.equal((profile.structuredContent as Record<string, unknown>).email, testStaticUser.email);
   const session = await callTool(service, sessionId, "auth.session", bearer(tokens.access_token));
   assert.equal((session.structuredContent as Record<string, unknown>).clientId, gptAppsMcpClient.client_id);
 });

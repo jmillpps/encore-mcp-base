@@ -8,6 +8,7 @@ import { getSigningKey } from "../../auth/tokens/signing-keys.ts";
 import { signJwt } from "../../auth/tokens/jwt.ts";
 import { verifyAccessToken } from "../../auth/tokens/access-token.ts";
 import { encodeJsonBase64Url } from "../../shared/base64url.ts";
+import { testStaticUser } from "../support/static-user.ts";
 
 test("access token verifier rejects future issued-at values", () => {
   const config = testConfig();
@@ -80,7 +81,7 @@ function accessClaims(config: ServiceConfig, overrides: Record<string, unknown>)
   const now = nowSeconds();
   return {
     iss: config.issuer,
-    sub: "user_justin_miller",
+    sub: testStaticUser.sub,
     aud: config.actionsAudience,
     exp: now + 900,
     iat: now,

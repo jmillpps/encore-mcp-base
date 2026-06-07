@@ -7,6 +7,7 @@ import { getSigningKey } from "../../auth/tokens/signing-keys.ts";
 import { signJwt } from "../../auth/tokens/jwt.ts";
 import { readConfig } from "../../shared/config.ts";
 import { nowSeconds } from "../../shared/time.ts";
+import { testStaticUser } from "../support/static-user.ts";
 
 test("production signing key lookup fails closed without configured key material", () => {
   getSigningKey(readConfig({}), {});
@@ -120,7 +121,7 @@ function productionConfig() {
 
 function accessClaims(config: ReturnType<typeof productionConfig>, kid: string): Record<string, unknown> {
   const now = nowSeconds();
-  return { iss: config.issuer, sub: "user_justin_miller", aud: config.actionsAudience, exp: now + 900, iat: now, nbf: now, jti: kid, client_id: "local-test", scope: "openid profile email" };
+  return { iss: config.issuer, sub: testStaticUser.sub, aud: config.actionsAudience, exp: now + 900, iat: now, nbf: now, jti: kid, client_id: "local-test", scope: "openid profile email" };
 }
 
 interface TestKeyPair {

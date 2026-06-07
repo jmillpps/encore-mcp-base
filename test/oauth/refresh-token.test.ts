@@ -11,9 +11,9 @@ import { startService } from "../support/service-process.ts";
 import { refreshTokenGrant } from "../../auth/tokens/refresh-token.ts";
 import { DiskOAuthStore } from "../../auth/storage/disk-store.ts";
 import { readConfig } from "../../shared/config.ts";
-import { staticUser } from "../../auth/static-user.ts";
 import { ServiceError } from "../../shared/errors.ts";
 import type { OAuthClient } from "../../auth/client-types.ts";
+import { testStaticUser } from "../support/static-user.ts";
 
 test("refresh token rotation revokes the token family on reuse", async (t) => {
   const service = await startService(t);
@@ -104,7 +104,7 @@ test("refresh token grant applies current client resource policy before rotating
   const store = new DiskOAuthStore(config.oauthStorePath);
   const refreshToken = await store.createRefreshToken({
     clientId: "local-test",
-    userSub: staticUser.sub,
+    userSub: testStaticUser.sub,
     resource: config.actionsAudience,
     scopes: ["openid"],
     authTime: 1,
