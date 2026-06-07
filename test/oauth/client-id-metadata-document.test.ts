@@ -218,7 +218,7 @@ function productionConfig() {
   return readConfig({
     NODE_ENV: "production",
     PUBLIC_ISSUER_URL: "https://issuer.example.test",
-    MCP_RESOURCE_URL: "https://mcp.example.test",
+    MCP_RESOURCE_URL: "https://mcp.example.test/mcp",
     ACTIONS_AUDIENCE: "https://actions.example.test/actions",
     OAUTH_STORE_PATH: "/tmp/mcp-oauth-store.json",
     ALLOWED_ORIGINS: "https://chatgpt.com",

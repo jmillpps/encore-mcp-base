@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import { assertMcpResourceUrl, mcpEndpointPath } from "./mcp-resource.ts";
 
 export interface ServiceConfig {
   issuer: string;
@@ -18,7 +19,8 @@ export interface ServiceConfig {
 export function readConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig {
   const production = env.NODE_ENV === "production";
   const issuer = readIssuerUrl(env, production);
-  const mcpResource = readHttpUrl(env, "MCP_RESOURCE_URL", issuer, production);
+  const mcpResource = readHttpUrl(env, "MCP_RESOURCE_URL", `${issuer}${mcpEndpointPath}`, production);
+  assertMcpResourceUrl(mcpResource, "MCP_RESOURCE_URL");
   const actionsAudience = readHttpUrl(env, "ACTIONS_AUDIENCE", `${issuer}/actions`, production);
   const oauthStorePath = env.OAUTH_STORE_PATH ?? (production ? "" : resolve(process.cwd(), "var/oauth-store.json"));
   if (production && oauthStorePath === "") throw new Error("OAUTH_STORE_PATH is required");

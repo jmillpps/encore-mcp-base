@@ -35,7 +35,7 @@ test("callTool rejects successful results that violate the tool output schema", 
 function testConfig(oauthStorePath: string): ServiceConfig {
   return {
     issuer: "http://localhost:4000",
-    mcpResource: "http://localhost:4000",
+    mcpResource: "http://localhost:4000/mcp",
     actionsAudience: "http://localhost:4000/actions",
     oauthStorePath,
     allowedOrigins: ["https://chatgpt.com"],

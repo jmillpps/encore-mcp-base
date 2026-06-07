@@ -12,6 +12,8 @@ When a protected tool needs authentication, it returns a ChatGPT-compatible `mcp
 
 Missing or invalid bearer tokens receive a Bearer challenge with `resource_metadata` and the required scope list.
 
+Bearer challenges use the path-specific protected resource metadata URL for `/mcp`.
+
 Tokens with insufficient scopes receive a Bearer challenge with `error="insufficient_scope"`, `resource_metadata`, and the required scope list.
 
 Tool names use ASCII letters, digits, underscores, hyphens, and dots. Names stay within 128 characters.

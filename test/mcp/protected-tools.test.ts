@@ -26,7 +26,7 @@ test("MCP tools expose metadata and protected tools return auth challenges", asy
   const challengeResponse = await postMcp(service, { jsonrpc: "2.0", id: "identity.profile", method: "tools/call", params: { name: "identity.profile", arguments: {} } }, { sessionId });
   assert.equal(challengeResponse.status, 200);
   const challengeHeader = challengeResponse.headers.get("www-authenticate") ?? "";
-  assert.match(challengeHeader, /resource_metadata=/);
+  assert.match(challengeHeader, resourceMetadataPattern(service));
   assert.match(challengeHeader, /scope="openid profile email"/);
   assert.doesNotMatch(challengeHeader, /insufficient_scope/);
   const challenge = (await readJson(challengeResponse)).result as Record<string, unknown>;
@@ -73,7 +73,7 @@ test("MCP protected tools enforce audience and scopes", async (t) => {
   assert.equal(missingScopeResponse.status, 200);
   const scopeChallenge = missingScopeResponse.headers.get("www-authenticate") ?? "";
   assert.match(scopeChallenge, /error="insufficient_scope"/);
-  assert.match(scopeChallenge, /resource_metadata=/);
+  assert.match(scopeChallenge, resourceMetadataPattern(service));
   assert.match(scopeChallenge, /scope="openid profile email"/);
   const missingScopes = ((await readJson(missingScopeResponse)).result as Record<string, unknown>);
   assert.equal(missingScopes.isError, true);
@@ -183,4 +183,8 @@ function readToolTextJson(result: Record<string, unknown>): unknown {
   assert.ok(Array.isArray(content));
   const first = requireRecord(content[0], "tool content");
   return JSON.parse(requireString(first.text, "tool content text"));
+}
+
+function resourceMetadataPattern(service: TestService): RegExp {
+  return new RegExp(`resource_metadata="${service.origin.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\/\\.well-known\\/oauth-protected-resource\\/mcp"`);
 }

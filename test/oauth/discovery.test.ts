@@ -24,13 +24,16 @@ test("OAuth discovery is processable by oauth4webapi", async (t) => {
   assert.equal(authorizationServer.client_id_metadata_document_supported, true);
   assert.deepEqual(authorizationServer.token_endpoint_auth_methods_supported, ["client_secret_post", "client_secret_basic", "none"]);
   const protectedResource = await readJson(await fetch(`${service.origin}/.well-known/oauth-protected-resource`));
+  assert.equal(protectedResource.resource, service.mcpResource);
   assert.deepEqual(protectedResource.scopes_supported, ["openid", "profile", "email"]);
+  const mcpProtectedResource = await readJson(await fetch(`${service.origin}/.well-known/oauth-protected-resource/mcp`));
+  assert.deepEqual(mcpProtectedResource, protectedResource);
 });
 
 test("discovery metadata advertises configured custom client scopes", () => {
   const config = readConfig({
     PUBLIC_ISSUER_URL: "https://issuer.example.test",
-    MCP_RESOURCE_URL: "https://mcp.example.test",
+    MCP_RESOURCE_URL: "https://mcp.example.test/mcp",
     ACTIONS_AUDIENCE: "https://api.example.test/actions",
   });
   const clients: OAuthClient[] = [

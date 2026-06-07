@@ -1,3 +1,4 @@
+import type { ServerResponse } from "node:http";
 import { api } from "encore.dev/api";
 import { readConfig } from "../shared/config.ts";
 import { writeJson } from "../shared/http.ts";
@@ -24,10 +25,18 @@ export const oauthServer = api.raw({ expose: true, method: "GET", path: "/.well-
 });
 
 export const protectedResource = api.raw({ expose: true, method: "GET", path: "/.well-known/oauth-protected-resource" }, async (_req, res) => {
+  await writeProtectedResource(res, "oauth.discovery.resource");
+});
+
+export const protectedResourceMcp = api.raw({ expose: true, method: "GET", path: "/.well-known/oauth-protected-resource/mcp" }, async (_req, res) => {
+  await writeProtectedResource(res, "oauth.discovery.resource.mcp");
+});
+
+async function writeProtectedResource(res: ServerResponse, endpoint: string): Promise<void> {
   try {
     const config = readConfig();
     writeJson(res, 200, protectedResourceMetadata(config, loadClients(config)));
   } catch (error) {
-    writeOAuthError(res, error, { endpoint: "oauth.discovery.resource", method: "GET" });
+    writeOAuthError(res, error, { endpoint, method: "GET" });
   }
-});
+}

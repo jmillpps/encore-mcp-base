@@ -41,7 +41,7 @@ export async function startService(t: TestContext, envOverrides: NodeJS.ProcessE
   const service = {
     origin,
     actionsAudience: `${origin}/actions`,
-    mcpResource: origin,
+    mcpResource: `${origin}/mcp`,
     storePath,
     stop: async () => {
       await stopChild(child);
@@ -80,7 +80,7 @@ function serviceEnv(origin: string, storePath: string, envOverrides: NodeJS.Proc
   const env: NodeJS.ProcessEnv = {
     ...process.env,
     PUBLIC_ISSUER_URL: origin,
-    MCP_RESOURCE_URL: origin,
+    MCP_RESOURCE_URL: `${origin}/mcp`,
     ACTIONS_AUDIENCE: `${origin}/actions`,
     OAUTH_STORE_PATH: storePath,
     ALLOWED_ORIGINS: "https://chatgpt.com https://chat.openai.com http://localhost:4000",

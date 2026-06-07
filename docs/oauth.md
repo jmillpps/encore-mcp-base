@@ -8,6 +8,8 @@ OAuth state is stored durably on disk. The store keeps hashes for authorization 
 
 The default local scopes are `openid`, `profile`, and `email`.
 
+The default local MCP resource is `http://localhost:4000/mcp`.
+
 The client registry controls allowed scopes per GPT client.
 
 Authorization requests require a `resource` value.
@@ -37,6 +39,8 @@ Confidential token authentication is rejected for metadata-document clients.
 OIDC discovery metadata advertises the ID token and profile claims supported by the service.
 
 Protected resource metadata advertises the scopes configured for clients that can use the MCP resource.
+
+Protected resource metadata is served at `/.well-known/oauth-protected-resource` and `/.well-known/oauth-protected-resource/mcp`.
 
 Authorization requests may include an OIDC nonce. The service validates nonce syntax, stores the nonce with the authorization code, and places the nonce in the ID token issued during code exchange.
 

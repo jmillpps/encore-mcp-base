@@ -1,9 +1,10 @@
 import type { ServiceConfig } from "../shared/config.ts";
 import type { ServiceError } from "../shared/errors.ts";
+import { protectedResourceMetadataUrl } from "../shared/mcp-resource.ts";
 
 export function wwwAuthenticate(config: ServiceConfig, scopes: string[], error?: ServiceError): string {
   const scope = scopes.join(" ");
-  const resourceMetadata = `resource_metadata="${config.issuer}/.well-known/oauth-protected-resource"`;
+  const resourceMetadata = `resource_metadata="${protectedResourceMetadataUrl(config.mcpResource)}"`;
   const scopeValue = `scope="${scope}"`;
   if (error?.status === 403) return `Bearer error="insufficient_scope", ${resourceMetadata}, ${scopeValue}`;
   return `Bearer ${resourceMetadata}, ${scopeValue}`;

@@ -75,7 +75,7 @@ function signedAccessToken(config: ServiceConfig, overrides: Record<string, unkn
 function testConfig(): ServiceConfig {
   return readConfig({
     PUBLIC_ISSUER_URL: "http://localhost:4000",
-    MCP_RESOURCE_URL: "http://localhost:4000",
+    MCP_RESOURCE_URL: "http://localhost:4000/mcp",
     ACTIONS_AUDIENCE: "http://localhost:4000/actions",
   });
 }

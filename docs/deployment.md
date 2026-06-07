@@ -37,6 +37,8 @@ Service URLs omit credentials, query strings, and fragments.
 
 OAuth endpoints are mounted at root paths under the issuer origin.
 
+`MCP_RESOURCE_URL` points to the public `/mcp` endpoint.
+
 ## Client Registry
 
 Use `node --experimental-strip-types tools/generate-client-secret.ts` to create a GPT client secret and registry hash.
