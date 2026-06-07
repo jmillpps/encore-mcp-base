@@ -62,7 +62,7 @@ Metadata-document client assertions must include `jti` for replay protection.
 
 OIDC discovery metadata advertises the ID token and profile claims supported by the service.
 
-Protected resource metadata advertises the scopes configured for clients that can use the MCP resource.
+Protected resource metadata advertises the scopes used by current MCP tools.
 
 Protected resource metadata advertises header bearer token use.
 
