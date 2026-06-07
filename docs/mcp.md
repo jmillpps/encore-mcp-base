@@ -52,6 +52,10 @@ MCP request methods require JSON-RPC identifiers.
 
 JSON-RPC `params` values must be objects when present.
 
+Supported MCP request methods reject unsupported parameter fields.
+
+Request metadata uses `_meta`. `_meta.progressToken` values are strings or finite numbers.
+
 JSON-RPC response `result` values must be objects.
 
 Clients send `Accept: application/json, text/event-stream` and `Content-Type: application/json`.
@@ -75,6 +79,8 @@ Initialize client metadata must use MCP implementation field shapes for optional
 Initialize responses include server instructions for ChatGPT tool selection and OAuth scope expectations.
 
 Clients send `notifications/initialized` before normal operation.
+
+`ping` accepts request metadata and returns an empty result.
 
 Accepted client notifications are `notifications/initialized`, `notifications/cancelled`, and `notifications/roots/list_changed`.
 

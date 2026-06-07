@@ -7,6 +7,7 @@ import { initializeClientId, initializeResult } from "./lifecycle.ts";
 import { isJsonRpcResponse, jsonRpcError, jsonRpcSuccess, parseJsonRpc, type JsonRpcRequest } from "./json-rpc.ts";
 import { handleNotification } from "./notifications.ts";
 import { McpProtocolError } from "./protocol-error.ts";
+import { optionalMethodParams, requiredMethodParams } from "./request-params.ts";
 
 export interface McpContext {
   config: ServiceConfig;
@@ -54,7 +55,10 @@ export async function handleMcpJson(context: McpContext, input: unknown): Promis
 
 async function dispatch(context: McpContext, request: JsonRpcRequest): Promise<unknown> {
   if (request.method === "initialize") return initializeResult(request.params);
-  if (request.method === "ping") return {};
+  if (request.method === "ping") {
+    optionalMethodParams(request.params, "ping", ["_meta"]);
+    return {};
+  }
   if (request.method === "tools/list") {
     validateListParams(request.params);
     return listTools();
@@ -67,23 +71,15 @@ async function dispatch(context: McpContext, request: JsonRpcRequest): Promise<u
 }
 
 function validateListParams(params: unknown): void {
-  if (params === undefined) return;
-  if (typeof params !== "object" || params === null || Array.isArray(params)) throw new McpProtocolError(-32602, "tools/list params must be an object");
-  const record = params as Record<string, unknown>;
-  if (record._meta !== undefined && (typeof record._meta !== "object" || record._meta === null || Array.isArray(record._meta))) {
-    throw new McpProtocolError(-32602, "tools/list _meta must be an object");
-  }
+  const record = optionalMethodParams(params, "tools/list", ["_meta", "cursor"]);
+  if (!record) return;
   if (record.cursor === undefined) return;
   if (typeof record.cursor !== "string") throw new McpProtocolError(-32602, "tools/list cursor must be a string");
   throw new McpProtocolError(-32602, "invalid cursor");
 }
 
 function toolCallParams(params: unknown): { name: string; args: Record<string, unknown> } {
-  if (typeof params !== "object" || params === null || Array.isArray(params)) throw new McpProtocolError(-32602, "tools/call params must be an object");
-  const record = params as Record<string, unknown>;
-  if (record._meta !== undefined && (typeof record._meta !== "object" || record._meta === null || Array.isArray(record._meta))) {
-    throw new McpProtocolError(-32602, "tools/call _meta must be an object");
-  }
+  const record = requiredMethodParams(params, "tools/call", ["_meta", "task", "name", "arguments"]);
   if (record.task !== undefined) throw new McpProtocolError(-32602, "task-augmented tool calls are unsupported");
   if (typeof record.name !== "string" || record.name.length === 0) throw new McpProtocolError(-32602, "tools/call name must be a string");
   const args = record.arguments;
