@@ -25,6 +25,8 @@ test("OAuth discovery is processable by oauth4webapi", async (t) => {
   assert.deepEqual(authorizationServer.token_endpoint_auth_methods_supported, ["client_secret_post", "client_secret_basic", "none", "private_key_jwt"]);
   const protectedResource = await readJson(await fetch(`${service.origin}/.well-known/oauth-protected-resource`));
   assert.equal(protectedResource.resource, service.mcpResource);
+  assert.equal(protectedResource.resource_name, "GPT MCP Service");
+  assert.deepEqual(protectedResource.bearer_methods_supported, ["header"]);
   assert.deepEqual(protectedResource.scopes_supported, ["openid", "profile", "email"]);
   const mcpProtectedResource = await readJson(await fetch(`${service.origin}/.well-known/oauth-protected-resource/mcp`));
   assert.deepEqual(mcpProtectedResource, protectedResource);
@@ -43,6 +45,8 @@ test("authorization server metadata advertises client scopes while protected res
   assert.deepEqual(openidConfiguration(config, clients).scopes_supported, ["openid", "profile", "email", "actions:write", "mcp:read"]);
   assert.deepEqual(authorizationServerMetadata(config, clients).scopes_supported, ["openid", "profile", "email", "actions:write", "mcp:read"]);
   assert.deepEqual(protectedResourceMetadata(config).scopes_supported, ["openid", "profile", "email"]);
+  assert.deepEqual(protectedResourceMetadata(config).bearer_methods_supported, ["header"]);
+  assert.equal(protectedResourceMetadata(config).resource_name, "GPT MCP Service");
 });
 
 function client(clientId: string, resource: string, scopes: string[]): OAuthClient {

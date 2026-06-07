@@ -1,4 +1,5 @@
 import type { ServiceConfig } from "../shared/config.ts";
+import { serviceTitle } from "../shared/service-info.ts";
 import type { OAuthClient } from "./client-types.ts";
 import { mcpProtectedResourceScopes } from "./scopes.ts";
 
@@ -39,8 +40,10 @@ export function authorizationServerMetadata(config: ServiceConfig, clients: read
 export function protectedResourceMetadata(config: ServiceConfig): Record<string, unknown> {
   return {
     resource: config.mcpResource,
+    resource_name: serviceTitle,
     authorization_servers: [config.issuer],
     scopes_supported: mcpProtectedResourceScopes(),
+    bearer_methods_supported: ["header"],
     resource_documentation: `${config.issuer}/docs/mcp`,
   };
 }

@@ -56,6 +56,8 @@ OIDC discovery metadata advertises the ID token and profile claims supported by 
 
 Protected resource metadata advertises the scopes configured for clients that can use the MCP resource.
 
+Protected resource metadata advertises header bearer token use.
+
 Protected resource metadata is served at `/.well-known/oauth-protected-resource` and `/.well-known/oauth-protected-resource/mcp`.
 
 Authorization requests may include `id_token_hint` during reauthorization.
