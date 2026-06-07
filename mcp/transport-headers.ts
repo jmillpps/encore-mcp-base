@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { rejectAccessTokenQuery } from "../shared/access-token-query.ts";
 import type { ServiceConfig } from "../shared/config.ts";
 import { ServiceError } from "../shared/errors.ts";
 import { acceptsMediaType, contentTypeUsesUtf8, mediaType } from "../shared/media-type.ts";
@@ -11,10 +12,7 @@ export function validateOrigin(config: ServiceConfig, req: IncomingMessage): voi
 }
 
 export function validateNoAccessTokenQuery(req: IncomingMessage): void {
-  const url = new URL(req.url ?? "/", "http://localhost");
-  if (url.searchParams.has("access_token")) {
-    throw new ServiceError("bad_request", "access tokens must use the authorization header", 400);
-  }
+  rejectAccessTokenQuery(req.url);
 }
 
 export function validatePostAccept(req: IncomingMessage): void {

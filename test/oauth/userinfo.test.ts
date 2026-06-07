@@ -21,4 +21,7 @@ test("userinfo accepts valid tokens issued for Actions and MCP resources", async
   const lowerCaseBearer = await fetch(`${service.origin}/oauth/userinfo`, { headers: { authorization: `bearer ${actionsFlow.tokens.access_token}` } });
   assert.equal(lowerCaseBearer.status, 200);
   assert.equal((await readJson(lowerCaseBearer)).email, "jmiller@inifnitedevlab.com");
+  const queryToken = await fetch(`${service.origin}/oauth/userinfo?access_token=query-token`, { headers: { authorization: `Bearer ${actionsFlow.tokens.access_token}` } });
+  assert.equal(queryToken.status, 400);
+  assert.equal((await readJson(queryToken)).error, "bad_request");
 });
