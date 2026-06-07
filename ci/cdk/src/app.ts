@@ -7,7 +7,7 @@ const config = deploymentConfig();
 const account = requiredEnv(process.env, "CDK_DEFAULT_ACCOUNT");
 const region = requiredRegion(process.env);
 
-new McpServiceStack(app, "GptMcpServiceProd", {
+new McpServiceStack(app, config.stackName, {
   config,
   env: { account, region },
 });

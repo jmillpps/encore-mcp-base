@@ -21,6 +21,7 @@ Optional deployment inputs:
 | --- | --- |
 | `CDK_APP_NAME` | Resource name prefix. Default is `gpt-mcp-service`. |
 | `CDK_ENVIRONMENT_NAME` | Environment name. Default is `prod`. |
+| `CDK_STACK_NAME` | CloudFormation stack name. Default is derived from `CDK_APP_NAME` and `CDK_ENVIRONMENT_NAME`. |
 | `CDK_PARAMETER_PREFIX` | Parameter Store path. Default is `/$CDK_APP_NAME/$CDK_ENVIRONMENT_NAME/env`. |
 | `CDK_INSTANCE_TYPE` | EC2 instance type. Default is `t4g.micro`. |
 | `CDK_ALLOWED_ORIGINS` | Browser origins allowed by the service. Default allows ChatGPT origins. |

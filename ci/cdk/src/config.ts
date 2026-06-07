@@ -1,6 +1,7 @@
 export interface DeploymentConfig {
   appName: string;
   environmentName: string;
+  stackName: string;
   domainName: string;
   hostedZoneId: string;
   hostedZoneName: string;
@@ -16,6 +17,7 @@ export function deploymentConfig(env: NodeJS.ProcessEnv = process.env): Deployme
   return {
     appName,
     environmentName,
+    stackName: env.CDK_STACK_NAME?.trim() || defaultStackName(appName, environmentName),
     domainName: requiredEnv(env, "CDK_DOMAIN_NAME"),
     hostedZoneId: requiredEnv(env, "CDK_HOSTED_ZONE_ID"),
     hostedZoneName: requiredEnv(env, "CDK_HOSTED_ZONE_NAME"),
@@ -30,4 +32,13 @@ function requiredEnv(env: NodeJS.ProcessEnv, key: string): string {
   const value = env[key]?.trim();
   if (!value) throw new Error(`${key} is required`);
   return value;
+}
+
+function defaultStackName(appName: string, environmentName: string): string {
+  const words = `${appName}-${environmentName}`
+    .split(/[^A-Za-z0-9]+/)
+    .filter((word) => word.length > 0);
+  const stackName = words.map((word) => `${word[0]?.toUpperCase() ?? ""}${word.slice(1)}`).join("");
+  if (!stackName) throw new Error("CDK_STACK_NAME is required");
+  return stackName;
 }

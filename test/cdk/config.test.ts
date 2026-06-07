@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 type DeploymentConfigReader = (env: NodeJS.ProcessEnv) => {
+  stackName: string;
   domainName: string;
   hostedZoneId: string;
   hostedZoneName: string;
@@ -24,6 +25,12 @@ test("deployment config accepts explicit deployment inputs", () => {
   assert.equal(config.hostedZoneName, "example.com");
   assert.equal(config.cognitoDomainPrefix, "service-example-prod");
   assert.equal(config.parameterPrefix, "/gpt-mcp-service/prod/env");
+  assert.equal(config.stackName, "GptMcpServiceProd");
+});
+
+test("deployment config accepts an explicit stack name", () => {
+  const config = cdkConfig.deploymentConfig(baseEnv({ CDK_STACK_NAME: "OperatorOwnedStack" }));
+  assert.equal(config.stackName, "OperatorOwnedStack");
 });
 
 function baseEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
