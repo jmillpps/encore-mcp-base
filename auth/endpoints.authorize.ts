@@ -26,6 +26,7 @@ export const authorize = api.raw({ expose: true, method: "GET", path: "/oauth/au
       "code_challenge_method",
       "nonce",
       "id_token_hint",
+      "ui_locales",
     ]);
     const request = {
       responseType: requiredParameter(url.searchParams, "response_type"),

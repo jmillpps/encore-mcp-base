@@ -44,6 +44,9 @@ test("authorization endpoint rejects invalid client request parameters", async (
   const invalidNonce = authorizeUrl(as.authorization_endpoint, service.actionsAudience, {});
   invalidNonce.searchParams.set("nonce", "bad nonce");
   await expectOAuthError(await fetch(invalidNonce, { redirect: "manual" }), 400, "bad_request");
+  const localized = authorizeUrl(as.authorization_endpoint, service.actionsAudience, {});
+  localized.searchParams.set("ui_locales", "en-US");
+  assert.equal((await fetch(localized, { redirect: "manual" })).status, 302);
 });
 
 test("oauth endpoints return standards-aligned unsupported mode errors", async (t) => {
