@@ -66,6 +66,8 @@ Protected resource metadata advertises the scopes used by current MCP tools.
 
 Protected resource metadata advertises header bearer token use.
 
+OAuth endpoints reject `access_token` URI query parameters.
+
 Protected resource metadata is served at `/.well-known/oauth-protected-resource` and `/.well-known/oauth-protected-resource/mcp`.
 
 Authorization requests may include `id_token_hint` during reauthorization.
