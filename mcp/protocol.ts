@@ -5,6 +5,7 @@ import { extractWwwAuthenticate } from "./auth-challenge.ts";
 import { callTool, listTools } from "./tool-registry.ts";
 import { initializeClientId, initializeResult } from "./lifecycle.ts";
 import { isJsonRpcResponse, jsonRpcError, jsonRpcSuccess, parseJsonRpc, type JsonRpcRequest } from "./json-rpc.ts";
+import { handleNotification } from "./notifications.ts";
 import { McpProtocolError } from "./protocol-error.ts";
 
 export interface McpContext {
@@ -49,14 +50,6 @@ export async function handleMcpJson(context: McpContext, input: unknown): Promis
     if (error instanceof ServiceError) return { status: error.status, body: jsonRpcError(request.id, -32000, error.message) };
     return { status: 500, body: jsonRpcError(request.id, -32603, "internal error") };
   }
-}
-
-function handleNotification(request: JsonRpcRequest): McpResult {
-  if (!request.method.startsWith("notifications/")) {
-    return { status: 400, body: jsonRpcError(undefined, -32600, "request method requires id") };
-  }
-  if (request.method === "notifications/initialized") return { status: 202 };
-  return { status: 202 };
 }
 
 async function dispatch(context: McpContext, request: JsonRpcRequest): Promise<unknown> {

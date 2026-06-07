@@ -76,6 +76,10 @@ Initialize responses include server instructions for ChatGPT tool selection and 
 
 Clients send `notifications/initialized` before normal operation.
 
+Accepted client notifications are `notifications/initialized`, `notifications/cancelled`, and `notifications/roots/list_changed`.
+
+Cancellation notifications include a valid `requestId`.
+
 The service negotiates unsupported declared protocol versions to `2025-11-25`.
 
 Requests return JSON responses. Notifications and client responses return `202 Accepted` with an empty body.
