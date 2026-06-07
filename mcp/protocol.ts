@@ -52,6 +52,9 @@ export async function handleMcpJson(context: McpContext, input: unknown): Promis
 }
 
 function handleNotification(request: JsonRpcRequest): McpResult {
+  if (!request.method.startsWith("notifications/")) {
+    return { status: 400, body: jsonRpcError(undefined, -32600, "request method requires id") };
+  }
   if (request.method === "notifications/initialized") return { status: 202 };
   return { status: 202 };
 }

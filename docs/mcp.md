@@ -46,6 +46,8 @@ JSON-RPC request and response identifiers are strings or numbers. Protocol error
 
 Numeric JSON-RPC identifiers must be finite safe integers.
 
+MCP request methods require JSON-RPC identifiers.
+
 JSON-RPC `params` values must be objects when present.
 
 JSON-RPC response `result` values must be objects.
