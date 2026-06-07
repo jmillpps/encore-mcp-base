@@ -1,8 +1,19 @@
 import { spawn } from "node:child_process";
 
-export async function createSourceArchive(projectRoot: string, outputPath: string): Promise<void> {
+export const serviceSourceArchivePaths = [
+  "actions",
+  "auth",
+  "mcp",
+  "shared",
+  "encore.app",
+  "package.json",
+  "package-lock.json",
+  "tsconfig.json",
+];
+
+export async function createSourceArchive(projectRoot: string, outputPath: string, paths: string[] = serviceSourceArchivePaths): Promise<void> {
   await assertCleanSourceTree(projectRoot);
-  await spawnFile("git", ["archive", "--format=zip", "--output", outputPath, "HEAD"], { cwd: projectRoot });
+  await spawnFile("git", ["archive", "--format=zip", "--output", outputPath, "HEAD", ...paths], { cwd: projectRoot });
 }
 
 async function assertCleanSourceTree(projectRoot: string): Promise<void> {
