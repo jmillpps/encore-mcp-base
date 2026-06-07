@@ -6,6 +6,7 @@ const methods = new Set(["get", "put", "post", "delete", "patch", "options", "he
 
 export function assertChatGptActionsOpenApi(document: JsonObject): void {
   if (document.openapi !== "3.1.0") throw new Error("OpenAPI document must use version 3.1.0");
+  assertInfo(document);
   const serverOrigin = readServerOrigin(document);
   assertOAuthOrigin(document, serverOrigin);
   for (const operation of operations(document)) {
@@ -17,6 +18,13 @@ export function assertChatGptActionsOpenApi(document: JsonObject): void {
     assertParameters(operation);
     assertJsonContent(operation);
   }
+}
+
+function assertInfo(document: JsonObject): void {
+  const info = object(document.info, "info");
+  assertTextLimit(info.title, operationDescriptionLimit, "info title");
+  assertTextLimit(info.description, operationDescriptionLimit, "info description");
+  assertTextLimit(info.version, operationDescriptionLimit, "info version");
 }
 
 interface Operation {

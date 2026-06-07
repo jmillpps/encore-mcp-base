@@ -3,7 +3,11 @@ type JsonObject = Record<string, unknown>;
 export function openApiDocument(baseUrl: string): JsonObject {
   return {
     openapi: "3.1.0",
-    info: { title: "GPT MCP Service Actions API", version: "0.1.0" },
+    info: {
+      title: "GPT MCP Service Actions API",
+      description: "OAuth-protected profile and session actions for the GPT MCP Service.",
+      version: "0.1.0",
+    },
     servers: [{ url: baseUrl }],
     "x-generated-from": "encore-compiled-route-graph",
     paths: actionPaths(),

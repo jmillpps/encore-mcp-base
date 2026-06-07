@@ -9,6 +9,9 @@ test("OpenAPI Actions compatibility accepts the generated document", () => {
 
 test("OpenAPI Actions compatibility enforces ChatGPT production limits", () => {
   assertRejects((document) => {
+    object(document.info, "info").description = "";
+  }, /info description/);
+  assertRejects((document) => {
     profileOperation(document).description = "x".repeat(301);
   }, /description/);
   assertRejects((document) => {
