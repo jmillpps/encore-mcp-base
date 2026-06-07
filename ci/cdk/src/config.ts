@@ -11,13 +11,16 @@ export interface DeploymentConfig {
   allowedOrigins: string;
 }
 
+const defaultAppName = "gpt-mcp-service";
+const defaultEnvironmentName = "prod";
+
 export function deploymentConfig(env: NodeJS.ProcessEnv = process.env): DeploymentConfig {
-  const environmentName = env.CDK_ENVIRONMENT_NAME ?? "prod";
-  const appName = env.CDK_APP_NAME ?? "gpt-mcp-service";
+  const environmentName = env.CDK_ENVIRONMENT_NAME ?? defaultEnvironmentName;
+  const appName = env.CDK_APP_NAME ?? defaultAppName;
   return {
     appName,
     environmentName,
-    stackName: env.CDK_STACK_NAME?.trim() || defaultStackName(appName, environmentName),
+    stackName: deploymentStackName(env),
     domainName: requiredEnv(env, "CDK_DOMAIN_NAME"),
     hostedZoneId: requiredEnv(env, "CDK_HOSTED_ZONE_ID"),
     hostedZoneName: requiredEnv(env, "CDK_HOSTED_ZONE_NAME"),
@@ -26,6 +29,12 @@ export function deploymentConfig(env: NodeJS.ProcessEnv = process.env): Deployme
     instanceType: env.CDK_INSTANCE_TYPE ?? "t4g.micro",
     allowedOrigins: env.CDK_ALLOWED_ORIGINS ?? "https://chatgpt.com https://chat.openai.com",
   };
+}
+
+export function deploymentStackName(env: NodeJS.ProcessEnv = process.env): string {
+  const environmentName = env.CDK_ENVIRONMENT_NAME ?? defaultEnvironmentName;
+  const appName = env.CDK_APP_NAME ?? defaultAppName;
+  return env.CDK_STACK_NAME?.trim() || defaultStackName(appName, environmentName);
 }
 
 function requiredEnv(env: NodeJS.ProcessEnv, key: string): string {

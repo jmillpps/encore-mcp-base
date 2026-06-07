@@ -10,7 +10,12 @@ type DeploymentConfigReader = (env: NodeJS.ProcessEnv) => {
   parameterPrefix: string;
 };
 
-const cdkConfig = await import(new URL("../../ci/cdk/src/config.ts", import.meta.url).href) as { deploymentConfig: DeploymentConfigReader };
+type DeploymentStackNameReader = (env: NodeJS.ProcessEnv) => string;
+
+const cdkConfig = await import(new URL("../../ci/cdk/src/config.ts", import.meta.url).href) as {
+  deploymentConfig: DeploymentConfigReader;
+  deploymentStackName: DeploymentStackNameReader;
+};
 
 test("deployment config requires operator-owned DNS and Cognito inputs", () => {
   assert.throws(() => cdkConfig.deploymentConfig({}), /CDK_DOMAIN_NAME is required/);
@@ -19,18 +24,25 @@ test("deployment config requires operator-owned DNS and Cognito inputs", () => {
 });
 
 test("deployment config accepts explicit deployment inputs", () => {
-  const config = cdkConfig.deploymentConfig(baseEnv());
+  const config = cdkConfig.deploymentConfig(baseEnv({
+    CDK_APP_NAME: "example-service",
+    CDK_ENVIRONMENT_NAME: "sandbox",
+  }));
   assert.equal(config.domainName, "service.example.com");
   assert.equal(config.hostedZoneId, "example-zone-id");
   assert.equal(config.hostedZoneName, "example.com");
   assert.equal(config.cognitoDomainPrefix, "service-example-prod");
-  assert.equal(config.parameterPrefix, "/gpt-mcp-service/prod/env");
-  assert.equal(config.stackName, "GptMcpServiceProd");
+  assert.equal(config.parameterPrefix, "/example-service/sandbox/env");
+  assert.equal(config.stackName, "ExampleServiceSandbox");
 });
 
 test("deployment config accepts an explicit stack name", () => {
   const config = cdkConfig.deploymentConfig(baseEnv({ CDK_STACK_NAME: "OperatorOwnedStack" }));
   assert.equal(config.stackName, "OperatorOwnedStack");
+});
+
+test("deployment stack name can be read without DNS inputs", () => {
+  assert.equal(cdkConfig.deploymentStackName({ CDK_APP_NAME: "operator-service", CDK_ENVIRONMENT_NAME: "qa" }), "OperatorServiceQa");
 });
 
 function baseEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {

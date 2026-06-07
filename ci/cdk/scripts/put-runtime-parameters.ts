@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { createHash, generateKeyPairSync, randomBytes } from "node:crypto";
+import { deploymentStackName } from "../src/config.ts";
 import { awsJson, awsText } from "./aws.ts";
 import { stackOutputs } from "./stack-outputs.ts";
 
@@ -65,7 +66,7 @@ console.log(JSON.stringify({
 
 function parseArgs(args: string[]): Options {
   const parsed = {
-    stackName: "GptMcpServiceProd",
+    stackName: deploymentStackName(),
     actionsRedirectUris: [] as string[],
     mcpRedirectUris: [] as string[],
   };

@@ -2,8 +2,9 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { awsJson, awsText } from "./aws.ts";
+import { deploymentStackName } from "../src/config.ts";
 import { createSourceArchive } from "../../../tools/source-archive.ts";
+import { awsJson, awsText } from "./aws.ts";
 import { stackOutputs } from "./stack-outputs.ts";
 
 interface Options {
@@ -39,7 +40,7 @@ try {
 }
 
 function parseArgs(args: string[]): Options {
-  const parsed: Options = { stackName: "GptMcpServiceProd", imageTag: "latest" };
+  const parsed: Options = { stackName: deploymentStackName(), imageTag: "latest" };
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index] ?? "";
     if (arg === "--stack-name") parsed.stackName = requiredArg(args, (index += 1), arg);
