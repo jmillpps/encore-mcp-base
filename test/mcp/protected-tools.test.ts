@@ -158,15 +158,6 @@ test("MCP tools return protocol errors for malformed tool requests and unknown t
   const error = (await readJson(unknown)).error as Record<string, unknown>;
   assert.equal(error.code, -32602);
   assert.match(requireString(error.message, "error message"), /Unknown tool/);
-  const taskAugmented = await postMcp(
-    service,
-    { jsonrpc: "2.0", id: "task-tool", method: "tools/call", params: { name: "health.check", task: { id: "task-1" } } },
-    { sessionId },
-  );
-  assert.equal(taskAugmented.status, 200);
-  const taskError = (await readJson(taskAugmented)).error as Record<string, unknown>;
-  assert.equal(taskError.code, -32602);
-  assert.match(requireString(taskError.message, "task error message"), /task/);
 });
 
 async function completeGptAppsMcpFlow(service: TestService): Promise<{ tokens: oauth.TokenEndpointResponse; idClaims: oauth.IDToken }> {

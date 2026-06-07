@@ -82,7 +82,6 @@ function validateListParams(params: unknown): void {
 
 function toolCallParams(params: unknown): { name: string; args: Record<string, unknown> } {
   const record = requiredMethodParams(params, "tools/call", ["_meta", "task", "name", "arguments"]);
-  if (record.task !== undefined) throw new McpProtocolError(-32602, "task-augmented tool calls are unsupported");
   if (typeof record.name !== "string" || record.name.length === 0) throw new McpProtocolError(-32602, "tools/call name must be a string");
   const args = record.arguments;
   if (args === undefined) return { name: record.name, args: {} };
