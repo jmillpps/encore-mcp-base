@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
@@ -61,27 +61,15 @@ test("OAuth store rejects malformed JSON and unexpected record shapes", async (t
     await rm(dir, { recursive: true, force: true });
   });
   const path = join(dir, "store.json");
-  await writeFile(path, "{", "utf8");
+  await writeStoreText(path, "{");
   await assert.rejects(() => new DiskOAuthStore(path).createRefreshToken(refreshInput()), /store file is malformed/);
-  await writeFile(path, JSON.stringify({ authorizationCodes: { [validHash]: { code_hash: validHash, unexpected: true } } }), "utf8");
+  await writeStoreJson(path, { authorizationCodes: { [validHash]: { code_hash: validHash, unexpected: true } } });
   await assert.rejects(() => new DiskOAuthStore(path).createRefreshToken(refreshInput()), /store file is malformed/);
-  await writeFile(
-    path,
-    JSON.stringify({ authorizationCodes: { [validHash]: authorizationCodeDiskRecord({ nonce: "bad nonce" }) } }),
-    "utf8",
-  );
+  await writeStoreJson(path, { authorizationCodes: { [validHash]: authorizationCodeDiskRecord({ nonce: "bad nonce" }) } });
   await assert.rejects(() => new DiskOAuthStore(path).createRefreshToken(refreshInput()), /store file is malformed/);
-  await writeFile(
-    path,
-    JSON.stringify({ authorizationCodes: { [validHash]: authorizationCodeDiskRecord({ auth_time: 2, created_at: 1 }) } }),
-    "utf8",
-  );
+  await writeStoreJson(path, { authorizationCodes: { [validHash]: authorizationCodeDiskRecord({ auth_time: 2, created_at: 1 }) } });
   await assert.rejects(() => new DiskOAuthStore(path).createRefreshToken(refreshInput()), /store file is malformed/);
-  await writeFile(
-    path,
-    JSON.stringify({ refreshTokens: { [validHash]: refreshTokenDiskRecord({ auth_time: 2, created_at: 1 }) } }),
-    "utf8",
-  );
+  await writeStoreJson(path, { refreshTokens: { [validHash]: refreshTokenDiskRecord({ auth_time: 2, created_at: 1 }) } });
   await assert.rejects(() => new DiskOAuthStore(path).createRefreshToken(refreshInput()), /store file is malformed/);
   await writeMalformedAndReject(path, { authorizationCodes: { [validHash]: authorizationCodeDiskRecord({ expires_at: 0, created_at: 1 }) } });
   await writeMalformedAndReject(path, { authorizationCodes: { [validHash]: authorizationCodeDiskRecord({ consumed_at: 0, created_at: 1 }) } });
@@ -270,8 +258,17 @@ function mcpSessionDiskRecord(overrides: Record<string, unknown> = {}): Record<s
 }
 
 async function writeMalformedAndReject(path: string, value: Record<string, unknown>) {
-  await writeFile(path, JSON.stringify(value), "utf8");
+  await writeStoreJson(path, value);
   await assert.rejects(() => new DiskOAuthStore(path).createRefreshToken(refreshInput()), /store file is malformed/);
+}
+
+async function writeStoreJson(path: string, value: Record<string, unknown>): Promise<void> {
+  await writeStoreText(path, JSON.stringify(value));
+}
+
+async function writeStoreText(path: string, value: string): Promise<void> {
+  await writeFile(path, value, { encoding: "utf8", mode: 0o600 });
+  await chmod(path, 0o600);
 }
 
 async function assertServiceError(code: string, fn: () => Promise<unknown>): Promise<void> {

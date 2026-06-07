@@ -16,6 +16,10 @@ The writer creates parent directories with mode `0700`.
 
 The writer stores the JSON file with mode `0600`.
 
+Existing store files must be regular files with mode `0600`.
+
+The reader rejects symlinks and files readable by group or other accounts.
+
 Each write uses a temporary file and an atomic rename into place.
 
 Authorization codes and refresh tokens are stored as SHA-256 hashes.

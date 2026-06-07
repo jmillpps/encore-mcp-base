@@ -1,4 +1,5 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { constants } from "node:fs";
+import { mkdir, open, rename, writeFile, type FileHandle } from "node:fs/promises";
 import { dirname } from "node:path";
 import { randomToken } from "../../shared/crypto.ts";
 import { emptyStoreState, type OAuthStoreState } from "./store-records.ts";
@@ -16,12 +17,22 @@ export class StoreFile {
   }
 
   async read(): Promise<OAuthStoreState> {
+    let handle: FileHandle;
     try {
-      const text = await readFile(this.path, "utf8");
-      return normalizeStore(parseStoreJson(text));
+      handle = await open(this.path, constants.O_RDONLY | constants.O_NOFOLLOW);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") return emptyStoreState();
+      if ((error as NodeJS.ErrnoException).code === "ELOOP") throw new Error("store file cannot be a symlink");
       throw error;
+    }
+    try {
+      const stats = await handle.stat();
+      if (!stats.isFile()) throw new Error("store path must be a regular file");
+      assertSecureFileMode(stats.mode);
+      const text = await handle.readFile("utf8");
+      return normalizeStore(parseStoreJson(text));
+    } finally {
+      await handle.close();
     }
   }
 
@@ -53,6 +64,10 @@ export class StoreFile {
     await writeFile(temp, `${JSON.stringify(serializeStore(state), null, 2)}\n`, { mode: 0o600 });
     await rename(temp, this.path);
   }
+}
+
+function assertSecureFileMode(mode: number): void {
+  if ((mode & 0o077) !== 0) throw new Error("store file permissions must be owner-only");
 }
 
 function parseStoreJson(text: string): unknown {
