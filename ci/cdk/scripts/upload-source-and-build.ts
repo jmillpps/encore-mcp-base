@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { awsJson, awsText } from "./aws.ts";
-import { spawnFile } from "./process.ts";
+import { createSourceArchive } from "../../../tools/source-archive.ts";
 import { stackOutputs } from "./stack-outputs.ts";
 
 interface Options {
@@ -21,20 +21,7 @@ const tempDir = await mkdtemp(join(tmpdir(), "gpt-mcp-service-source-"));
 const sourceZip = join(tempDir, "source.zip");
 
 try {
-  await spawnFile("zip", [
-    "-qr",
-    sourceZip,
-    ".",
-    "-x",
-    ".git/*",
-    "node_modules/*",
-    ".encore/*",
-    "encore.gen/*",
-    "var/*",
-    "ci/cdk/node_modules/*",
-    "ci/cdk/cdk.out/*",
-    "ci/cdk/.source/*",
-  ], { cwd: projectRoot });
+  await createSourceArchive(projectRoot, sourceZip);
   await awsText(["s3", "cp", sourceZip, `s3://${bucket}/source/source.zip`]);
   const build = await awsJson([
     "codebuild",
