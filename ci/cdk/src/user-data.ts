@@ -82,7 +82,7 @@ function runScript(input: UserDataInput): string {
     'aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$IMAGE_REPOSITORY_URI"',
     'docker pull "$IMAGE_REPOSITORY_URI:$IMAGE_TAG"',
     "docker rm -f gpt-mcp-service 2>/dev/null || true",
-    'docker run -d --name gpt-mcp-service --restart unless-stopped --env-file "$ENV_FILE" -v /var/lib/gpt-mcp-service:/var/lib/gpt-mcp-service -p 127.0.0.1:8080:8080 "$IMAGE_REPOSITORY_URI:$IMAGE_TAG"',
+    'docker run -d --name gpt-mcp-service --restart unless-stopped --env-file "$ENV_FILE" -v /var/lib/gpt-mcp-service:/var/lib/gpt-mcp-service -v /run/gpt-mcp-service:/run/gpt-mcp-service:ro -p 127.0.0.1:8080:8080 "$IMAGE_REPOSITORY_URI:$IMAGE_TAG"',
     "SERVICE",
   ].join("\n");
 }
