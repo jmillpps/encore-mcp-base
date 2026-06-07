@@ -3,6 +3,7 @@ import { badRequest } from "../shared/errors.ts";
 import { serviceName, serviceTitle, serviceVersion } from "../shared/service-info.ts";
 import { supportedProtocolVersion } from "./protocol-version.ts";
 import { serverInstructions } from "./server-instructions.ts";
+import { validateClientCapabilities } from "./client-capabilities.ts";
 
 const implementationNamePattern = /^[A-Za-z0-9._:/ -]{1,128}$/;
 const implementationVersionPattern = /^[\x20-\x7E]{1,128}$/;
@@ -30,7 +31,7 @@ export function initializeClientId(params: unknown): string {
 function initializeParams(params: unknown): Record<string, unknown> {
   const record = asRecord(params, "params");
   requiredString(record, "protocolVersion");
-  asRecord(record.capabilities, "capabilities");
+  validateClientCapabilities(asRecord(record.capabilities, "capabilities"));
   clientImplementation(record);
   return record;
 }

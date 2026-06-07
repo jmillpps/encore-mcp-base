@@ -60,6 +60,8 @@ Initialize requests start a new MCP session and do not include `MCP-Session-Id`.
 
 Initialize requests must include `protocolVersion`, `capabilities`, and `clientInfo`.
 
+Initialize client capabilities must use object-shaped known capability branches and boolean `roots.listChanged` when present.
+
 Initialize responses include server instructions for ChatGPT tool selection and OAuth scope expectations.
 
 Clients send `notifications/initialized` before normal operation.

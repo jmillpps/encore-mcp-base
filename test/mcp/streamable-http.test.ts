@@ -23,7 +23,15 @@ test("MCP Streamable HTTP validates transport headers and session lifecycle", as
   );
   const initializeWithSessionError = await expectOAuthError(initializeWithSession, 400, "bad_request");
   assert.match(String(initializeWithSessionError.error_description), /session/);
-  const init = await postMcp(service, { jsonrpc: "2.0", id: "init-instructions", method: "initialize", params: initializeParams({ clientInfo: { name: "instruction-test", version: "0.1.0" } }) });
+  const init = await postMcp(
+    service,
+    {
+      jsonrpc: "2.0",
+      id: "init-instructions",
+      method: "initialize",
+      params: initializeParams({ capabilities: { roots: { listChanged: true }, experimental: { custom: {} } }, clientInfo: { name: "instruction-test", version: "0.1.0" } }),
+    },
+  );
   assert.equal(init.status, 200);
   const initInstructions = requireString(((await readJson(init)).result as Record<string, unknown>).instructions, "instructions");
   assert.ok(initInstructions.length > 0);
@@ -205,6 +213,23 @@ test("MCP Streamable HTTP rejects non-object JSON-RPC response results", async (
     const body = await readJson(response);
     assert.equal((body.error as Record<string, unknown>).code, -32600);
     assert.equal(Object.hasOwn(body, "id"), false);
+  }
+});
+
+test("MCP Streamable HTTP rejects invalid initialize client capabilities", async (t) => {
+  const service = await startService(t);
+  for (const capabilities of [
+    { roots: "invalid" },
+    { roots: { listChanged: "yes" } },
+    { sampling: { context: true } },
+    { elicitation: { form: [] } },
+    { tasks: { requests: { sampling: { createMessage: false } } } },
+    { experimental: { custom: false } },
+  ]) {
+    const response = await postMcp(service, { jsonrpc: "2.0", id: "invalid-capabilities", method: "initialize", params: initializeParams({ capabilities }) });
+    assert.equal(response.status, 400);
+    const body = await readJson(response);
+    assert.equal((body.error as Record<string, unknown>).code, -32000);
   }
 });
 
