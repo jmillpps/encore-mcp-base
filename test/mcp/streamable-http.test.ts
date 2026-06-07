@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { expectOAuthError, readJson, requireString } from "../support/http.ts";
+import { assertExposesHeader, expectOAuthError, readJson, requireString } from "../support/http.ts";
 import { deleteSession, initializeMcp, postMcp } from "../support/mcp.ts";
 import { startService } from "../support/service-process.ts";
 import { assertSseOpen, SseReader } from "../support/sse.ts";
@@ -50,6 +50,7 @@ test("MCP Streamable HTTP validates transport headers and session lifecycle", as
     { contentType: "application/json; charset=utf-8" },
   );
   assert.equal(charsetInitialize.status, 200);
+  assertExposesHeader(charsetInitialize, "mcp-session-id");
   assert.match(charsetInitialize.headers.get("access-control-allow-headers") ?? "", /MCP-Session-Id/);
   assert.match(charsetInitialize.headers.get("access-control-allow-headers") ?? "", /MCP-Protocol-Version/);
   await expectOAuthError(

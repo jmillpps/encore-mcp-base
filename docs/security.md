@@ -12,6 +12,8 @@ Raw MCP handlers return HTTP 403 for invalid present `Origin` headers.
 
 Encore gateway CORS configuration pins preflight origins and MCP transport headers in `encore.app`.
 
+MCP CORS responses expose `MCP-Session-Id` and `WWW-Authenticate` for browser-hosted ChatGPT clients.
+
 Production deployment validation must verify browser preflight requests with invalid present `Origin` headers return HTTP 403 at the public `/mcp` ingress.
 
 Client ID Metadata Document retrieval treats the client ID URL as attacker-controlled input.

@@ -3,7 +3,7 @@ import test from "node:test";
 import * as oauth from "oauth4webapi";
 import { completeAuthorizationCodeFlow, discover } from "../support/oauth-client.ts";
 import { callTool, initializeMcp, postMcp, bearer } from "../support/mcp.ts";
-import { readJson, requireRecord, requireString } from "../support/http.ts";
+import { assertExposesHeader, readJson, requireRecord, requireString } from "../support/http.ts";
 import { startService, type TestService } from "../support/service-process.ts";
 
 const gptAppsMcpClient: oauth.Client = { client_id: "gpt-apps-mcp" };
@@ -30,6 +30,7 @@ test("MCP tools expose metadata and protected tools return auth challenges", asy
   const challengeResponse = await postMcp(service, { jsonrpc: "2.0", id: "identity.profile", method: "tools/call", params: { name: "identity.profile", arguments: {} } }, { sessionId });
   assert.equal(challengeResponse.status, 200);
   const challengeHeader = challengeResponse.headers.get("www-authenticate") ?? "";
+  assertExposesHeader(challengeResponse, "www-authenticate");
   assert.match(challengeHeader, /error="invalid_token"/);
   assert.match(challengeHeader, /error_description="Authentication required\."/);
   assert.match(challengeHeader, resourceMetadataPattern(service));

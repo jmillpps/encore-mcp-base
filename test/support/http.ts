@@ -25,3 +25,8 @@ export function requireRecord(value: unknown, name: string): Record<string, unkn
   if (typeof value !== "object" || value === null || Array.isArray(value)) assert.fail(`${name} must be an object`);
   return value as Record<string, unknown>;
 }
+
+export function assertExposesHeader(response: Response, header: string): void {
+  const exposed = (response.headers.get("access-control-expose-headers") ?? "").split(",").map((value) => value.trim().toLowerCase());
+  assert.ok(exposed.includes(header.toLowerCase()));
+}
