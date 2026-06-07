@@ -44,7 +44,6 @@ export function protectedResourceMetadata(config: ServiceConfig): Record<string,
     authorization_servers: [config.issuer],
     scopes_supported: mcpProtectedResourceScopes(),
     bearer_methods_supported: ["header"],
-    resource_documentation: `${config.issuer}/docs/mcp`,
   };
 }
 

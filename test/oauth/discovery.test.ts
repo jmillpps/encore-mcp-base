@@ -28,6 +28,7 @@ test("OAuth discovery is processable by oauth4webapi", async (t) => {
   assert.equal(protectedResource.resource_name, "GPT MCP Service");
   assert.deepEqual(protectedResource.bearer_methods_supported, ["header"]);
   assert.deepEqual(protectedResource.scopes_supported, ["openid", "profile", "email"]);
+  assert.equal(Object.hasOwn(protectedResource, "resource_documentation"), false);
   const mcpProtectedResource = await readJson(await fetch(`${service.origin}/.well-known/oauth-protected-resource/mcp`));
   assert.deepEqual(mcpProtectedResource, protectedResource);
 });
