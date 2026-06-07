@@ -9,6 +9,7 @@ import { jwtKid, verifyJwt } from "./tokens/jwt.ts";
 
 const maximumAssertionLifetimeSeconds = 300;
 const assertionClockSkewSeconds = 60;
+const minimumClientJwksRsaModulusBits = 2048;
 const replayCache = new Map<string, number>();
 const jwksCache = new Map<string, { keys: Map<string, KeyObject>; expiresAt: number }>();
 
@@ -61,7 +62,15 @@ function parseJwk(value: unknown): { kid: string; publicKey: KeyObject } {
   if (record.alg !== undefined && record.alg !== "RS256") throw invalidClient();
   if (record.key_ops !== undefined && (!Array.isArray(record.key_ops) || !record.key_ops.includes("verify"))) throw invalidClient();
   const kid = safeString(record.kid);
-  return { kid, publicKey: createPublicKey({ key: { kty: "RSA", n: record.n, e: record.e }, format: "jwk" }) };
+  const publicKey = createPublicKey({ key: { kty: "RSA", n: record.n, e: record.e }, format: "jwk" });
+  if (!strongClientJwksRsaKey(publicKey)) throw invalidClient();
+  return { kid, publicKey };
+}
+
+function strongClientJwksRsaKey(key: KeyObject): boolean {
+  if (key.asymmetricKeyType !== "rsa") return false;
+  const modulusLength = key.asymmetricKeyDetails?.modulusLength;
+  return typeof modulusLength === "number" && modulusLength >= minimumClientJwksRsaModulusBits;
 }
 
 function validateAssertionClaims(config: ServiceConfig, client: OAuthClient, claims: Record<string, unknown>): void {

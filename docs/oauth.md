@@ -48,6 +48,8 @@ Metadata-document clients may use `token_endpoint_auth_method` value `none` or `
 
 Metadata-document clients that use `private_key_jwt` must publish a same-origin `jwks_uri`.
 
+Metadata-document `private_key_jwt` JWKS entries must publish RSA `RS256` verification keys with at least 2048-bit modulus length.
+
 Metadata-document clients always require PKCE.
 
 Metadata-document clients receive the default `openid`, `profile`, and `email` scopes and the MCP resource audience.

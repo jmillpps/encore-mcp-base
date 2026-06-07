@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
+import { createSign, generateKeyPairSync, randomUUID, type KeyObject } from "node:crypto";
 import test from "node:test";
 import * as oauth from "oauth4webapi";
+import { encodeJsonBase64Url } from "../../shared/base64url.ts";
 import { callTool, initializeMcp, bearer } from "../support/mcp.ts";
-import { readJson } from "../support/http.ts";
+import { readJson, requireString } from "../support/http.ts";
 import { startService } from "../support/service-process.ts";
 import {
   authorizeMetadataDocumentClient,
@@ -133,6 +135,65 @@ test("metadata document private_key_jwt requires a JWKS URI", async (t) => {
   assert.equal(response.status, 401);
   assert.equal((await readJson(response)).error, "invalid_client");
 });
+
+test("metadata document private_key_jwt rejects weak RSA JWKS keys", async (t) => {
+  const service = await startService(t);
+  const key = generateWeakPrivateKeyJwtKey("weak-metadata-key");
+  const metadata = await startMetadataServer(t, service.mcpResource, {
+    tokenEndpointAuthMethod: "private_key_jwt",
+    jwks: { keys: [key.publicJwk] },
+  });
+  const authorization = await authorizeMetadataDocumentClient(service, metadata.clientId, metadata.redirectUri);
+  const response = await fetch(String(authorization.as.token_endpoint), {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "authorization_code",
+      client_id: metadata.clientId,
+      client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+      client_assertion: signClientAssertion(metadata.clientId, String(authorization.as.issuer), key.kid, key.privateKey),
+      code: requireString(authorization.callbackParameters.get("code"), "code"),
+      redirect_uri: metadata.redirectUri,
+      code_verifier: authorization.codeVerifier,
+      resource: service.mcpResource,
+    }),
+  });
+  assert.equal(response.status, 401);
+  assert.equal((await readJson(response)).error, "invalid_client");
+});
+
+function generateWeakPrivateKeyJwtKey(kid: string): { privateKey: KeyObject; publicJwk: Record<string, unknown>; kid: string } {
+  const { privateKey, publicKey } = generateKeyPairSync("rsa", { modulusLength: 1024, publicExponent: 0x10001 });
+  const publicJwk = publicKey.export({ format: "jwk" });
+  return {
+    privateKey,
+    publicJwk: {
+      kty: publicJwk.kty,
+      n: publicJwk.n,
+      e: publicJwk.e,
+      kid,
+      alg: "RS256",
+      use: "sig",
+    },
+    kid,
+  };
+}
+
+function signClientAssertion(clientId: string, issuer: string, kid: string, privateKey: KeyObject): string {
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: "RS256", kid, typ: "JWT" };
+  const payload = {
+    iss: clientId,
+    sub: clientId,
+    aud: issuer,
+    exp: now + 300,
+    iat: now,
+    jti: randomUUID(),
+  };
+  const signingInput = `${encodeJsonBase64Url(header)}.${encodeJsonBase64Url(payload)}`;
+  const signature = createSign("RSA-SHA256").update(signingInput).end().sign(privateKey, "base64url");
+  return `${signingInput}.${signature}`;
+}
 
 function capturingPrivateKeyJwt(metadata: { privateKey: oauth.CryptoKey; kid: string }, captured: { assertion?: string }): oauth.ClientAuth {
   const clientAuth = oauth.PrivateKeyJwt({ key: metadata.privateKey, kid: metadata.kid });
