@@ -30,6 +30,8 @@ test("MCP Streamable HTTP validates transport headers and session lifecycle", as
     { contentType: "application/json; charset=utf-8" },
   );
   assert.equal(charsetInitialize.status, 200);
+  assert.match(charsetInitialize.headers.get("access-control-allow-headers") ?? "", /MCP-Session-Id/);
+  assert.match(charsetInitialize.headers.get("access-control-allow-headers") ?? "", /MCP-Protocol-Version/);
   const invalidClientInfo = await postMcp(
     service,
     { jsonrpc: "2.0", id: "bad-client-info", method: "initialize", params: { clientInfo: { name: "bad\nclient" } } },

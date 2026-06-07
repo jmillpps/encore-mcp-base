@@ -53,5 +53,5 @@ export function writeCors(config: ServiceConfig, req: IncomingMessage, res: Serv
     res.setHeader("vary", "origin");
   }
   res.setHeader("access-control-allow-methods", "GET,POST,DELETE,OPTIONS");
-  res.setHeader("access-control-allow-headers", "authorization,content-type,accept,mcp-protocol-version,mcp-session-id,last-event-id");
+  res.setHeader("access-control-allow-headers", "Authorization,Content-Type,Accept,MCP-Protocol-Version,MCP-Session-Id,Last-Event-ID");
 }
