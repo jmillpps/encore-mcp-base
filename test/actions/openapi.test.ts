@@ -13,9 +13,12 @@ test("OpenAPI export contains Actions endpoints and OAuth authorization code met
   assert.equal(document.openapi, "3.1.0");
   assert.equal(document["x-generated-from"], "encore-compiled-route-graph");
   const paths = document.paths as Record<string, Record<string, unknown>>;
-  assert.ok(requireRecord(paths["/health"], "/health").get);
+  const health = requireRecord(requireRecord(paths["/health"], "/health").get, "health get");
+  assert.equal(health["x-openai-isConsequential"], false);
   const profile = requireRecord(requireRecord(paths["/actions/profile"], "/actions/profile").get, "profile get");
   const session = requireRecord(requireRecord(paths["/actions/session"], "/actions/session").get, "session get");
+  assert.equal(profile["x-openai-isConsequential"], false);
+  assert.equal(session["x-openai-isConsequential"], false);
   assert.deepEqual(profile.security, [{ OAuth2: ["openid", "profile", "email"] }]);
   assert.deepEqual(session.security, [{ OAuth2: ["openid"] }]);
   assert.ok(requireRecord(profile.responses, "profile responses")["403"]);

@@ -20,6 +20,7 @@ function actionPaths(): JsonObject {
       get: {
         operationId: "health",
         tags: ["Actions"],
+        "x-openai-isConsequential": false,
         responses: { 200: jsonResponse("Service health.", "HealthResponse") },
       },
     },
@@ -28,6 +29,7 @@ function actionPaths(): JsonObject {
         operationId: "getActionProfile",
         tags: ["Actions"],
         security: [{ OAuth2: ["openid", "profile", "email"] }],
+        "x-openai-isConsequential": false,
         responses: {
           200: jsonResponse("Static authenticated profile.", "StaticUser"),
           401: jsonResponse("Invalid bearer token.", "ErrorResponse"),
@@ -40,6 +42,7 @@ function actionPaths(): JsonObject {
         operationId: "getActionSession",
         tags: ["Actions"],
         security: [{ OAuth2: ["openid"] }],
+        "x-openai-isConsequential": false,
         responses: {
           200: jsonResponse("Authenticated session metadata.", "SessionResponse"),
           401: jsonResponse("Invalid bearer token.", "ErrorResponse"),

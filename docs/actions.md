@@ -10,6 +10,8 @@ Protected Actions endpoints require bearer access tokens issued by this service.
 
 The OpenAPI export must describe the protected action endpoints and OAuth authorization code flow.
 
+The OpenAPI export marks current read-only operations with `x-openai-isConsequential: false`.
+
 GPT Actions account linking uses the registered `gpt-actions` OAuth client.
 
 The Actions OAuth client can omit `resource` during authorization, code exchange, and refresh.
