@@ -1,5 +1,6 @@
 import type { ServiceConfig } from "../../shared/config.ts";
 import type { OAuthClient } from "../clients.ts";
+import { resolveOAuthGrantResource } from "../oauth-resource.ts";
 import { optionalParameter, requiredParameter } from "../oauth-parameters.ts";
 import type { DiskOAuthStore } from "../storage/disk-store.ts";
 import { issueTokenResponse, type TokenResponse } from "./token-response.ts";
@@ -7,7 +8,7 @@ import { issueTokenResponse, type TokenResponse } from "./token-response.ts";
 export async function authorizationCodeGrant(config: ServiceConfig, store: DiskOAuthStore, client: OAuthClient, form: URLSearchParams): Promise<TokenResponse> {
   const code = requiredParameter(form, "code");
   const redirectUri = requiredParameter(form, "redirect_uri");
-  const requestedResource = requiredParameter(form, "resource");
+  const requestedResource = resolveOAuthGrantResource(client, optionalParameter(form, "resource"));
   const record = await store.consumeAuthorizationCode(code, optionalParameter(form, "code_verifier"), {
     clientId: client.clientId,
     redirectUri,

@@ -13,6 +13,12 @@ test("authorization endpoint rejects invalid client request parameters", async (
   const missingResource = authorizeUrl(as.authorization_endpoint, service.actionsAudience, {});
   missingResource.searchParams.delete("resource");
   await expectOAuthError(await fetch(missingResource, { redirect: "manual" }), 400, "bad_request");
+  const missingMcpResource = authorizeUrl(as.authorization_endpoint, service.mcpResource, {
+    clientId: "gpt-apps-mcp",
+    redirectUri: "https://chatgpt.com/connector/oauth/local-callback",
+  });
+  missingMcpResource.searchParams.delete("resource");
+  await expectOAuthError(await fetch(missingMcpResource, { redirect: "manual" }), 400, "bad_request");
   const duplicateClient = authorizeUrl(as.authorization_endpoint, service.actionsAudience, {});
   duplicateClient.searchParams.append("client_id", "local-test");
   await expectOAuthError(await fetch(duplicateClient, { redirect: "manual" }), 400, "bad_request");

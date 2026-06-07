@@ -10,13 +10,19 @@ The default local scopes are `openid`, `profile`, and `email`.
 
 The default local MCP resource is `http://localhost:4000/mcp`.
 
-The client registry controls allowed scopes per GPT client.
+The client registry controls allowed scopes and allowed audiences per GPT client.
 
-Authorization requests require a `resource` value.
+MCP clients include `resource` in authorization requests, authorization-code exchanges, and refresh-token exchanges.
 
-Authorization-code exchanges and refresh-token exchanges require a `resource` value that matches the granted audience.
+The service rejects missing `resource` values for MCP clients, Client ID Metadata Document clients, and local multi-resource clients.
 
-Issued access tokens use the requested `resource` value as the token audience.
+Registered GPT Actions clients may omit `resource` in authorization requests, authorization-code exchanges, and refresh-token exchanges.
+
+The service binds omitted GPT Actions resources to the client's configured Actions audience.
+
+The GPT Actions client must have exactly one allowed audience when `resource` is omitted.
+
+Issued access tokens use the resolved `resource` value as the token audience.
 
 Discovery metadata advertises the union of configured client scopes.
 

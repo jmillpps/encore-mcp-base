@@ -9,3 +9,9 @@ Protected Actions endpoints require bearer access tokens issued by this service.
 `/actions/session` requires `openid`.
 
 The OpenAPI export must describe the protected action endpoints and OAuth authorization code flow.
+
+GPT Actions account linking uses the registered `gpt-actions` OAuth client.
+
+The Actions OAuth client can omit `resource` during authorization, code exchange, and refresh.
+
+The service binds omitted Actions resources to the configured Actions audience.

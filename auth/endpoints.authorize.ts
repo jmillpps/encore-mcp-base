@@ -30,7 +30,7 @@ export const authorize = api.raw({ expose: true, method: "GET", path: "/oauth/au
       redirectUri: requiredParameter(url.searchParams, "redirect_uri"),
       ...(url.searchParams.has("scope") ? { scope: optionalParameter(url.searchParams, "scope") ?? "" } : {}),
       ...(url.searchParams.has("state") ? { state: optionalParameter(url.searchParams, "state") ?? "" } : {}),
-      resource: requiredParameter(url.searchParams, "resource"),
+      ...(url.searchParams.has("resource") ? { resource: optionalParameter(url.searchParams, "resource") ?? "" } : {}),
       ...(url.searchParams.has("code_challenge") ? { codeChallenge: optionalParameter(url.searchParams, "code_challenge") ?? "" } : {}),
       ...(url.searchParams.has("code_challenge_method") ? { codeChallengeMethod: optionalParameter(url.searchParams, "code_challenge_method") ?? "" } : {}),
       ...(url.searchParams.has("nonce") ? { nonce: optionalParameter(url.searchParams, "nonce") ?? "" } : {}),
