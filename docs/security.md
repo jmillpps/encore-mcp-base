@@ -24,6 +24,8 @@ Client ID Metadata Document retrieval treats the client ID URL as attacker-contr
 
 Client ID Metadata Document and client JWKS caches remove expired entries and keep a bounded number of live entries.
 
+Metadata documents and client JWKS documents must decode as valid UTF-8 before JSON parsing.
+
 Production metadata retrieval requires HTTPS, rejects loopback and private network targets, pins DNS resolution for the outbound request, disables redirects, limits response size, and uses a short request timeout.
 
 Metadata documents must use exact `client_id` matching and exact redirect URI registration.

@@ -60,6 +60,36 @@ export async function startMetadataServer(t: TestContextLike, resource: string, 
   return { clientId, redirectUri };
 }
 
+export async function startInvalidUtf8MetadataServer(t: TestContextLike): Promise<MetadataServer> {
+  let clientId = "";
+  let redirectUri = "";
+  const server = createServer((req, res) => {
+    if (req.url !== "/client.json") {
+      res.writeHead(404);
+      res.end();
+      return;
+    }
+    const before = Buffer.from(
+      `{"client_id":${JSON.stringify(clientId)},"client_name":"Invalid `,
+      "utf8",
+    );
+    const invalid = Buffer.from([0xff]);
+    const after = Buffer.from(
+      ` metadata","redirect_uris":[${JSON.stringify(redirectUri)}],"grant_types":["authorization_code"],"response_types":["code"],"token_endpoint_auth_method":"none"}`,
+      "utf8",
+    );
+    res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+    res.end(Buffer.concat([before, invalid, after]));
+  });
+  await listen(server);
+  const address = server.address();
+  assertAddressInfo(address);
+  clientId = `http://127.0.0.1:${address.port}/client.json`;
+  redirectUri = `http://127.0.0.1:${address.port}/callback`;
+  t.after(async () => close(server));
+  return { clientId, redirectUri };
+}
+
 export async function startPrivateKeyMetadataServer(t: TestContextLike, resource: string): Promise<PrivateKeyMetadataServer> {
   const key = await generatePrivateKeyJwtKey("metadata-key");
   const metadata = await startMetadataServer(t, resource, { tokenEndpointAuthMethod: "private_key_jwt", jwks: { keys: [key.publicJwk] } });

@@ -12,7 +12,7 @@ import { readConfig } from "../../shared/config.ts";
 import { callTool, initializeMcp, bearer } from "../support/mcp.ts";
 import { readJson } from "../support/http.ts";
 import { startService, type TestService } from "../support/service-process.ts";
-import { authorizeMetadataDocumentClient, fetchAuthorizationUrl, startMetadataServer } from "../support/client-metadata.ts";
+import { authorizeMetadataDocumentClient, fetchAuthorizationUrl, startInvalidUtf8MetadataServer, startMetadataServer } from "../support/client-metadata.ts";
 
 test("Client ID Metadata Document clients complete OAuth and call protected MCP tools", async (t) => {
   const service = await startService(t);
@@ -74,6 +74,14 @@ test("metadata document client_id mismatch is rejected before issuing a code", a
 test("metadata document unsupported token auth method is rejected before issuing a code", async (t) => {
   const service = await startService(t);
   const metadata = await startMetadataServer(t, service.mcpResource, { tokenEndpointAuthMethod: "client_secret_post" });
+  const response = await fetchAuthorizationUrl(service, metadata.clientId, metadata.redirectUri);
+  assert.equal(response.status, 401);
+  assert.equal((await readJson(response)).error, "invalid_client");
+});
+
+test("metadata document clients reject invalid UTF-8 documents before issuing a code", async (t) => {
+  const service = await startService(t);
+  const metadata = await startInvalidUtf8MetadataServer(t);
   const response = await fetchAuthorizationUrl(service, metadata.clientId, metadata.redirectUri);
   assert.equal(response.status, 401);
   assert.equal((await readJson(response)).error, "invalid_client");

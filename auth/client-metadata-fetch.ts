@@ -1,6 +1,7 @@
 import { Buffer } from "node:buffer";
 import { request as httpRequest, type IncomingHttpHeaders, type IncomingMessage, type RequestOptions } from "node:http";
 import { request as httpsRequest } from "node:https";
+import { TextDecoder } from "node:util";
 import { mediaType } from "../shared/media-type.ts";
 import { networkHostname } from "../shared/network-address.ts";
 import { invalidMetadataClient } from "./client-metadata-error.ts";
@@ -10,6 +11,7 @@ const maximumMetadataBytes = 32768;
 const metadataFetchTimeoutMs = 3000;
 const defaultCacheSeconds = 300;
 const maximumCacheSeconds = 3600;
+const utf8Decoder = new TextDecoder("utf-8", { fatal: true });
 
 export async function fetchMetadataDocument(url: URL, networkAddress: NetworkAddress | undefined): Promise<{ body: unknown; cacheSeconds: number }> {
   let response: IncomingMessage;
@@ -71,7 +73,11 @@ async function readMetadataBody(response: IncomingMessage): Promise<string> {
     }
     chunks.push(buffer);
   }
-  return Buffer.concat(chunks).toString("utf8");
+  try {
+    return utf8Decoder.decode(Buffer.concat(chunks));
+  } catch {
+    throw invalidMetadataClient();
+  }
 }
 
 function validStatus(statusCode: number | undefined): boolean {
