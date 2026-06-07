@@ -30,6 +30,8 @@ Streamable HTTP is served at `/mcp`.
 
 `POST /mcp` accepts one JSON-RPC request, notification, or response per HTTP request.
 
+JSON-RPC request and response identifiers are strings or numbers. Protocol errors omit `id` when no valid request identifier exists.
+
 Clients send `Accept: application/json, text/event-stream` and `Content-Type: application/json`.
 
 The initialize response includes `MCP-Session-Id`. Clients send that session ID with `MCP-Protocol-Version` on later `/mcp` requests.
