@@ -2,6 +2,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { isLoopbackHostname, isNonPublicHostname } from "../shared/network-address.ts";
 import { openApiDocument } from "./openapi-document.ts";
 import { loadValidatedEncoreGraph } from "./openapi-graph.ts";
 
@@ -48,9 +49,11 @@ function normalizeBaseUrl(value: string): string {
   if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("base URL must use http or https");
   if (url.protocol === "http:" && !isLocalHttpHost(url.hostname)) throw new Error("public base URL must use https");
   if (url.username || url.password || url.search || url.hash) throw new Error("base URL contains unsupported URL parts");
+  if (url.pathname !== "/") throw new Error("base URL must not include a path");
+  if (url.protocol === "https:" && isNonPublicHostname(url.hostname)) throw new Error("public base URL must use a public host");
   return url.href.replace(/\/$/, "");
 }
 
 function isLocalHttpHost(hostname: string): boolean {
-  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1" || hostname === "[::1]";
+  return isLoopbackHostname(hostname);
 }

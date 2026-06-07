@@ -62,6 +62,24 @@ test("OpenAPI export rejects base URLs with unsupported URL parts", () => {
   assert.match(result.stderr, /unsupported URL parts/);
 });
 
+test("OpenAPI export rejects base URLs with unsupported deployment paths", () => {
+  const result = spawnSync(process.execPath, ["--experimental-strip-types", "tools/export-openapi.ts", "--base-url", "https://example.test/base"], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /must not include a path/);
+});
+
+test("OpenAPI export rejects private HTTPS base URLs", () => {
+  const result = spawnSync(process.execPath, ["--experimental-strip-types", "tools/export-openapi.ts", "--base-url", "https://localhost"], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /public host/);
+});
+
 test("OpenAPI export rejects public HTTP base URLs", () => {
   const result = spawnSync(process.execPath, ["--experimental-strip-types", "tools/export-openapi.ts", "--base-url", "http://example.test"], {
     cwd: process.cwd(),
