@@ -1,4 +1,5 @@
 import { api } from "encore.dev/api";
+import { rejectAccessTokenQuery } from "../shared/access-token-query.ts";
 import { readConfig } from "../shared/config.ts";
 import { ServiceError } from "../shared/errors.ts";
 import { readForm, requestSubject, writeJson } from "../shared/http.ts";
@@ -11,6 +12,7 @@ import { handleTokenGrant } from "./token.ts";
 export const token = api.raw({ expose: true, method: "POST", path: "/oauth/token" }, async (req, res) => {
   try {
     const config = readConfig();
+    rejectAccessTokenQuery(req.url);
     const form = await readForm(req);
     const authorization = String(req.headers.authorization ?? "");
     await enforceRateLimit(config, "oauth-token", tokenRateSubject(form, authorization, requestSubject(req)));

@@ -22,6 +22,23 @@ test("authorization code grant rejects refresh-token parameters without consumin
   assert.equal((await exchangeCode(authorization, service.actionsAudience)).tokens.token_type, "bearer");
 });
 
+test("token endpoint rejects access tokens in the URI query without consuming the code", async (t) => {
+  const service = await startService(t);
+  const as = await discover(service);
+  const authorization = await authorizeCode(service, as, service.actionsAudience);
+  const body = new URLSearchParams({
+    grant_type: "authorization_code",
+    client_id: "local-test",
+    client_secret: localClientSecret,
+    code: authorization.code,
+    redirect_uri: localRedirectUri,
+    code_verifier: authorization.codeVerifier,
+    resource: service.actionsAudience,
+  });
+  await expectOAuthError(await postToken(`${as.token_endpoint}?access_token=query-token`, body), 400, "bad_request");
+  assert.equal((await exchangeCode(authorization, service.actionsAudience)).tokens.token_type, "bearer");
+});
+
 test("authorization code grant requires resource without consuming the code", async (t) => {
   const service = await startService(t);
   const as = await discover(service);
