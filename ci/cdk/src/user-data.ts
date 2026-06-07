@@ -11,7 +11,7 @@ export function userDataCommands(input: UserDataInput): string[] {
     "set -euo pipefail",
     "exec > >(tee -a /var/log/gpt-mcp-service-bootstrap.log) 2>&1",
     "dnf update -y",
-    "dnf install -y docker jq awscli curl tar gzip",
+    "dnf install -y docker jq awscli tar gzip",
     "systemctl enable --now docker",
     installCaddy(),
     "mkdir -p /etc/caddy /opt/gpt-mcp-service /var/lib/gpt-mcp-service /var/lib/caddy /run/gpt-mcp-service",
