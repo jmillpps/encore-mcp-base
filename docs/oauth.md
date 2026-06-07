@@ -56,6 +56,10 @@ Protected resource metadata advertises the scopes configured for clients that ca
 
 Protected resource metadata is served at `/.well-known/oauth-protected-resource` and `/.well-known/oauth-protected-resource/mcp`.
 
+Authorization requests may include `id_token_hint` during reauthorization.
+
+The service validates `id_token_hint` syntax and keeps authorization decisions tied to registered clients, redirect URIs, scopes, resources, and PKCE.
+
 Authorization requests may include an OIDC nonce. The service validates nonce syntax, stores the nonce with the authorization code, and places the nonce in the ID token issued during code exchange.
 
 ID token `auth_time` reflects the authorization request time and remains stable across refresh token rotation.

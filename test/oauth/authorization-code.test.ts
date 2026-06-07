@@ -76,6 +76,32 @@ test("authorization code flow preserves authentication time across delayed excha
   assert.ok(numberClaim(idClaims.auth_time, "auth_time") < numberClaim(idClaims.iat, "iat"));
 });
 
+test("authorization endpoint accepts id_token_hint during reauthorization", async (t) => {
+  const service = await startService(t);
+  const flow = await completeAuthorizationCodeFlow(service);
+  const state = oauth.generateRandomState();
+  const url = await authorizationUrl(flow.as, service.actionsAudience, state);
+  url.searchParams.set("id_token_hint", requireString(flow.tokens.id_token, "id_token"));
+  const response = await fetch(url, { redirect: "manual" });
+  assert.equal(response.status, 302);
+  const callback = new URL(requireString(response.headers.get("location"), "location"));
+  const params = oauth.validateAuthResponse(flow.as, localClient, callback, state);
+  assert.ok(params.get("code"));
+});
+
+test("authorization endpoint rejects malformed id_token_hint before redirect", async (t) => {
+  const service = await startService(t);
+  const as = await discover(service);
+  for (const hint of ["not a jwt", "a".repeat(4097)]) {
+    const url = await authorizationUrl(as, service.actionsAudience, oauth.generateRandomState());
+    url.searchParams.set("id_token_hint", hint);
+    const response = await fetch(url, { redirect: "manual" });
+    assert.equal(response.status, 400);
+    assert.equal((await readJson(response)).error, "bad_request");
+    assert.equal(response.headers.get("location"), null);
+  }
+});
+
 test("authorization endpoint rejects invalid state values before redirect", async (t) => {
   const service = await startService(t);
   const as = await discover(service);

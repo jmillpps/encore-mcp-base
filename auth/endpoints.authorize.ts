@@ -23,6 +23,7 @@ export const authorize = api.raw({ expose: true, method: "GET", path: "/oauth/au
       "code_challenge",
       "code_challenge_method",
       "nonce",
+      "id_token_hint",
     ]);
     const request = {
       responseType: requiredParameter(url.searchParams, "response_type"),
@@ -34,6 +35,7 @@ export const authorize = api.raw({ expose: true, method: "GET", path: "/oauth/au
       ...(url.searchParams.has("code_challenge") ? { codeChallenge: optionalParameter(url.searchParams, "code_challenge") ?? "" } : {}),
       ...(url.searchParams.has("code_challenge_method") ? { codeChallengeMethod: optionalParameter(url.searchParams, "code_challenge_method") ?? "" } : {}),
       ...(url.searchParams.has("nonce") ? { nonce: optionalParameter(url.searchParams, "nonce") ?? "" } : {}),
+      ...(url.searchParams.has("id_token_hint") ? { idTokenHint: optionalParameter(url.searchParams, "id_token_hint") ?? "" } : {}),
     };
     const redirect = await createAuthorizationRedirect(config, new DiskOAuthStore(config.oauthStorePath), loadClients(config), request);
     writeRedirect(res, redirect);
