@@ -1,5 +1,6 @@
 import type { ServiceConfig } from "../shared/config.ts";
 import type { OAuthClient } from "./client-types.ts";
+import { mcpProtectedResourceScopes } from "./scopes.ts";
 
 export function openidConfiguration(config: ServiceConfig, clients: readonly OAuthClient[]): Record<string, unknown> {
   return {
@@ -35,11 +36,11 @@ export function authorizationServerMetadata(config: ServiceConfig, clients: read
   };
 }
 
-export function protectedResourceMetadata(config: ServiceConfig, clients: readonly OAuthClient[]): Record<string, unknown> {
+export function protectedResourceMetadata(config: ServiceConfig): Record<string, unknown> {
   return {
     resource: config.mcpResource,
     authorization_servers: [config.issuer],
-    scopes_supported: supportedScopes(clients, config.mcpResource),
+    scopes_supported: mcpProtectedResourceScopes(),
     resource_documentation: `${config.issuer}/docs/mcp`,
   };
 }

@@ -31,7 +31,7 @@ export function issueAccessToken(config: ServiceConfig, input: AccessTokenInput)
   return signJwt({ ...claims }, key.kid, key.privateKey);
 }
 
-export function verifyAccessToken(config: ServiceConfig, token: string, audience: string, requiredScopes: string[] = []): AccessTokenClaims {
+export function verifyAccessToken(config: ServiceConfig, token: string, audience: string, requiredScopes: readonly string[] = []): AccessTokenClaims {
   const kid = jwtKid(token);
   const key = getVerificationKeys(config).find((candidate) => candidate.kid === kid);
   if (!key) throw new ServiceError("unauthorized", "invalid token", 401);

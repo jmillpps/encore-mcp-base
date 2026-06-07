@@ -1,9 +1,8 @@
 import { verifyBearer } from "../../auth/bearer.ts";
+import { authSessionScopes } from "../../auth/scopes.ts";
 import { readOnlyToolAnnotations } from "../tool-annotations.ts";
 import { emptyInputSchema, objectSchema, stringArraySchema, stringSchema } from "../tool-schemas.ts";
 import type { McpTool } from "../tool-types.ts";
-
-const authSessionScopes = ["openid"];
 
 export const authSessionTool: McpTool = {
   name: "auth.session",

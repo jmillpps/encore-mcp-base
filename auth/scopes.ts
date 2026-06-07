@@ -1,6 +1,12 @@
 import { ServiceError } from "../shared/errors.ts";
 
-export const defaultScopes = ["openid", "profile", "email"] as const;
+export const authSessionScopes = ["openid"] as const;
+export const identityProfileScopes = ["openid", "profile", "email"] as const;
+export const defaultScopes = identityProfileScopes;
+
+export function mcpProtectedResourceScopes(): string[] {
+  return [...new Set([...authSessionScopes, ...identityProfileScopes])];
+}
 
 export function parseScopes(input: string | undefined): string[] {
   const raw = input?.trim() ? input : defaultScopes.join(" ");

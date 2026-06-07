@@ -30,7 +30,7 @@ test("OAuth discovery is processable by oauth4webapi", async (t) => {
   assert.deepEqual(mcpProtectedResource, protectedResource);
 });
 
-test("discovery metadata advertises configured custom client scopes", () => {
+test("authorization server metadata advertises client scopes while protected resource metadata stays tied to MCP tool scopes", () => {
   const config = readConfig({
     PUBLIC_ISSUER_URL: "https://issuer.example.test",
     MCP_RESOURCE_URL: "https://mcp.example.test/mcp",
@@ -42,7 +42,7 @@ test("discovery metadata advertises configured custom client scopes", () => {
   ];
   assert.deepEqual(openidConfiguration(config, clients).scopes_supported, ["openid", "profile", "email", "actions:write", "mcp:read"]);
   assert.deepEqual(authorizationServerMetadata(config, clients).scopes_supported, ["openid", "profile", "email", "actions:write", "mcp:read"]);
-  assert.deepEqual(protectedResourceMetadata(config, clients).scopes_supported, ["openid", "profile", "email", "mcp:read"]);
+  assert.deepEqual(protectedResourceMetadata(config).scopes_supported, ["openid", "profile", "email"]);
 });
 
 function client(clientId: string, resource: string, scopes: string[]): OAuthClient {

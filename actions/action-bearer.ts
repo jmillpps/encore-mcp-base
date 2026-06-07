@@ -4,7 +4,7 @@ import type { AccessTokenClaims } from "../auth/tokens/token-claims.ts";
 import { ServiceError } from "../shared/errors.ts";
 import { readConfig } from "../shared/config.ts";
 
-export function verifyActionBearer(authorization: string, scopes: string[]): AccessTokenClaims {
+export function verifyActionBearer(authorization: string, scopes: readonly string[]): AccessTokenClaims {
   try {
     const config = readConfig();
     return verifyBearer(config, authorization, config.actionsAudience, scopes);

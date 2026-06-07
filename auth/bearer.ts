@@ -8,11 +8,11 @@ export function readBearer(header: string | undefined): string {
   return readAuthorizationCredentials(header, "Bearer", { code: "unauthorized", message: "missing bearer token", status: 401 });
 }
 
-export function verifyBearer(config: ServiceConfig, header: string | undefined, audience: string, scopes: string[] = []): AccessTokenClaims {
+export function verifyBearer(config: ServiceConfig, header: string | undefined, audience: string, scopes: readonly string[] = []): AccessTokenClaims {
   return verifyAccessToken(config, readBearer(header), audience, scopes);
 }
 
-export function verifyBearerAnyAudience(config: ServiceConfig, header: string | undefined, audiences: string[], scopes: string[] = []): AccessTokenClaims {
+export function verifyBearerAnyAudience(config: ServiceConfig, header: string | undefined, audiences: readonly string[], scopes: readonly string[] = []): AccessTokenClaims {
   const token = readBearer(header);
   let scopeError: ServiceError | undefined;
   for (const audience of audiences) {

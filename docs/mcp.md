@@ -14,6 +14,8 @@ Missing or invalid bearer tokens receive a Bearer challenge with `error="invalid
 
 Bearer challenges use the path-specific protected resource metadata URL for `/mcp`.
 
+Protected resource metadata advertises the scopes used by current MCP tools.
+
 Tokens with insufficient scopes receive a Bearer challenge with `error="insufficient_scope"`, `error_description`, `resource_metadata`, and the required scope list.
 
 Tool names use ASCII letters, digits, underscores, hyphens, and dots. Names stay within 128 characters.

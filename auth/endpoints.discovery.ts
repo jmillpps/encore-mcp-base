@@ -35,7 +35,7 @@ export const protectedResourceMcp = api.raw({ expose: true, method: "GET", path:
 async function writeProtectedResource(res: ServerResponse, endpoint: string): Promise<void> {
   try {
     const config = readConfig();
-    writeJson(res, 200, protectedResourceMetadata(config, loadClients(config)));
+    writeJson(res, 200, protectedResourceMetadata(config));
   } catch (error) {
     writeOAuthError(res, error, { endpoint, method: "GET" });
   }
