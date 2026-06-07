@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import * as oauth from "oauth4webapi";
 import { resolveClientIdMetadataDocument } from "../../auth/client-id-metadata-document.ts";
+import { parseMetadataClient } from "../../auth/client-metadata-parser.ts";
 import { ServiceError } from "../../shared/errors.ts";
 import { readConfig } from "../../shared/config.ts";
 import { callTool, initializeMcp, bearer } from "../support/mcp.ts";
@@ -74,6 +75,36 @@ test("metadata document unsupported token auth method is rejected before issuing
   assert.equal((await readJson(response)).error, "invalid_client");
 });
 
+test("metadata document clients allow production loopback HTTP redirect URIs", () => {
+  const config = productionConfig();
+  const clientId = "https://client.example.test/client.json";
+  const client = parseMetadataClient(config, clientId, {
+    client_id: clientId,
+    client_name: "Desktop MCP Client",
+    redirect_uris: ["http://127.0.0.1:3000/callback", "http://localhost:3000/callback"],
+    grant_types: ["authorization_code"],
+    response_types: ["code"],
+    token_endpoint_auth_method: "none",
+  });
+  assert.deepEqual(client.redirectUris, ["http://127.0.0.1:3000/callback", "http://localhost:3000/callback"]);
+});
+
+test("metadata document clients reject production public HTTP redirect URIs", () => {
+  const config = productionConfig();
+  const clientId = "https://client.example.test/client.json";
+  assert.throws(
+    () => parseMetadataClient(config, clientId, {
+      client_id: clientId,
+      client_name: "Public HTTP Client",
+      redirect_uris: ["http://public.example.test/callback"],
+      grant_types: ["authorization_code"],
+      response_types: ["code"],
+      token_endpoint_auth_method: "none",
+    }),
+    (error) => error instanceof ServiceError && error.code === "invalid_client",
+  );
+});
+
 test("production metadata document resolution rejects unsafe URL targets", async () => {
   const config = productionConfig();
   for (const clientId of [
@@ -134,5 +165,6 @@ function productionConfig() {
     REFRESH_TOKEN_TTL_SECONDS: "2592000",
     RATE_LIMIT_WINDOW_SECONDS: "60",
     RATE_LIMIT_MAX_REQUESTS: "120",
+    MCP_SSE_MAX_CONNECTIONS: "1024",
   });
 }

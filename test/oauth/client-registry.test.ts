@@ -39,10 +39,17 @@ test("client registry preserves redirect URI text for exact callback matching", 
   assert.throws(() => assertRedirectUri(client, new URL(redirectUri).toString()), /redirect_uri/);
 });
 
+test("client registry allows production loopback HTTP redirect URIs", () => {
+  const redirectUris = ["http://127.0.0.1:3000/callback", "http://localhost:3000/callback"];
+  const clients = parseClientJson(JSON.stringify([clientRecord({ redirectUris })]), true);
+  assert.deepEqual(clients[0]?.redirectUris, redirectUris);
+});
+
 test("client registry rejects unsafe or malformed metadata", () => {
   assert.throws(() => parseClientJson("{}", true), /non-empty array/);
   assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ clientSecretHash: "bad" })]), true), /SHA-256/);
   assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ redirectUris: ["https://*.example.test/callback"] })]), true), /wildcards/);
+  assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ redirectUris: ["http://public.example.test/callback"] })]), true), /https or localhost/);
   assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ redirectUris: [" https://chatgpt.com/callback"] })]), true), /whitespace/);
   assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ redirectUris: ["https://user:pass@chatgpt.com/callback"] })]), true), /credentials/);
   assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ tokenEndpointAuthMethod: "none" })]), true), /not supported/);

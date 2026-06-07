@@ -12,6 +12,8 @@ The default local MCP resource is `http://localhost:4000/mcp`.
 
 The client registry controls allowed scopes and allowed audiences per GPT client.
 
+Production redirect URIs use HTTPS or loopback HTTP.
+
 MCP clients include `resource` in authorization requests, authorization-code exchanges, and refresh-token exchanges.
 
 The service rejects missing `resource` values for MCP clients, Client ID Metadata Document clients, and local multi-resource clients.

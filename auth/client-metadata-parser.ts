@@ -2,6 +2,7 @@ import type { ServiceConfig } from "../shared/config.ts";
 import { invalidMetadataClient } from "./client-metadata-error.ts";
 import { parseClientIdUrl } from "./client-metadata-network.ts";
 import type { OAuthClient, TokenEndpointAuthMethod } from "./client-types.ts";
+import { parseRedirectUri, productionRedirectUriAllowed } from "./redirect-uri.ts";
 import { defaultScopes } from "./scopes.ts";
 
 export function parseMetadataClient(config: ServiceConfig, clientId: string, body: unknown): OAuthClient {
@@ -89,17 +90,12 @@ function optionalStringArray(value: unknown): string[] {
 }
 
 function validRedirectUri(value: string, production: boolean): string {
-  let url: URL;
   try {
-    url = new URL(value);
+    const url = parseRedirectUri(value, "redirect_uris");
+    if (production && !productionRedirectUriAllowed(url)) throw invalidMetadataClient();
   } catch {
     throw invalidMetadataClient();
   }
-  if (value !== value.trim()) throw invalidMetadataClient();
-  if (value.includes("*")) throw invalidMetadataClient();
-  if (url.username || url.password || url.hash) throw invalidMetadataClient();
-  if (production && url.protocol !== "https:") throw invalidMetadataClient();
-  if (url.protocol !== "https:" && url.protocol !== "http:") throw invalidMetadataClient();
   return value;
 }
 

@@ -1,4 +1,5 @@
 import type { OAuthClient } from "./client-types.ts";
+import { parseRedirectUri, productionRedirectUriAllowed } from "./redirect-uri.ts";
 
 const authMethods = ["client_secret_post", "client_secret_basic"] as const;
 const pkcePolicies = ["required", "optional"] as const;
@@ -88,7 +89,8 @@ function parseHttpUrl(value: string, key: string, production: boolean): URL {
 }
 
 function parseRedirectUrl(value: string, production: boolean): string {
-  parseHttpUrl(value, "redirectUris", production);
+  const url = parseRedirectUri(value, "redirectUris");
+  if (production && !productionRedirectUriAllowed(url)) throw new Error("redirectUris must use https or localhost http in production");
   return value;
 }
 

@@ -92,6 +92,7 @@ function productionConfig() {
     REFRESH_TOKEN_TTL_SECONDS: "2592000",
     RATE_LIMIT_WINDOW_SECONDS: "60",
     RATE_LIMIT_MAX_REQUESTS: "120",
+    MCP_SSE_MAX_CONNECTIONS: "1024",
   });
 }
 
