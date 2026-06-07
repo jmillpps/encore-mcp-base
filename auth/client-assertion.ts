@@ -5,13 +5,15 @@ import { nowSeconds } from "../shared/time.ts";
 import { fetchMetadataDocument } from "./client-metadata-fetch.ts";
 import { resolveMetadataNetworkAddress } from "./client-metadata-network.ts";
 import type { OAuthClient } from "./client-types.ts";
+import { readExpiringCache, writeExpiringCache, type ExpiringCacheEntry } from "./expiring-cache.ts";
 import { jwtKid, verifyJwt } from "./tokens/jwt.ts";
 
 const maximumAssertionLifetimeSeconds = 300;
 const assertionClockSkewSeconds = 60;
 const minimumClientJwksRsaModulusBits = 2048;
+const maximumClientJwksCacheEntries = 64;
 const replayCache = new Map<string, number>();
-const jwksCache = new Map<string, { keys: Map<string, KeyObject>; expiresAt: number }>();
+const jwksCache = new Map<string, ExpiringCacheEntry<Map<string, KeyObject>>>();
 
 export async function assertPrivateKeyJwtClientAssertion(config: ServiceConfig, client: OAuthClient, assertion: string | undefined): Promise<void> {
   if (!assertion || !client.jwksUri) throw invalidClient();
@@ -33,12 +35,13 @@ async function clientAssertionKey(config: ServiceConfig, jwksUri: string, assert
 }
 
 async function clientJwks(config: ServiceConfig, jwksUri: string): Promise<Map<string, KeyObject>> {
-  const cached = jwksCache.get(jwksUri);
-  if (cached && cached.expiresAt > Date.now()) return cached.keys;
+  const cacheKey = `${config.production}\0${jwksUri}`;
+  const cached = readExpiringCache(jwksCache, cacheKey);
+  if (cached) return cached;
   const url = new URL(jwksUri);
   const fetched = await fetchMetadataDocument(url, await resolveMetadataNetworkAddress(url, config.production));
   const keys = parseJwks(fetched.body);
-  jwksCache.set(jwksUri, { keys, expiresAt: Date.now() + fetched.cacheSeconds * 1000 });
+  writeExpiringCache(jwksCache, cacheKey, keys, fetched.cacheSeconds, maximumClientJwksCacheEntries);
   return keys;
 }
 

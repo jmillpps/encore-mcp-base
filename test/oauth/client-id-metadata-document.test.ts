@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { once } from "node:events";
+import { createServer, type Server } from "node:http";
+import type { AddressInfo } from "node:net";
 import test from "node:test";
 import * as oauth from "oauth4webapi";
 import { resolveClientIdMetadataDocument } from "../../auth/client-id-metadata-document.ts";
@@ -74,6 +77,19 @@ test("metadata document unsupported token auth method is rejected before issuing
   const response = await fetchAuthorizationUrl(service, metadata.clientId, metadata.redirectUri);
   assert.equal(response.status, 401);
   assert.equal((await readJson(response)).error, "invalid_client");
+});
+
+test("metadata document cache evicts older remote clients after bounded capacity", async (t) => {
+  const config = readConfig({});
+  const metadata = await startCountingMetadataDocumentServer(t, config.mcpResource);
+  const firstClientId = metadata.clientId(0);
+  await resolveClientIdMetadataDocument(config, firstClientId);
+  for (let index = 1; index <= 70; index += 1) {
+    await resolveClientIdMetadataDocument(config, metadata.clientId(index));
+  }
+  assert.equal(metadata.count(firstClientId), 1);
+  await resolveClientIdMetadataDocument(config, firstClientId);
+  assert.equal(metadata.count(firstClientId), 2);
 });
 
 test("metadata document clients allow production loopback HTTP redirect URIs", () => {
@@ -187,4 +203,64 @@ function productionConfig() {
     RATE_LIMIT_MAX_REQUESTS: "120",
     MCP_SSE_MAX_CONNECTIONS: "1024",
   });
+}
+
+async function startCountingMetadataDocumentServer(
+  t: TestContextLike,
+  resource: string,
+): Promise<{ clientId(index: number): string; count(clientId: string): number }> {
+  const hits = new Map<string, number>();
+  let origin = "";
+  const server = createServer((req, res) => {
+    const path = req.url ?? "/";
+    if (!/^\/client-\d+\.json$/.test(path)) {
+      res.writeHead(404);
+      res.end();
+      return;
+    }
+    const clientId = `${origin}${path}`;
+    hits.set(clientId, (hits.get(clientId) ?? 0) + 1);
+    res.writeHead(200, { "content-type": "application/json", "cache-control": "max-age=3600" });
+    res.end(JSON.stringify({
+      client_id: clientId,
+      client_name: "Counting Metadata Client",
+      redirect_uris: [`${origin}/callback`],
+      grant_types: ["authorization_code"],
+      response_types: ["code"],
+      token_endpoint_auth_method: "none",
+      resource,
+    }));
+  });
+  await listen(server);
+  const address = server.address();
+  assertAddressInfo(address);
+  origin = `http://127.0.0.1:${address.port}`;
+  t.after(async () => close(server));
+  return {
+    clientId(index: number) {
+      return `${origin}/client-${index}.json`;
+    },
+    count(clientId: string) {
+      return hits.get(clientId) ?? 0;
+    },
+  };
+}
+
+async function listen(server: Server): Promise<void> {
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+}
+
+async function close(server: Server): Promise<void> {
+  server.close();
+  await once(server, "close");
+}
+
+interface TestContextLike {
+  after(fn: () => Promise<void>): void;
+}
+
+function assertAddressInfo(value: string | AddressInfo | null): asserts value is AddressInfo {
+  assert.equal(typeof value, "object");
+  assert.ok(value);
 }

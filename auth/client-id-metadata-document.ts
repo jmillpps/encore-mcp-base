@@ -3,22 +3,19 @@ import type { OAuthClient } from "./client-types.ts";
 import { fetchMetadataDocument } from "./client-metadata-fetch.ts";
 import { parseMetadataClient } from "./client-metadata-parser.ts";
 import { parseClientIdUrl, resolveMetadataNetworkAddress } from "./client-metadata-network.ts";
+import { readExpiringCache, writeExpiringCache, type ExpiringCacheEntry } from "./expiring-cache.ts";
 
-interface CachedMetadataClient {
-  client: OAuthClient;
-  expiresAt: number;
-}
-
-const metadataCache = new Map<string, CachedMetadataClient>();
+const maximumMetadataCacheEntries = 64;
+const metadataCache = new Map<string, ExpiringCacheEntry<OAuthClient>>();
 
 export async function resolveClientIdMetadataDocument(config: ServiceConfig, clientId: string): Promise<OAuthClient> {
   const url = parseClientIdUrl(clientId, config.production);
   const networkAddress = await resolveMetadataNetworkAddress(url, config.production);
   const cacheKey = `${config.mcpResource}\0${config.production}\0${clientId}`;
-  const cached = metadataCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) return cached.client;
+  const cached = readExpiringCache(metadataCache, cacheKey);
+  if (cached) return cached;
   const fetched = await fetchMetadataDocument(url, networkAddress);
   const client = parseMetadataClient(config, clientId, fetched.body);
-  metadataCache.set(cacheKey, { client, expiresAt: Date.now() + fetched.cacheSeconds * 1000 });
+  writeExpiringCache(metadataCache, cacheKey, client, fetched.cacheSeconds, maximumMetadataCacheEntries);
   return client;
 }
