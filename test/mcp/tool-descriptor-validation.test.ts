@@ -13,6 +13,9 @@ test("listTools rejects malformed tool descriptors before exposure", () => {
     { annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false } },
     { annotations: { destructiveHint: false, idempotentHint: true, openWorldHint: false } },
     { requiredScopes: ["bad scope"] },
+    { invocation: { invoking: "", invoked: "Done" } },
+    { invocation: { invoking: "x".repeat(65), invoked: "Done" } },
+    { invocation: { invoking: "Running", invoked: "Done", extra: true } },
     { inputSchema: { type: "string" } },
     { outputSchema: { type: "array" } },
     { run: "not-a-function" },
@@ -38,6 +41,7 @@ function baseTool(index: number): McpTool {
     inputSchema: emptyInputSchema(),
     outputSchema: objectSchema({ status: stringSchema() }),
     annotations: readOnlyToolAnnotations(),
+    invocation: { invoking: "Running descriptor test", invoked: "Descriptor test ready" },
     requiredScopes: [],
     run: async () => ({ content: [{ type: "text", text: "ok" }], structuredContent: { status: "ok" } }),
   };

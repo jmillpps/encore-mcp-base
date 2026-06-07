@@ -15,6 +15,7 @@ export const healthCheckTool: McpTool = {
     service: objectSchema({ name: stringSchema(), version: stringSchema() }),
   }),
   annotations: readOnlyToolAnnotations(),
+  invocation: { invoking: "Checking service health", invoked: "Service health ready" },
   requiredScopes: [],
   run: async () => {
     const structuredContent = {

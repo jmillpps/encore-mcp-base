@@ -20,6 +20,7 @@ export const identityProfileTool: McpTool = {
     email_verified: booleanSchema(),
   }),
   annotations: readOnlyToolAnnotations(),
+  invocation: { invoking: "Reading identity profile", invoked: "Identity profile ready" },
   requiredScopes: [...identityProfileScopes],
   run: async (context) => identityProfile(context),
 };

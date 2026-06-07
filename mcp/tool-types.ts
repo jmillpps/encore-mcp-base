@@ -7,8 +7,14 @@ export interface McpTool {
   inputSchema: Record<string, unknown>;
   outputSchema: Record<string, unknown>;
   annotations: Record<string, unknown>;
+  invocation: ToolInvocationStatus;
   requiredScopes: string[];
   run: (context: ToolContext, args: Record<string, unknown>) => Promise<Record<string, unknown>>;
+}
+
+export interface ToolInvocationStatus {
+  invoking: string;
+  invoked: string;
 }
 
 export interface ToolContext {

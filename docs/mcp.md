@@ -26,6 +26,10 @@ Tool descriptors include per-tool ChatGPT Apps auth schemes.
 
 Tool descriptors mirror auth schemes in `_meta.securitySchemes` for ChatGPT Apps clients that read descriptor metadata.
 
+Tool descriptors set `_meta.ui.visibility` to `["model"]` for the current model-callable tool surface.
+
+Tool descriptors include short ChatGPT Apps invocation status text under OpenAI metadata keys.
+
 Tool descriptors are validated before they are listed or executed.
 
 The current tool list is returned as a single page. `tools/list` accepts request metadata and rejects unsupported cursors with `-32602`.

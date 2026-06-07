@@ -16,6 +16,7 @@ export const authSessionTool: McpTool = {
     scopes: stringArraySchema(),
   }),
   annotations: readOnlyToolAnnotations(),
+  invocation: { invoking: "Reading auth session", invoked: "Auth session ready" },
   requiredScopes: [...authSessionScopes],
   run: async (context) => {
     const claims = verifyBearer(context.config, context.authorization, context.config.mcpResource, authSessionScopes);

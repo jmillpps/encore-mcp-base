@@ -60,6 +60,7 @@ function assertToolDescriptor(tool: McpTool): void {
   if (!isObjectSchema(tool.inputSchema)) throw invalidToolDescriptor();
   if (!isObjectSchema(tool.outputSchema)) throw invalidToolDescriptor();
   if (!isToolAnnotations(tool.annotations)) throw invalidToolDescriptor();
+  if (!isToolInvocationStatus(tool.invocation)) throw invalidToolDescriptor();
   if (!Array.isArray(tool.requiredScopes) || tool.requiredScopes.some((scope) => typeof scope !== "string" || !scopePattern.test(scope))) throw invalidToolDescriptor();
   if (new Set(tool.requiredScopes).size !== tool.requiredScopes.length) throw invalidToolDescriptor();
   if (typeof tool.run !== "function") throw invalidToolDescriptor();
@@ -76,7 +77,12 @@ function toolDescriptor(tool: McpTool): Record<string, unknown> {
     outputSchema: tool.outputSchema,
     annotations: tool.annotations,
     securitySchemes,
-    _meta: { securitySchemes },
+    _meta: {
+      securitySchemes,
+      ui: { visibility: ["model"] },
+      "openai/toolInvocation/invoking": tool.invocation.invoking,
+      "openai/toolInvocation/invoked": tool.invocation.invoked,
+    },
   };
 }
 
@@ -121,6 +127,17 @@ function isToolAnnotations(value: unknown): boolean {
     if (typeof record[key] !== "boolean") return false;
   }
   return true;
+}
+
+function isToolInvocationStatus(value: unknown): boolean {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const record = value as Record<string, unknown>;
+  if (Object.keys(record).some((key) => !["invoking", "invoked"].includes(key))) return false;
+  return isStatusText(record.invoking) && isStatusText(record.invoked);
+}
+
+function isStatusText(value: unknown): boolean {
+  return typeof value === "string" && value.length > 0 && value.length <= 64;
 }
 
 function invalidToolDescriptor(): ServiceError {

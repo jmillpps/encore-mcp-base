@@ -22,7 +22,13 @@ test("MCP tools expose metadata and protected tools return auth challenges", asy
     assert.match(requireString(tool.name, "tool name"), /^[A-Za-z0-9_.-]{1,128}$/);
     assert.equal(requireRecord(tool.annotations, "tool annotations").readOnlyHint, true);
     assert.deepEqual(tool.execution, { taskSupport: "forbidden" });
-    assert.deepEqual(requireRecord(tool._meta, "tool metadata").securitySchemes, tool.securitySchemes);
+    const meta = requireRecord(tool._meta, "tool metadata");
+    assert.deepEqual(meta.securitySchemes, tool.securitySchemes);
+    assert.deepEqual(requireRecord(meta.ui, "tool ui metadata").visibility, ["model"]);
+    assert.equal(typeof meta["openai/toolInvocation/invoking"], "string");
+    assert.equal(typeof meta["openai/toolInvocation/invoked"], "string");
+    assert.ok(requireString(meta["openai/toolInvocation/invoking"], "invoking status").length <= 64);
+    assert.ok(requireString(meta["openai/toolInvocation/invoked"], "invoked status").length <= 64);
   }
   assert.deepEqual(toolByName(tools, "health.check").securitySchemes, [{ type: "noauth" }]);
   assert.deepEqual(toolByName(tools, "identity.profile").securitySchemes, [{ type: "oauth2", scopes: ["openid", "profile", "email"] }]);

@@ -9,6 +9,8 @@ import { readOnlyToolAnnotations } from "../../mcp/tool-annotations.ts";
 import { callTool, tools, type McpTool } from "../../mcp/tool-registry.ts";
 import { emptyInputSchema, objectSchema, stringSchema } from "../../mcp/tool-schemas.ts";
 
+const testInvocation = { invoking: "Running test tool", invoked: "Test tool ready" };
+
 test("callTool rejects successful results that violate the tool output schema", async () => {
   const dir = await mkdtemp(join(tmpdir(), "mcp-output-validation-"));
   const tool: McpTool = {
@@ -18,6 +20,7 @@ test("callTool rejects successful results that violate the tool output schema", 
     inputSchema: emptyInputSchema(),
     outputSchema: objectSchema({ status: stringSchema() }),
     annotations: readOnlyToolAnnotations(),
+    invocation: testInvocation,
     requiredScopes: [],
     run: async () => ({ content: [{ type: "text", text: "bad" }], structuredContent: { status: 1 } }),
   };
@@ -63,6 +66,7 @@ test("callTool rejects malformed tool result envelopes", async () => {
       inputSchema: emptyInputSchema(),
       outputSchema: objectSchema({ status: stringSchema() }),
       annotations: readOnlyToolAnnotations(),
+      invocation: testInvocation,
       requiredScopes: [],
       run: async () => result,
     };
@@ -88,6 +92,7 @@ test("callTool accepts valid text content metadata", async () => {
     inputSchema: emptyInputSchema(),
     outputSchema: objectSchema({ status: stringSchema() }),
     annotations: readOnlyToolAnnotations(),
+    invocation: testInvocation,
     requiredScopes: [],
     run: async () => ({
       content: [
@@ -120,6 +125,7 @@ test("callTool accepts valid binary and resource content", async () => {
     inputSchema: emptyInputSchema(),
     outputSchema: objectSchema({ status: stringSchema() }),
     annotations: readOnlyToolAnnotations(),
+    invocation: testInvocation,
     requiredScopes: [],
     run: async () => ({
       content: [
