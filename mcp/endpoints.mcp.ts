@@ -34,7 +34,6 @@ export const mcpPost = api.raw({ expose: true, method: "POST", path: "/mcp" }, a
     validateOrigin(activeConfig, req);
     validateNoAccessTokenQuery(req);
     validateSingleAuthorizationHeader(req);
-    verifyPresentedBearer(activeConfig, req.headers.authorization, activeConfig.mcpResource);
     validatePostAccept(req);
     validatePostContentType(req);
     writeCors(activeConfig, req, res);

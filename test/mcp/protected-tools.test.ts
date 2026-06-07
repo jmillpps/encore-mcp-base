@@ -3,7 +3,7 @@ import test from "node:test";
 import * as oauth from "oauth4webapi";
 import { completeAuthorizationCodeFlow, discover } from "../support/oauth-client.ts";
 import { callTool, initializeMcp, postMcp, bearer } from "../support/mcp.ts";
-import { assertExposesHeader, expectOAuthError, readJson, requireRecord, requireString } from "../support/http.ts";
+import { assertExposesHeader, readJson, requireRecord, requireString } from "../support/http.ts";
 import { startService, type TestService } from "../support/service-process.ts";
 
 const gptAppsMcpClient: oauth.Client = { client_id: "gpt-apps-mcp" };
@@ -27,6 +27,13 @@ test("MCP tools expose metadata and protected tools return auth challenges", asy
   assert.deepEqual(toolByName(tools, "health.check").securitySchemes, [{ type: "noauth" }]);
   assert.deepEqual(toolByName(tools, "identity.profile").securitySchemes, [{ type: "oauth2", scopes: ["openid", "profile", "email"] }]);
   assert.deepEqual(toolByName(tools, "auth.session").securitySchemes, [{ type: "oauth2", scopes: ["openid"] }]);
+  const unauthenticatedList = await postMcp(
+    service,
+    { jsonrpc: "2.0", id: "list-invalid-token", method: "tools/list" },
+    { sessionId, authorization: "Bearer aaa.bbb.ccc" },
+  );
+  assert.equal(unauthenticatedList.status, 200);
+  assert.ok(((await readJson(unauthenticatedList)).result as Record<string, unknown>).tools);
   const challengeResponse = await postMcp(service, { jsonrpc: "2.0", id: "identity.profile", method: "tools/call", params: { name: "identity.profile", arguments: {} } }, { sessionId });
   assert.equal(challengeResponse.status, 200);
   const challengeHeader = challengeResponse.headers.get("www-authenticate") ?? "";
@@ -74,8 +81,13 @@ test("MCP protected tools enforce audience and scopes", async (t) => {
     { jsonrpc: "2.0", id: "identity.profile.wrong-audience", method: "tools/call", params: { name: "identity.profile", arguments: {} } },
     { sessionId, authorization: bearer(actionsFlow.tokens.access_token) },
   );
-  await expectOAuthError(wrongAudience, 401, "unauthorized");
-  assert.match(wrongAudience.headers.get("www-authenticate") ?? "", resourceMetadataPattern(service));
+  assert.equal(wrongAudience.status, 200);
+  const wrongAudienceChallenge = wrongAudience.headers.get("www-authenticate") ?? "";
+  assert.match(wrongAudienceChallenge, /error="invalid_token"/);
+  assert.match(wrongAudienceChallenge, resourceMetadataPattern(service));
+  const wrongAudienceResult = ((await readJson(wrongAudience)).result as Record<string, unknown>);
+  assert.equal(wrongAudienceResult.isError, true);
+  assert.ok(Array.isArray(requireRecord(wrongAudienceResult._meta, "wrong audience challenge metadata")["mcp/www_authenticate"]));
   const narrowFlow = await completeAuthorizationCodeFlow(service, service.mcpResource, "openid");
   const missingScopeResponse = await postMcp(
     service,

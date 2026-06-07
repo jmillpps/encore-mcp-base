@@ -33,7 +33,6 @@ export const messages = api.raw({ expose: true, method: "POST", path: "/messages
     validateOrigin(config, req);
     validateNoAccessTokenQuery(req);
     validateSingleAuthorizationHeader(req);
-    verifyPresentedBearer(config, req.headers.authorization, config.mcpResource);
     validatePostContentType(req);
     writeCors(config, req, res);
     const sessionId = readLegacySseSessionId(req.url);
