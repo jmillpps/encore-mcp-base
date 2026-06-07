@@ -7,7 +7,7 @@ import type { McpTool } from "../tool-types.ts";
 export const authSessionTool: McpTool = {
   name: "auth.session",
   title: "Auth Session",
-  description: "Return authenticated token session metadata.",
+  description: "Use this when ChatGPT needs OAuth token session metadata.",
   inputSchema: emptyInputSchema(),
   outputSchema: objectSchema({
     subject: stringSchema(),

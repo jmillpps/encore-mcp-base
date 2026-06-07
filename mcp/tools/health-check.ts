@@ -7,7 +7,7 @@ import type { McpTool } from "../tool-types.ts";
 export const healthCheckTool: McpTool = {
   name: "health.check",
   title: "Health Check",
-  description: "Check whether the service is reachable.",
+  description: "Use this when ChatGPT needs to confirm the MCP service is reachable.",
   inputSchema: emptyInputSchema(),
   outputSchema: objectSchema({
     status: stringSchema(),

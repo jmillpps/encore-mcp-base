@@ -20,6 +20,7 @@ test("MCP tools expose metadata and protected tools return auth challenges", asy
   assert.ok(tools.some((tool) => tool.name === "identity.profile"));
   for (const tool of tools) {
     assert.match(requireString(tool.name, "tool name"), /^[A-Za-z0-9_.-]{1,128}$/);
+    assert.match(requireString(tool.description, "tool description"), /^Use this when /);
     assert.equal(requireRecord(tool.annotations, "tool annotations").readOnlyHint, true);
     assert.deepEqual(tool.execution, { taskSupport: "forbidden" });
     const meta = requireRecord(tool._meta, "tool metadata");

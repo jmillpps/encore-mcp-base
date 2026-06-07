@@ -8,7 +8,7 @@ import type { McpTool, ToolContext } from "../tool-types.ts";
 export const identityProfileTool: McpTool = {
   name: "identity.profile",
   title: "Identity Profile",
-  description: "Return the authenticated static user profile.",
+  description: "Use this when ChatGPT needs the authenticated user's OpenID Connect profile.",
   inputSchema: emptyInputSchema(),
   outputSchema: objectSchema({
     sub: stringSchema(),
