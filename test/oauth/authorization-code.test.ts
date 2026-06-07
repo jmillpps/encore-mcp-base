@@ -113,6 +113,19 @@ test("authorization endpoint rejects invalid state values before redirect", asyn
   }
 });
 
+test("authorization endpoint rejects invalid scope values before redirect", async (t) => {
+  const service = await startService(t);
+  const as = await discover(service);
+  for (const scope of ["", "openid\tprofile", "openid\nprofile", "openid  profile", "openid bad!scope"]) {
+    const url = await authorizationUrl(as, service.actionsAudience, oauth.generateRandomState());
+    url.searchParams.set("scope", scope);
+    const response = await fetch(url, { redirect: "manual" });
+    assert.equal(response.status, 400);
+    assert.equal((await readJson(response)).error, "invalid_scope");
+    assert.equal(response.headers.get("location"), null);
+  }
+});
+
 test("authorization code grant applies current client policy before consuming", async (t) => {
   const dir = await mkdtemp(join(tmpdir(), "mcp-code-policy-"));
   t.after(async () => {

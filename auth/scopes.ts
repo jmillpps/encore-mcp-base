@@ -3,14 +3,16 @@ import { ServiceError } from "../shared/errors.ts";
 export const authSessionScopes = ["openid"] as const;
 export const identityProfileScopes = ["openid", "profile", "email"] as const;
 export const defaultScopes = identityProfileScopes;
+const scopeListPattern = /^[A-Za-z0-9:_./-]+(?: [A-Za-z0-9:_./-]+)*$/;
 
 export function mcpProtectedResourceScopes(): string[] {
   return [...new Set([...authSessionScopes, ...identityProfileScopes])];
 }
 
 export function parseScopes(input: string | undefined): string[] {
-  const raw = input?.trim() ? input : defaultScopes.join(" ");
-  return [...new Set(raw.split(/\s+/).map((scope) => scope.trim()).filter(Boolean))];
+  if (input === undefined) return [...defaultScopes];
+  if (!scopeListPattern.test(input)) throw new ServiceError("invalid_scope", "scope is invalid", 400);
+  return [...new Set(input.split(" "))];
 }
 
 export function assertAllowedScopes(requested: string[], allowed: readonly string[]): void {
