@@ -7,7 +7,7 @@ export interface JsonRpcRequest {
   jsonrpc: "2.0";
   id?: JsonRpcId;
   method: string;
-  params?: unknown;
+  params?: Record<string, unknown>;
 }
 
 export function isJsonRpcResponse(value: unknown): boolean {
@@ -32,7 +32,7 @@ export function parseJsonRpc(value: unknown): JsonRpcRequest {
   if (id !== undefined) validateJsonRpcId(id);
   const request: JsonRpcRequest = { jsonrpc: "2.0", method };
   if (id !== undefined) request.id = id;
-  if (record.params !== undefined) request.params = record.params;
+  if (record.params !== undefined) request.params = jsonRpcParams(record.params);
   return request;
 }
 
@@ -61,6 +61,11 @@ function validateJsonRpcError(value: unknown): void {
   const record = asRecord(value, "error");
   if (!Number.isInteger(record.code)) throw new ServiceError("bad_request", "invalid json-rpc error", 400);
   if (typeof record.message !== "string") throw new ServiceError("bad_request", "invalid json-rpc error", 400);
+}
+
+function jsonRpcParams(value: unknown): Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) throw new ServiceError("bad_request", "invalid json-rpc params", 400);
+  return value as Record<string, unknown>;
 }
 
 function validateJsonRpcId(value: unknown): asserts value is JsonRpcId {

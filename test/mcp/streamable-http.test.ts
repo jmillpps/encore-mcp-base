@@ -148,8 +148,8 @@ test("MCP Streamable HTTP validates transport headers and session lifecycle", as
   assert.equal(Array.isArray(toolsListResult.tools), true);
   assert.equal(Object.hasOwn(toolsListResult, "nextCursor"), false);
   const badListParams = await postMcp(service, { jsonrpc: "2.0", id: "bad-list-params", method: "tools/list", params: [] }, { sessionId });
-  assert.equal(badListParams.status, 200);
-  assert.equal(((await readJson(badListParams)).error as Record<string, unknown>).code, -32602);
+  assert.equal(badListParams.status, 400);
+  assert.equal(((await readJson(badListParams)).error as Record<string, unknown>).code, -32600);
   const badListCursor = await postMcp(service, { jsonrpc: "2.0", id: "bad-list-cursor", method: "tools/list", params: { cursor: "never-issued" } }, { sessionId });
   assert.equal(badListCursor.status, 200);
   assert.equal(((await readJson(badListCursor)).error as Record<string, unknown>).code, -32602);
@@ -176,8 +176,8 @@ test("MCP Streamable HTTP validates transport headers and session lifecycle", as
   assert.equal(missingMethod.status, 200);
   assert.equal(((await readJson(missingMethod)).error as Record<string, unknown>).code, -32601);
   const missingMethodWithInvalidParams = await postMcp(service, { jsonrpc: "2.0", id: "missing-invalid-params", method: "missing/method", params: [] }, { sessionId });
-  assert.equal(missingMethodWithInvalidParams.status, 200);
-  assert.equal(((await readJson(missingMethodWithInvalidParams)).error as Record<string, unknown>).code, -32601);
+  assert.equal(missingMethodWithInvalidParams.status, 400);
+  assert.equal(((await readJson(missingMethodWithInvalidParams)).error as Record<string, unknown>).code, -32600);
   await expectOAuthError(await deleteMcp(service, sessionId, "https://evil.test"), 403, "forbidden");
   const deleted = await deleteSession(service, sessionId);
   assert.equal(deleted.status, 204);
@@ -189,6 +189,22 @@ test("MCP Streamable HTTP rejects unsafe numeric JSON-RPC ids", async (t) => {
   const service = await startService(t);
   for (const id of ["1e999", "9007199254740993", "1.5"]) {
     const response = await postRawMcp(service, `{"jsonrpc":"2.0","id":${id},"method":"initialize","params":${JSON.stringify(initializeParams())}}`);
+    assert.equal(response.status, 400);
+    const body = await readJson(response);
+    assert.equal((body.error as Record<string, unknown>).code, -32600);
+    assert.equal(Object.hasOwn(body, "id"), false);
+  }
+});
+
+test("MCP Streamable HTTP rejects non-object JSON-RPC params", async (t) => {
+  const service = await startService(t);
+  const sessionId = await initializeMcp(service);
+  for (const message of [
+    { jsonrpc: "2.0", id: "array-params", method: "ping", params: [] },
+    { jsonrpc: "2.0", id: "null-params", method: "ping", params: null },
+    { jsonrpc: "2.0", method: "notifications/initialized", params: [] },
+  ]) {
+    const response = await postMcp(service, message, { sessionId });
     assert.equal(response.status, 400);
     const body = await readJson(response);
     assert.equal((body.error as Record<string, unknown>).code, -32600);

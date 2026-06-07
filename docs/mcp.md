@@ -46,6 +46,8 @@ JSON-RPC request and response identifiers are strings or numbers. Protocol error
 
 Numeric JSON-RPC identifiers must be finite safe integers.
 
+JSON-RPC `params` values must be objects when present.
+
 Clients send `Accept: application/json, text/event-stream` and `Content-Type: application/json`.
 
 JSON request bodies use UTF-8.
