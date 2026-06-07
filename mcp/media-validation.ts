@@ -3,7 +3,7 @@ const imageMimeTypePattern = /^image\/[A-Za-z0-9.+-]+(?:;[ \t]*[A-Za-z0-9!#$&^_.
 const audioMimeTypePattern = /^audio\/[A-Za-z0-9.+-]+(?:;[ \t]*[A-Za-z0-9!#$&^_.+-]+=[A-Za-z0-9!#$&^_.+-]+)*$/i;
 const dataUrlPattern = /^(data:)(image\/[A-Za-z0-9.+-]+(?:;[A-Za-z0-9!#$&^_.+-]+=[A-Za-z0-9!#$&^_.+-]+)*);base64,([A-Za-z0-9+/]*={0,2})$/i;
 const iconSizePattern = /^(?:any|[1-9][0-9]*x[1-9][0-9]*)$/;
-const blockedResourceUriProtocols = new Set(["data:", "javascript:", "vbscript:"]);
+const allowedResourceUriProtocols = new Set(["https:", "http:", "ui:"]);
 
 export function isBase64(value: unknown): value is string {
   return typeof value === "string" && value.length % 4 === 0 && base64Pattern.test(value);
@@ -13,7 +13,7 @@ export function isResourceUri(value: unknown): value is string {
   if (typeof value !== "string") return false;
   try {
     const url = new URL(value);
-    return !blockedResourceUriProtocols.has(url.protocol);
+    return allowedResourceUriProtocols.has(url.protocol);
   } catch {
     return false;
   }

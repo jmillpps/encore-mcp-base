@@ -40,6 +40,8 @@ Tool results must use MCP `CallToolResult` content, structured content, error fl
 
 Tool result content blocks are validated against supported MCP content shapes.
 
+Tool result resource URIs use `https`, `http`, or `ui` schemes.
+
 Task-augmented tool calls run normally when task support is not advertised.
 
 The service ignores `params.task` and `io.modelcontextprotocol/related-task` request metadata.
