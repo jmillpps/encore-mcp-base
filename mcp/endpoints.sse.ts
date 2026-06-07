@@ -4,12 +4,13 @@ import { requestSubject, writeError, writeJson } from "../shared/http.ts";
 import { readLegacySseSessionId, runLegacySseSession, sendLegacySseMessage } from "./legacy-sse-session.ts";
 import { handleMcpJson } from "./protocol.ts";
 import { isMcpBodyResult, readMcpJsonBody } from "./request-body.ts";
-import { validateOrigin, validatePostContentType, validateSseAccept, writeCors } from "./transport-headers.ts";
+import { validateNoAccessTokenQuery, validateOrigin, validatePostContentType, validateSseAccept, writeCors } from "./transport-headers.ts";
 
 export const sse = api.raw({ expose: true, method: "GET", path: "/sse" }, async (req, res) => {
   try {
     const config = readConfig();
     validateOrigin(config, req);
+    validateNoAccessTokenQuery(req);
     validateSseAccept(req);
     writeCors(config, req, res);
     await runLegacySseSession(res, config.mcpSseMaxConnections);
@@ -23,6 +24,7 @@ export const messages = api.raw({ expose: true, method: "POST", path: "/messages
   try {
     const config = readConfig();
     validateOrigin(config, req);
+    validateNoAccessTokenQuery(req);
     validatePostContentType(req);
     writeCors(config, req, res);
     const sessionId = readLegacySseSessionId(req.url);

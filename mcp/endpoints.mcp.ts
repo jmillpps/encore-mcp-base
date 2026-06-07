@@ -8,12 +8,13 @@ import { runStreamableGetStream } from "./streamable-get-stream.ts";
 import { handleMcpJson } from "./protocol.ts";
 import { negotiateProtocolVersion } from "./protocol-version.ts";
 import { isMcpBodyResult, readMcpJsonBody } from "./request-body.ts";
-import { readMcpProtocolVersion, readMcpSessionId, validateNoMcpSessionId, validateOrigin, validatePostAccept, validatePostContentType, writeCors } from "./transport-headers.ts";
+import { readMcpProtocolVersion, readMcpSessionId, validateNoAccessTokenQuery, validateNoMcpSessionId, validateOrigin, validatePostAccept, validatePostContentType, writeCors } from "./transport-headers.ts";
 
 export const mcpOptions = api.raw({ expose: true, method: "OPTIONS", path: "/mcp" }, async (req, res) => {
   try {
     const config = readConfig();
     validateOrigin(config, req);
+    validateNoAccessTokenQuery(req);
     writeCors(config, req, res);
     writeNoContent(res);
   } catch (error) {
@@ -25,6 +26,7 @@ export const mcpPost = api.raw({ expose: true, method: "POST", path: "/mcp" }, a
   try {
     const config = readConfig();
     validateOrigin(config, req);
+    validateNoAccessTokenQuery(req);
     validatePostAccept(req);
     validatePostContentType(req);
     writeCors(config, req, res);
@@ -51,6 +53,7 @@ export const mcpGet = api.raw({ expose: true, method: "GET", path: "/mcp" }, asy
   try {
     const config = readConfig();
     validateOrigin(config, req);
+    validateNoAccessTokenQuery(req);
     const accept = String(req.headers.accept ?? "");
     if (!acceptsMediaType(accept, "text/event-stream")) throw new ServiceError("bad_request", "invalid accept header", 400);
     const protocolVersion = negotiateProtocolVersion(readMcpProtocolVersion(req, true));
@@ -67,6 +70,7 @@ export const mcpDelete = api.raw({ expose: true, method: "DELETE", path: "/mcp" 
   try {
     const config = readConfig();
     validateOrigin(config, req);
+    validateNoAccessTokenQuery(req);
     const protocolVersion = negotiateProtocolVersion(readMcpProtocolVersion(req, true));
     await touchMcpSession(config, readMcpSessionId(req), protocolVersion);
     await terminateMcpSession(config, readMcpSessionId(req));

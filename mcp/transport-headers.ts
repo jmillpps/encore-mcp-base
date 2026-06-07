@@ -10,6 +10,13 @@ export function validateOrigin(config: ServiceConfig, req: IncomingMessage): voi
   }
 }
 
+export function validateNoAccessTokenQuery(req: IncomingMessage): void {
+  const url = new URL(req.url ?? "/", "http://localhost");
+  if (url.searchParams.has("access_token")) {
+    throw new ServiceError("bad_request", "access tokens must use the authorization header", 400);
+  }
+}
+
 export function validatePostAccept(req: IncomingMessage): void {
   const accept = String(req.headers.accept ?? "");
   if (!acceptsMediaType(accept, "application/json") || !acceptsMediaType(accept, "text/event-stream")) {
