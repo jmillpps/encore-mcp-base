@@ -17,7 +17,7 @@ export async function createMcpSession(config: ServiceConfig, protocolVersion: s
   return sessionId;
 }
 
-export async function touchMcpSession(config: ServiceConfig, sessionId: string, protocolVersion: string, markInitialized = false): Promise<{ initialized: boolean }> {
+export async function touchMcpSession(config: ServiceConfig, sessionId: string, protocolVersion: string | undefined, markInitialized = false): Promise<{ initialized: boolean }> {
   return new DiskOAuthStore(config.oauthStorePath).touchMcpSession(sha256Base64Url(sessionId), protocolVersion, markInitialized);
 }
 

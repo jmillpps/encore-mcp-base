@@ -76,6 +76,8 @@ JSON-RPC request and notification objects cannot include response fields.
 
 The initialize response includes `MCP-Session-Id`. Clients send that session ID with `MCP-Protocol-Version` on later `/mcp` requests.
 
+Session-bound requests without `MCP-Protocol-Version` use the negotiated protocol version stored with the session.
+
 Initialize requests start a new MCP session and do not include `MCP-Session-Id`.
 
 Initialize requests must include `protocolVersion`, `capabilities`, and `clientInfo`.
