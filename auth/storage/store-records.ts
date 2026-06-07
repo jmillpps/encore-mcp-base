@@ -36,6 +36,7 @@ export interface McpSessionRecord {
   createdAt: number;
   lastSeenAt: number;
   expiresAt: number;
+  requestIdHashes: string[];
   initializedAt?: number;
   terminatedAt?: number;
 }

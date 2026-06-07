@@ -2,7 +2,7 @@ import { api } from "encore.dev/api";
 import { verifyPresentedBearer } from "../auth/bearer.ts";
 import { readConfig } from "../shared/config.ts";
 import { requestSubject, writeJson } from "../shared/http.ts";
-import { readLegacySseSessionId, runLegacySseSession, sendLegacySseMessage } from "./legacy-sse-session.ts";
+import { readLegacySseSessionId, reserveLegacyRequestId, runLegacySseSession, sendLegacySseMessage } from "./legacy-sse-session.ts";
 import { handleMcpJson } from "./protocol.ts";
 import { isMcpBodyResult, readMcpJsonBody } from "./request-body.ts";
 import { validateNoAccessTokenQuery, validateOrigin, validatePostContentType, validateSseAccept, writeCors } from "./transport-headers.ts";
@@ -39,7 +39,12 @@ export const messages = api.raw({ expose: true, method: "POST", path: "/messages
       writeJson(res, body.status, body.body);
       return;
     }
-    const result = await handleMcpJson({ config, authorization: String(req.headers.authorization ?? ""), rateLimitSubject: requestSubject(req) }, body);
+    const result = await handleMcpJson({
+      config,
+      authorization: String(req.headers.authorization ?? ""),
+      rateLimitSubject: requestSubject(req),
+      reserveRequestId: (id) => Promise.resolve(reserveLegacyRequestId(sessionId, id)),
+    }, body);
     if (result.wwwAuthenticate) res.setHeader("www-authenticate", result.wwwAuthenticate);
     if (result.body) await sendLegacySseMessage(sessionId, result.body);
     res.writeHead(202);

@@ -4,7 +4,7 @@ import { asRecord } from "../shared/json.ts";
 import { extractWwwAuthenticate } from "./auth-challenge.ts";
 import { callTool, listTools } from "./tool-registry.ts";
 import { initializeClientId, initializeResult } from "./lifecycle.ts";
-import { isJsonRpcResponse, jsonRpcError, jsonRpcSuccess, parseJsonRpc, type JsonRpcRequest } from "./json-rpc.ts";
+import { isJsonRpcResponse, jsonRpcError, jsonRpcSuccess, parseJsonRpc, type JsonRpcId, type JsonRpcRequest } from "./json-rpc.ts";
 import { handleNotification } from "./notifications.ts";
 import { McpProtocolError } from "./protocol-error.ts";
 import { optionalMethodParams, requiredMethodParams } from "./request-params.ts";
@@ -14,6 +14,7 @@ export interface McpContext {
   authorization?: string;
   rateLimitSubject?: string;
   sessionInitialized?: boolean;
+  reserveRequestId?: (id: JsonRpcId) => Promise<void>;
 }
 
 export interface McpResult {
@@ -33,11 +34,12 @@ export async function handleMcpJson(context: McpContext, input: unknown): Promis
     if (error instanceof ServiceError) return { status: error.status, body: jsonRpcError(undefined, -32600, error.message) };
     throw error;
   }
-  if (context.sessionInitialized === false && !["initialize", "ping", "notifications/initialized"].includes(request.method)) {
-    return { status: request.id === undefined ? 400 : 200, body: jsonRpcError(request.id, -32002, "session is not initialized") };
-  }
-  if (request.id === undefined) return handleNotification(request);
   try {
+    if (request.id !== undefined) await context.reserveRequestId?.(request.id);
+    if (context.sessionInitialized === false && !["initialize", "ping", "notifications/initialized"].includes(request.method)) {
+      return { status: request.id === undefined ? 400 : 200, body: jsonRpcError(request.id, -32002, "session is not initialized") };
+    }
+    if (request.id === undefined) return handleNotification(request);
     const result = await dispatch(context, request);
     return {
       status: 200,

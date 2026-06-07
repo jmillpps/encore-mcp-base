@@ -134,6 +134,7 @@ test("OAuth store rejects authorization, refresh, and MCP records at the expiry 
     createdAt: now,
     lastSeenAt: now,
     expiresAt: now,
+    requestIdHashes: [],
   });
   await assertServiceError("not_found", () => store.touchMcpSession(validHash, "2025-11-25"));
   await assertServiceError("not_found", () => store.terminateMcpSession(validHash));
@@ -155,6 +156,7 @@ test("OAuth store persists MCP session initialization state", async (t) => {
     createdAt: now,
     lastSeenAt: now,
     expiresAt: now + 300,
+    requestIdHashes: [],
   });
   assert.deepEqual(await store.touchMcpSession(validHash, "2025-11-25"), { initialized: false });
   assert.deepEqual(await store.touchMcpSession(validHash, "2025-11-25", true), { initialized: true });

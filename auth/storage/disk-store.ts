@@ -7,6 +7,8 @@ import { StoreFile } from "./store-file.ts";
 import type { AuthorizationCodeExpectation, AuthorizationCodeInput, RefreshTokenInput } from "./store-inputs.ts";
 import type { AuthorizationCodeRecord, McpSessionRecord, RefreshTokenRecord } from "./store-records.ts";
 
+const maxMcpRequestIds = 4096;
+
 export class DiskOAuthStore {
   private readonly file: StoreFile;
 
@@ -144,6 +146,19 @@ export class DiskOAuthStore {
       record.lastSeenAt = now;
       if (markInitialized && !record.initializedAt) record.initializedAt = now;
       return { initialized: record.initializedAt !== undefined };
+    });
+  }
+
+  async reserveMcpRequestId(sessionIdHash: string, requestIdHash: string): Promise<boolean> {
+    return this.file.update((state) => {
+      const record = state.mcpSessions[sessionIdHash];
+      const now = nowSeconds();
+      if (!record || record.terminatedAt || isExpired(record.expiresAt, now)) throw new ServiceError("not_found", "mcp session not found", 404);
+      record.lastSeenAt = now;
+      if (record.requestIdHashes.includes(requestIdHash)) return false;
+      if (record.requestIdHashes.length >= maxMcpRequestIds) throw new ServiceError("rate_limited", "too many mcp request ids", 429);
+      record.requestIdHashes.push(requestIdHash);
+      return true;
     });
   }
 

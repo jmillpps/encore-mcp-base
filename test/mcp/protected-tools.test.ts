@@ -71,7 +71,7 @@ test("MCP protected tools enforce audience and scopes", async (t) => {
   const actionsFlow = await completeAuthorizationCodeFlow(service, service.actionsAudience);
   const wrongAudience = await postMcp(
     service,
-    { jsonrpc: "2.0", id: "identity.profile", method: "tools/call", params: { name: "identity.profile", arguments: {} } },
+    { jsonrpc: "2.0", id: "identity.profile.wrong-audience", method: "tools/call", params: { name: "identity.profile", arguments: {} } },
     { sessionId, authorization: bearer(actionsFlow.tokens.access_token) },
   );
   await expectOAuthError(wrongAudience, 401, "unauthorized");
@@ -79,7 +79,7 @@ test("MCP protected tools enforce audience and scopes", async (t) => {
   const narrowFlow = await completeAuthorizationCodeFlow(service, service.mcpResource, "openid");
   const missingScopeResponse = await postMcp(
     service,
-    { jsonrpc: "2.0", id: "identity.profile", method: "tools/call", params: { name: "identity.profile", arguments: {} } },
+    { jsonrpc: "2.0", id: "identity.profile.missing-scope", method: "tools/call", params: { name: "identity.profile", arguments: {} } },
     { sessionId, authorization: bearer(narrowFlow.tokens.access_token) },
   );
   assert.equal(missingScopeResponse.status, 200);

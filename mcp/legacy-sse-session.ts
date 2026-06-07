@@ -1,6 +1,8 @@
 import type { ServerResponse } from "node:http";
 import { randomToken } from "../shared/crypto.ts";
 import { ServiceError } from "../shared/errors.ts";
+import type { JsonRpcId } from "./json-rpc.ts";
+import { duplicateRequestIdError, mcpRequestIdHash, mcpRequestIdLimit } from "./request-id.ts";
 import { acquireSseConnection } from "./sse-connection-limit.ts";
 import { writeSseComment, writeSseEvent, writeSseHeaders } from "./sse-event.ts";
 
@@ -12,6 +14,7 @@ interface LegacySseSession {
   id: string;
   res: ServerResponse;
   heartbeat: NodeJS.Timeout;
+  requestIdHashes: Set<string>;
   sequence: number;
 }
 
@@ -44,12 +47,22 @@ export async function sendLegacySseMessage(sessionId: string, body: Record<strin
   await writeSseEvent(session.res, "message", JSON.stringify(body), nextEventId(session));
 }
 
+export function reserveLegacyRequestId(sessionId: string, id: JsonRpcId): void {
+  const session = sessions.get(sessionId);
+  if (!session || session.res.destroyed || session.res.writableEnded) throw new ServiceError("not_found", "sse session not found", 404);
+  const hash = mcpRequestIdHash(id);
+  if (session.requestIdHashes.has(hash)) throw duplicateRequestIdError();
+  if (session.requestIdHashes.size >= mcpRequestIdLimit) throw new ServiceError("rate_limited", "too many mcp request ids", 429);
+  session.requestIdHashes.add(hash);
+}
+
 function createLegacySseSession(res: ServerResponse): LegacySseSession {
   const id = randomToken(24);
   const session: LegacySseSession = {
     id,
     res,
     heartbeat: setInterval(() => void writeSseComment(res, "heartbeat").catch(() => closeLegacySseSession(id)), heartbeatMs),
+    requestIdHashes: new Set<string>(),
     sequence: 0,
   };
   session.heartbeat.unref();

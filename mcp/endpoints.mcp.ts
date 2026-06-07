@@ -4,7 +4,7 @@ import { readConfig } from "../shared/config.ts";
 import { ServiceError } from "../shared/errors.ts";
 import { requestSubject, writeError, writeJson, writeNoContent } from "../shared/http.ts";
 import { acceptsMediaType } from "../shared/media-type.ts";
-import { createMcpSession, terminateMcpSession, touchMcpSession } from "./session-store.ts";
+import { createMcpSession, reserveMcpRequestId, terminateMcpSession, touchMcpSession } from "./session-store.ts";
 import { runStreamableGetStream } from "./streamable-get-stream.ts";
 import { handleMcpJson } from "./protocol.ts";
 import { negotiateProtocolVersion } from "./protocol-version.ts";
@@ -28,12 +28,13 @@ export const mcpPost = api.raw({ expose: true, method: "POST", path: "/mcp" }, a
   let config: ReturnType<typeof readConfig> | undefined;
   try {
     config = readConfig();
-    validateOrigin(config, req);
+    const activeConfig = config;
+    validateOrigin(activeConfig, req);
     validateNoAccessTokenQuery(req);
-    verifyPresentedBearer(config, req.headers.authorization, config.mcpResource);
+    verifyPresentedBearer(activeConfig, req.headers.authorization, activeConfig.mcpResource);
     validatePostAccept(req);
     validatePostContentType(req);
-    writeCors(config, req, res);
+    writeCors(activeConfig, req, res);
     const body = await readMcpJsonBody(req);
     if (isMcpBodyResult(body)) {
       writeJson(res, body.status, body.body);
@@ -43,10 +44,16 @@ export const mcpPost = api.raw({ expose: true, method: "POST", path: "/mcp" }, a
     if (method === "initialize") validateNoMcpSessionId(req);
     const sessionId = method === "initialize" ? undefined : readMcpSessionId(req);
     const protocolVersion = method === "initialize" ? negotiateProtocolVersion(readMcpProtocolVersion(req, false)) : readMcpProtocolVersion(req, false);
-    const session = sessionId === undefined ? { initialized: false } : await touchMcpSession(config, sessionId, protocolVersion);
-    const result = await handleMcpJson({ config, authorization: String(req.headers.authorization ?? ""), rateLimitSubject: requestSubject(req), sessionInitialized: session.initialized }, body);
-    if (result.initialized) res.setHeader("MCP-Session-Id", await createMcpSession(config, protocolVersion ?? negotiateProtocolVersion(undefined), result.clientId ?? "unknown-mcp-client"));
-    if (method === "notifications/initialized" && result.status === 202 && !result.body && sessionId !== undefined) await touchMcpSession(config, sessionId, protocolVersion, true);
+    const session = sessionId === undefined ? { initialized: false } : await touchMcpSession(activeConfig, sessionId, protocolVersion);
+    const result = await handleMcpJson({
+      config: activeConfig,
+      authorization: String(req.headers.authorization ?? ""),
+      rateLimitSubject: requestSubject(req),
+      reserveRequestId: sessionId === undefined ? undefined : (id) => reserveMcpRequestId(activeConfig, sessionId, id),
+      sessionInitialized: session.initialized,
+    }, body);
+    if (result.initialized) res.setHeader("MCP-Session-Id", await createMcpSession(activeConfig, protocolVersion ?? negotiateProtocolVersion(undefined), result.clientId ?? "unknown-mcp-client"));
+    if (method === "notifications/initialized" && result.status === 202 && !result.body && sessionId !== undefined) await touchMcpSession(activeConfig, sessionId, protocolVersion, true);
     if (result.wwwAuthenticate) res.setHeader("www-authenticate", result.wwwAuthenticate);
     if (!result.body) writeNoContent(res, result.status);
     else writeJson(res, result.status, result.body);
