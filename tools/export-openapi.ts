@@ -3,6 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { isLoopbackHostname, isNonPublicHostname } from "../shared/network-address.ts";
+import { assertChatGptActionsOpenApi } from "./openapi-actions-compatibility.ts";
 import { openApiDocument } from "./openapi-document.ts";
 import { loadValidatedEncoreGraph } from "./openapi-graph.ts";
 
@@ -17,6 +18,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const options = parseArgs(process.argv.slice(2));
 await loadValidatedEncoreGraph(root, options.build);
 const document = openApiDocument(options.baseUrl);
+assertChatGptActionsOpenApi(document);
 const output = `${JSON.stringify(document, null, 2)}\n`;
 if (options.out) {
   const outPath = resolveOutputPath(root, options.out);
