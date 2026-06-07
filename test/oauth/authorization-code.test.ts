@@ -12,7 +12,7 @@ import { authorizationCodeGrant } from "../../auth/tokens/authorization-code.ts"
 import { DiskOAuthStore } from "../../auth/storage/disk-store.ts";
 import { readConfig } from "../../shared/config.ts";
 import { staticUser } from "../../auth/static-user.ts";
-import { ServiceError } from "../../shared/errors.ts";
+import { ServiceError, type ErrorCode } from "../../shared/errors.ts";
 import type { OAuthClient } from "../../auth/client-types.ts";
 
 test("authorization code flow issues externally processed OIDC tokens and userinfo", async (t) => {
@@ -95,7 +95,7 @@ test("authorization code grant applies current client policy before consuming", 
   const config = readConfig({ PUBLIC_ISSUER_URL: "http://localhost:4000", OAUTH_STORE_PATH: join(dir, "store.json") });
   const store = new DiskOAuthStore(config.oauthStorePath);
   const resourceCode = await createStoredCode(store, config, ["openid"]);
-  await assertInvalidGrant(() => authorizationCodeGrant(config, store, client(["openid"], [config.mcpResource]), tokenForm(config, resourceCode)));
+  await assertServiceError(() => authorizationCodeGrant(config, store, client(["openid"], [config.mcpResource]), tokenForm(config, resourceCode)), "invalid_target");
   assert.equal((await authorizationCodeGrant(config, store, client(["openid"], [config.actionsAudience]), tokenForm(config, resourceCode))).token_type, "bearer");
   const scopeCode = await createStoredCode(store, config, ["openid", "email"]);
   await assertInvalidGrant(() => authorizationCodeGrant(config, store, client(["openid"], [config.actionsAudience]), tokenForm(config, scopeCode)));
@@ -175,5 +175,9 @@ function client(allowedScopes: string[], allowedResources: string[]): OAuthClien
 }
 
 async function assertInvalidGrant(fn: () => Promise<unknown>): Promise<void> {
-  await assert.rejects(fn, (error) => error instanceof ServiceError && error.code === "invalid_grant");
+  await assertServiceError(fn, "invalid_grant");
+}
+
+async function assertServiceError(fn: () => Promise<unknown>, code: ErrorCode): Promise<void> {
+  await assert.rejects(fn, (error) => error instanceof ServiceError && error.code === code);
 }

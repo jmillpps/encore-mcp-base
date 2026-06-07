@@ -112,12 +112,12 @@ test("refresh token grant applies current client resource policy before rotating
   });
   await assert.rejects(
     () => refreshTokenGrant(config, store, clientWithResources([config.actionsAudience]), new URLSearchParams({ refresh_token: refreshToken })),
-    (error) => error instanceof ServiceError && error.code === "bad_request",
+    (error) => error instanceof ServiceError && error.code === "invalid_target",
   );
   const form = new URLSearchParams({ refresh_token: refreshToken, resource: config.actionsAudience });
   await assert.rejects(
     () => refreshTokenGrant(config, store, clientWithResources([config.mcpResource]), form),
-    (error) => error instanceof ServiceError && error.code === "invalid_grant",
+    (error) => error instanceof ServiceError && error.code === "invalid_target",
   );
   const response = await refreshTokenGrant(config, store, clientWithResources([config.actionsAudience]), form);
   assert.equal(response.token_type, "bearer");

@@ -24,6 +24,12 @@ The GPT Actions client must have exactly one allowed audience when `resource` is
 
 Issued access tokens use the resolved `resource` value as the token audience.
 
+Resource indicator failures return OAuth error code `invalid_target`.
+
+Resource error descriptions stay generic and do not expose configured audience values.
+
+Token grants validate requested resources against the current client policy before stored grants are consumed or rotated.
+
 Discovery metadata advertises the union of configured client scopes.
 
 Authorization server metadata advertises Client ID Metadata Document support through `client_id_metadata_document_supported`.

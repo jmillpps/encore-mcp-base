@@ -12,13 +12,20 @@ test("authorization endpoint rejects invalid client request parameters", async (
   await expectOAuthError(await fetch(authorizeUrl(as.authorization_endpoint, service.actionsAudience, { scope: "openid admin" }), { redirect: "manual" }), 400, "invalid_scope");
   const missingResource = authorizeUrl(as.authorization_endpoint, service.actionsAudience, {});
   missingResource.searchParams.delete("resource");
-  await expectOAuthError(await fetch(missingResource, { redirect: "manual" }), 400, "bad_request");
+  await expectOAuthError(await fetch(missingResource, { redirect: "manual" }), 400, "invalid_target");
   const missingMcpResource = authorizeUrl(as.authorization_endpoint, service.mcpResource, {
     clientId: "gpt-apps-mcp",
     redirectUri: "https://chatgpt.com/connector/oauth/local-callback",
   });
   missingMcpResource.searchParams.delete("resource");
-  await expectOAuthError(await fetch(missingMcpResource, { redirect: "manual" }), 400, "bad_request");
+  await expectOAuthError(await fetch(missingMcpResource, { redirect: "manual" }), 400, "invalid_target");
+  await expectOAuthError(
+    await fetch(authorizeUrl(as.authorization_endpoint, service.actionsAudience, { clientId: "gpt-apps-mcp", redirectUri: "https://chatgpt.com/connector/oauth/local-callback" }), {
+      redirect: "manual",
+    }),
+    400,
+    "invalid_target",
+  );
   const duplicateClient = authorizeUrl(as.authorization_endpoint, service.actionsAudience, {});
   duplicateClient.searchParams.append("client_id", "local-test");
   await expectOAuthError(await fetch(duplicateClient, { redirect: "manual" }), 400, "bad_request");
@@ -106,6 +113,15 @@ test("oauth endpoints return generic external error descriptions", async (t) => 
   );
   assert.equal(scopeError.error_description, "scope is invalid");
   assert.equal(JSON.stringify(scopeError).includes("admin"), false);
+  const resourceError = await expectOAuthError(
+    await fetch(authorizeUrl(as.authorization_endpoint, service.actionsAudience, { clientId: "gpt-apps-mcp", redirectUri: "https://chatgpt.com/connector/oauth/local-callback" }), {
+      redirect: "manual",
+    }),
+    400,
+    "invalid_target",
+  );
+  assert.equal(resourceError.error_description, "resource target is invalid");
+  assert.equal(JSON.stringify(resourceError).includes(service.actionsAudience), false);
   const authorization = await authorizeCode(service, as, service.actionsAudience);
   const wrongSecret = await tokenRequest(as.token_endpoint, service.actionsAudience, authorization.code, authorization.codeVerifier, "bad-secret");
   const clientError = await expectOAuthError(wrongSecret, 401, "invalid_client");

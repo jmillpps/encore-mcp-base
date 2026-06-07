@@ -6,6 +6,7 @@ export type ErrorCode =
   | "invalid_grant"
   | "invalid_client"
   | "invalid_scope"
+  | "invalid_target"
   | "unsupported_grant_type"
   | "unsupported_response_type"
   | "rate_limited"

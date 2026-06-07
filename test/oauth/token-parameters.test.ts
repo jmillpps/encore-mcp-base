@@ -34,7 +34,24 @@ test("authorization code grant requires resource without consuming the code", as
     redirect_uri: localRedirectUri,
     code_verifier: authorization.codeVerifier,
   });
-  await expectOAuthError(await postToken(as.token_endpoint, body), 400, "bad_request");
+  await expectOAuthError(await postToken(as.token_endpoint, body), 400, "invalid_target");
+  assert.equal((await exchangeCode(authorization, service.actionsAudience)).tokens.token_type, "bearer");
+});
+
+test("authorization code grant rejects unallowed resource without consuming the code", async (t) => {
+  const service = await startService(t);
+  const as = await discover(service);
+  const authorization = await authorizeCode(service, as, service.actionsAudience);
+  const body = new URLSearchParams({
+    grant_type: "authorization_code",
+    client_id: "local-test",
+    client_secret: localClientSecret,
+    code: authorization.code,
+    redirect_uri: localRedirectUri,
+    code_verifier: authorization.codeVerifier,
+    resource: "http://invalid.test/resource",
+  });
+  await expectOAuthError(await postToken(as.token_endpoint, body), 400, "invalid_target");
   assert.equal((await exchangeCode(authorization, service.actionsAudience)).tokens.token_type, "bearer");
 });
 
@@ -64,7 +81,22 @@ test("refresh token grant requires resource without rotating the token", async (
     client_secret: localClientSecret,
     refresh_token: refreshToken,
   });
-  await expectOAuthError(await postToken(flow.as.token_endpoint, body), 400, "bad_request");
+  await expectOAuthError(await postToken(flow.as.token_endpoint, body), 400, "invalid_target");
+  assert.equal((await refreshTokens(flow.as, refreshToken, service.actionsAudience)).tokens.token_type, "bearer");
+});
+
+test("refresh token grant rejects unallowed resource without rotating the token", async (t) => {
+  const service = await startService(t);
+  const flow = await completeAuthorizationCodeFlow(service);
+  const refreshToken = requireString(flow.tokens.refresh_token, "refresh_token");
+  const body = new URLSearchParams({
+    grant_type: "refresh_token",
+    client_id: "local-test",
+    client_secret: localClientSecret,
+    refresh_token: refreshToken,
+    resource: "http://invalid.test/resource",
+  });
+  await expectOAuthError(await postToken(flow.as.token_endpoint, body), 400, "invalid_target");
   assert.equal((await refreshTokens(flow.as, refreshToken, service.actionsAudience)).tokens.token_type, "bearer");
 });
 

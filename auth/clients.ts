@@ -39,7 +39,7 @@ export function assertRedirectUri(client: OAuthClient, redirectUri: string): voi
 
 export function assertResource(client: OAuthClient, resource: string): void {
   if (!client.allowedResources.includes(resource)) {
-    throw new ServiceError("bad_request", "resource is not allowed", 400);
+    throw new ServiceError("invalid_target", "resource is not allowed", 400);
   }
 }
 
