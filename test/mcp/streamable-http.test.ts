@@ -94,6 +94,17 @@ test("MCP Streamable HTTP validates transport headers and session lifecycle", as
   const oversized = await postRawMcp(service, JSON.stringify({ jsonrpc: "2.0", id: "oversized", method: "ping", params: { payload: "x".repeat(33000) } }));
   assert.equal(oversized.status, 413);
   assert.equal(((await readJson(oversized)).error as Record<string, unknown>).code, -32600);
+  const toolsList = await postMcp(service, { jsonrpc: "2.0", id: "tools-list", method: "tools/list", params: { _meta: { progressToken: "list-progress" } } }, { sessionId });
+  assert.equal(toolsList.status, 200);
+  const toolsListResult = (await readJson(toolsList)).result as Record<string, unknown>;
+  assert.equal(Array.isArray(toolsListResult.tools), true);
+  assert.equal(Object.hasOwn(toolsListResult, "nextCursor"), false);
+  const badListParams = await postMcp(service, { jsonrpc: "2.0", id: "bad-list-params", method: "tools/list", params: [] }, { sessionId });
+  assert.equal(badListParams.status, 200);
+  assert.equal(((await readJson(badListParams)).error as Record<string, unknown>).code, -32602);
+  const badListCursor = await postMcp(service, { jsonrpc: "2.0", id: "bad-list-cursor", method: "tools/list", params: { cursor: "never-issued" } }, { sessionId });
+  assert.equal(badListCursor.status, 200);
+  assert.equal(((await readJson(badListCursor)).error as Record<string, unknown>).code, -32602);
   await expectOAuthError(await postMcp(service, { jsonrpc: "2.0", id: "bad-session", method: "ping" }, { sessionId: "bad-session" }), 400, "bad_request");
   await expectOAuthError(await postMcp(service, { jsonrpc: "2.0", id: "bad-version", method: "ping" }, { sessionId, protocolVersion: "2024-01-01" }), 400, "bad_request");
   await expectOAuthError(await getMcp(service, sessionId, "2025-11-25", "text/event-stream", undefined, "https://evil.test"), 403, "forbidden");

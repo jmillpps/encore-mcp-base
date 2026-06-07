@@ -55,12 +55,27 @@ function handleNotification(request: JsonRpcRequest): McpResult {
 async function dispatch(context: McpContext, request: JsonRpcRequest): Promise<unknown> {
   if (request.method === "initialize") return initializeResult(request.params);
   if (request.method === "ping") return {};
-  if (request.method === "tools/list") return listTools();
+  if (request.method === "tools/list") {
+    validateListParams(request.params);
+    return listTools();
+  }
   if (request.method === "tools/call") {
     const { name, args } = toolCallParams(request.params);
     return callTool(context, name, args);
   }
   throw new McpProtocolError(-32601, "method not found");
+}
+
+function validateListParams(params: unknown): void {
+  if (params === undefined) return;
+  if (typeof params !== "object" || params === null || Array.isArray(params)) throw new McpProtocolError(-32602, "tools/list params must be an object");
+  const record = params as Record<string, unknown>;
+  if (record._meta !== undefined && (typeof record._meta !== "object" || record._meta === null || Array.isArray(record._meta))) {
+    throw new McpProtocolError(-32602, "tools/list _meta must be an object");
+  }
+  if (record.cursor === undefined) return;
+  if (typeof record.cursor !== "string") throw new McpProtocolError(-32602, "tools/list cursor must be a string");
+  throw new McpProtocolError(-32602, "invalid cursor");
 }
 
 function toolCallParams(params: unknown): { name: string; args: Record<string, unknown> } {
