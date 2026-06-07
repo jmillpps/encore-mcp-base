@@ -4,7 +4,7 @@ The service exposes MCP for GPT Apps through Streamable HTTP and legacy HTTP/SSE
 
 The protocol baseline is `2025-11-25`.
 
-The first tool set includes a public health tool, a protected identity profile tool, and a protected auth session tool.
+The first tool set includes a no-scope health tool, a protected identity profile tool, and a protected auth session tool.
 
 Protected tools validate issuer, audience, expiry, client ID, and scopes on every call.
 
@@ -74,9 +74,9 @@ JSON request bodies use UTF-8.
 
 Bearer tokens use the `Authorization` header. MCP routes reject `access_token` URI query parameters.
 
-Session-bound MCP message transports require MCP-audience bearer tokens before JSON-RPC handling.
+MCP message transports require MCP-audience bearer tokens before JSON-RPC handling.
 
-Initialize requests may include MCP-audience bearer tokens. Presented invalid tokens are rejected.
+Initialize requests require MCP-audience bearer tokens before session creation.
 
 Protected tool handlers validate issuer, audience, expiry, client ID, and scopes before returning protected data.
 

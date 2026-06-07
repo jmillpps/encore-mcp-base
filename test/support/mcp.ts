@@ -94,7 +94,7 @@ export async function mcpAuthorization(service: TestService): Promise<string> {
 async function storedMcpAuthorization(service: TestService, sessionId: string | undefined, skip: boolean | undefined): Promise<string | undefined> {
   if (skip) return undefined;
   if (sessionId) return sessionAuthorizations.get(sessionKey(service, sessionId)) ?? await mcpAuthorization(service);
-  return undefined;
+  return mcpAuthorization(service);
 }
 
 function sessionKey(service: TestService, sessionId: string): string {

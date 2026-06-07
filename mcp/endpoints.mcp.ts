@@ -1,6 +1,6 @@
 import { api } from "encore.dev/api";
 import { validateSingleAuthorizationHeader } from "../auth/authorization-header.ts";
-import { verifyBearer, verifyPresentedBearer } from "../auth/bearer.ts";
+import { verifyBearer } from "../auth/bearer.ts";
 import { readConfig } from "../shared/config.ts";
 import { ServiceError } from "../shared/errors.ts";
 import { requestSubject, writeError, writeJson, writeNoContent } from "../shared/http.ts";
@@ -34,6 +34,7 @@ export const mcpPost = api.raw({ expose: true, method: "POST", path: "/mcp" }, a
     validateOrigin(activeConfig, req);
     validateNoAccessTokenQuery(req);
     validateSingleAuthorizationHeader(req);
+    verifyBearer(activeConfig, req.headers.authorization, activeConfig.mcpResource);
     validatePostAccept(req);
     validatePostContentType(req);
     writeCors(activeConfig, req, res);
@@ -45,8 +46,6 @@ export const mcpPost = api.raw({ expose: true, method: "POST", path: "/mcp" }, a
     const method = typeof body === "object" && body !== null && !Array.isArray(body) ? (body as Record<string, unknown>).method : undefined;
     if (method === "initialize") validateNoMcpSessionId(req);
     const sessionId = method === "initialize" ? undefined : readMcpSessionId(req);
-    if (sessionId === undefined) verifyPresentedBearer(activeConfig, req.headers.authorization, activeConfig.mcpResource);
-    else verifyBearer(activeConfig, req.headers.authorization, activeConfig.mcpResource);
     const protocolVersion = method === "initialize" ? negotiateProtocolVersion(readMcpProtocolVersion(req, false)) : readMcpProtocolVersion(req, false);
     const session = sessionId === undefined ? { initialized: false } : await touchMcpSession(activeConfig, sessionId, protocolVersion);
     const result = await handleMcpJson({

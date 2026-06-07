@@ -13,6 +13,18 @@ test("MCP receive transports require bearer tokens", async (t) => {
   await expectOAuthError(await assertScopedChallenge(getLegacySse(service.origin)), 401, "unauthorized");
 });
 
+test("MCP initialize requires bearer tokens", async (t) => {
+  const service = await startService(t);
+  const missing = await postMcp(service, initializeRequest("missing-init-token"), { skipAuthorization: true });
+  await expectOAuthError(await assertScopedChallenge(Promise.resolve(missing)), 401, "unauthorized");
+  const actionsFlow = await completeAuthorizationCodeFlow(service, service.actionsAudience);
+  const wrongAudience = await postMcp(service, initializeRequest("wrong-init-audience"), { authorization: bearer(actionsFlow.tokens.access_token) });
+  await expectOAuthError(await assertScopedChallenge(Promise.resolve(wrongAudience)), 401, "unauthorized");
+  const sessionId = await initializeMcp(service);
+  const recovery = await postMcp(service, { jsonrpc: "2.0", id: "recovery", method: "ping" }, { sessionId });
+  assert.equal(recovery.status, 200);
+});
+
 test("MCP receive transports reject presented bearer tokens for other audiences", async (t) => {
   const service = await startService(t);
   const sessionId = await initializeMcp(service);
@@ -57,6 +69,15 @@ test("MCP transports accept presented bearer tokens for the MCP resource", async
 
 function healthCall(): Record<string, unknown> {
   return { jsonrpc: "2.0", id: "health", method: "tools/call", params: { name: "health.check", arguments: {} } };
+}
+
+function initializeRequest(id: string): Record<string, unknown> {
+  return {
+    jsonrpc: "2.0",
+    id,
+    method: "initialize",
+    params: { protocolVersion: "2025-11-25", capabilities: {}, clientInfo: { name: id, version: "0.1.0" } },
+  };
 }
 
 function getMcp(service: { origin: string }, sessionId: string, authorization?: string): Promise<Response> {

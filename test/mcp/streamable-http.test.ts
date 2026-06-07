@@ -256,10 +256,10 @@ async function deleteMcp(service: TestService, sessionId: string, origin = "http
   });
 }
 
-function postRawMcp(service: { origin: string }, body: string | Buffer): Promise<Response> {
+async function postRawMcp(service: TestService, body: string | Buffer): Promise<Response> {
   return fetch(`${service.origin}/mcp`, {
     method: "POST",
-    headers: { accept: "application/json, text/event-stream", "content-type": "application/json", origin: "https://chatgpt.com" },
+    headers: { accept: "application/json, text/event-stream", authorization: await mcpAuthorization(service), "content-type": "application/json", origin: "https://chatgpt.com" },
     body,
   });
 }
