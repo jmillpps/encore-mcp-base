@@ -1,5 +1,6 @@
 import { resolve } from "node:path";
 import { assertMcpResourceUrl, mcpEndpointPath } from "./mcp-resource.ts";
+import { isNonPublicHostname } from "./network-address.ts";
 
 export interface ServiceConfig {
   issuer: string;
@@ -53,6 +54,7 @@ function readHttpUrl(env: NodeJS.ProcessEnv, key: string, fallback: string, prod
   if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error(`${key} must use http or https`);
   if (production && url.protocol !== "https:") throw new Error(`${key} must use https in production`);
   if (url.username || url.password || url.search || url.hash) throw new Error(`${key} contains unsupported URL parts`);
+  if (production && isNonPublicHostname(url.hostname)) throw new Error(`${key} must use a public host in production`);
   return url.href.replace(/\/$/, "");
 }
 
@@ -75,6 +77,7 @@ function normalizeOrigin(value: string, production: boolean): string {
   if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("ALLOWED_ORIGINS must use http or https");
   if (production && url.protocol !== "https:") throw new Error("ALLOWED_ORIGINS must use https in production");
   if (url.origin !== url.href.replace(/\/$/, "")) throw new Error("ALLOWED_ORIGINS entries must be origins");
+  if (production && isNonPublicHostname(url.hostname)) throw new Error("ALLOWED_ORIGINS entries must use public hosts in production");
   return url.origin;
 }
 

@@ -2,8 +2,9 @@ import { Buffer } from "node:buffer";
 import { request as httpRequest, type IncomingHttpHeaders, type IncomingMessage, type RequestOptions } from "node:http";
 import { request as httpsRequest } from "node:https";
 import { mediaType } from "../shared/media-type.ts";
+import { networkHostname } from "../shared/network-address.ts";
 import { invalidMetadataClient } from "./client-metadata-error.ts";
-import { networkHostname, type NetworkAddress } from "./client-metadata-network.ts";
+import type { NetworkAddress } from "./client-metadata-network.ts";
 
 const maximumMetadataBytes = 32768;
 const metadataFetchTimeoutMs = 3000;
