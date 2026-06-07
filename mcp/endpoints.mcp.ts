@@ -8,7 +8,7 @@ import { runStreamableGetStream } from "./streamable-get-stream.ts";
 import { handleMcpJson } from "./protocol.ts";
 import { negotiateProtocolVersion } from "./protocol-version.ts";
 import { isMcpBodyResult, readMcpJsonBody } from "./request-body.ts";
-import { readMcpProtocolVersion, readMcpSessionId, validateOrigin, validatePostAccept, validatePostContentType, writeCors } from "./transport-headers.ts";
+import { readMcpProtocolVersion, readMcpSessionId, validateNoMcpSessionId, validateOrigin, validatePostAccept, validatePostContentType, writeCors } from "./transport-headers.ts";
 
 export const mcpOptions = api.raw({ expose: true, method: "OPTIONS", path: "/mcp" }, async (req, res) => {
   try {
@@ -34,6 +34,7 @@ export const mcpPost = api.raw({ expose: true, method: "POST", path: "/mcp" }, a
       return;
     }
     const method = typeof body === "object" && body !== null && !Array.isArray(body) ? (body as Record<string, unknown>).method : undefined;
+    if (method === "initialize") validateNoMcpSessionId(req);
     const protocolVersion = negotiateProtocolVersion(readMcpProtocolVersion(req, method !== "initialize"));
     const session = method === "initialize" ? { initialized: true } : await touchMcpSession(config, readMcpSessionId(req), protocolVersion, method === "notifications/initialized");
     const result = await handleMcpJson({ config, authorization: String(req.headers.authorization ?? ""), rateLimitSubject: requestSubject(req), sessionInitialized: session.initialized }, body);

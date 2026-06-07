@@ -37,6 +37,12 @@ export function readMcpSessionId(req: IncomingMessage): string {
   return value;
 }
 
+export function validateNoMcpSessionId(req: IncomingMessage): void {
+  if (req.headers["mcp-session-id"] !== undefined) {
+    throw new ServiceError("bad_request", "initialize must not include mcp session", 400);
+  }
+}
+
 export function readMcpProtocolVersion(req: IncomingMessage, required: boolean): string | undefined {
   const value = String(req.headers["mcp-protocol-version"] ?? "");
   if (!value) {

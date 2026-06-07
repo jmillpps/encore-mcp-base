@@ -16,6 +16,13 @@ test("MCP Streamable HTTP validates transport headers and session lifecycle", as
   assert.equal(initializedStore.includes("initialized_at"), false);
   assert.equal(initializedStore.includes("anonymous"), false);
   assert.equal(initializedStore.includes(sessionId), false);
+  const initializeWithSession = await postMcp(
+    service,
+    { jsonrpc: "2.0", id: "init-with-session", method: "initialize", params: initializeParams({ clientInfo: { name: "session-init", version: "0.1.0" } }) },
+    { sessionId },
+  );
+  const initializeWithSessionError = await expectOAuthError(initializeWithSession, 400, "bad_request");
+  assert.match(String(initializeWithSessionError.error_description), /session/);
   const init = await postMcp(service, { jsonrpc: "2.0", id: "init-instructions", method: "initialize", params: initializeParams({ clientInfo: { name: "instruction-test", version: "0.1.0" } }) });
   assert.equal(init.status, 200);
   const initInstructions = requireString(((await readJson(init)).result as Record<string, unknown>).instructions, "instructions");

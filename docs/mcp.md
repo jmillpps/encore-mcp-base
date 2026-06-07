@@ -48,6 +48,8 @@ JSON request bodies use UTF-8.
 
 The initialize response includes `MCP-Session-Id`. Clients send that session ID with `MCP-Protocol-Version` on later `/mcp` requests.
 
+Initialize requests start a new MCP session and do not include `MCP-Session-Id`.
+
 Initialize requests must include `protocolVersion`, `capabilities`, and `clientInfo`.
 
 Initialize responses include server instructions for ChatGPT tool selection and OAuth scope expectations.
