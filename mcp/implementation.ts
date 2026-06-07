@@ -6,6 +6,7 @@ const implementationVersionPattern = /^[\x20-\x7E]{1,128}$/;
 
 export function validateImplementation(value: unknown, field: string): Record<string, unknown> {
   const record = asRecord(value, field);
+  assertKeys(record, ["icons", "name", "title", "version", "description", "websiteUrl"], field);
   implementationName(record);
   implementationVersion(record);
   optionalString(record, "title");
@@ -40,6 +41,7 @@ function validateIcons(value: unknown): void {
 
 function validateIcon(value: unknown): void {
   const record = asRecord(value, "icon");
+  assertKeys(record, ["src", "mimeType", "sizes", "theme"], "icon");
   const src = requiredString(record, "src");
   validateUrl(src, "src", ["http:", "https:", "data:"]);
   optionalString(record, "mimeType");
@@ -54,6 +56,10 @@ function validateSizes(value: unknown): void {
 
 function validateTheme(value: unknown): void {
   if (value !== undefined && value !== "light" && value !== "dark") throw badRequest("theme must be light or dark");
+}
+
+function assertKeys(record: Record<string, unknown>, allowed: readonly string[], name: string): void {
+  if (Object.keys(record).some((key) => !allowed.includes(key))) throw badRequest(`${name} contains unsupported fields`);
 }
 
 function validateUrl(value: string, field: string, protocols: readonly string[]): void {

@@ -72,7 +72,11 @@ Initialize requests start a new MCP session and do not include `MCP-Session-Id`.
 
 Initialize requests must include `protocolVersion`, `capabilities`, and `clientInfo`.
 
+Initialize requests accept request metadata and reject unsupported parameter fields.
+
 Initialize client capabilities must use object-shaped known capability branches and boolean `roots.listChanged` when present.
+
+Known initialize client capability branches reject unsupported nested fields. Custom top-level capability branches are accepted when their values are objects.
 
 Initialize client metadata must use MCP implementation field shapes for optional title, description, website URL, and icons.
 

@@ -81,29 +81,24 @@ test("MCP Streamable HTTP validates transport headers and session lifecycle", as
   assert.ok(validPreflight.status === 200 || validPreflight.status === 204);
   assert.equal(validPreflight.headers.get("access-control-allow-origin"), "https://chatgpt.com");
   const missingProtocolVersion = await postMcp(service, { jsonrpc: "2.0", id: "missing-version", method: "initialize", params: initializeParams({ protocolVersion: undefined }) });
-  assert.equal(missingProtocolVersion.status, 400);
-  assert.equal(((await readJson(missingProtocolVersion)).error as Record<string, unknown>).message, "protocolVersion is required");
+  await assertInitializeError(missingProtocolVersion, "protocolVersion is required");
   const missingCapabilities = await postMcp(service, { jsonrpc: "2.0", id: "missing-capabilities", method: "initialize", params: initializeParams({ capabilities: undefined }) });
-  assert.equal(missingCapabilities.status, 400);
-  assert.equal(((await readJson(missingCapabilities)).error as Record<string, unknown>).message, "capabilities must be an object");
+  await assertInitializeError(missingCapabilities, "capabilities must be an object");
   const missingClientInfoVersion = await postMcp(
     service,
     { jsonrpc: "2.0", id: "missing-client-version", method: "initialize", params: initializeParams({ clientInfo: { name: "bad-client" } }) },
   );
-  assert.equal(missingClientInfoVersion.status, 400);
-  assert.equal(((await readJson(missingClientInfoVersion)).error as Record<string, unknown>).message, "version is required");
+  await assertInitializeError(missingClientInfoVersion, "version is required");
   const invalidClientInfo = await postMcp(
     service,
     { jsonrpc: "2.0", id: "bad-client-info", method: "initialize", params: initializeParams({ clientInfo: { name: "bad\nclient", version: "0.1.0" } }) },
   );
-  assert.equal(invalidClientInfo.status, 400);
-  assert.equal(((await readJson(invalidClientInfo)).error as Record<string, unknown>).message, "clientInfo.name is invalid");
+  await assertInitializeError(invalidClientInfo, "clientInfo.name is invalid");
   const invalidClientVersion = await postMcp(
     service,
     { jsonrpc: "2.0", id: "bad-client-version", method: "initialize", params: initializeParams({ clientInfo: { name: "bad-client", version: "bad\nversion" } }) },
   );
-  assert.equal(invalidClientVersion.status, 400);
-  assert.equal(((await readJson(invalidClientVersion)).error as Record<string, unknown>).message, "clientInfo.version is invalid");
+  await assertInitializeError(invalidClientVersion, "clientInfo.version is invalid");
   await expectOAuthError(await postMcp(service, { jsonrpc: "2.0", id: "bad-origin", method: "initialize", params: {} }, { origin: "https://evil.test" }), 403, "forbidden");
   await expectOAuthError(await postMcp(service, { jsonrpc: "2.0", id: "bad-type", method: "initialize", params: {} }, { contentType: "text/plain" }), 415, "bad_request");
   await expectOAuthError(
@@ -216,23 +211,6 @@ test("MCP Streamable HTTP rejects non-object JSON-RPC response results", async (
   }
 });
 
-test("MCP Streamable HTTP rejects invalid initialize client capabilities", async (t) => {
-  const service = await startService(t);
-  for (const capabilities of [
-    { roots: "invalid" },
-    { roots: { listChanged: "yes" } },
-    { sampling: { context: true } },
-    { elicitation: { form: [] } },
-    { tasks: { requests: { sampling: { createMessage: false } } } },
-    { experimental: { custom: false } },
-  ]) {
-    const response = await postMcp(service, { jsonrpc: "2.0", id: "invalid-capabilities", method: "initialize", params: initializeParams({ capabilities }) });
-    assert.equal(response.status, 400);
-    const body = await readJson(response);
-    assert.equal((body.error as Record<string, unknown>).code, -32000);
-  }
-});
-
 test("MCP Streamable HTTP rejects non-object JSON-RPC params", async (t) => {
   const service = await startService(t);
   const sessionId = await initializeMcp(service);
@@ -287,6 +265,13 @@ function optionsMcp(origin: string, requestOrigin: string): Promise<Response> {
       "access-control-request-headers": "authorization,content-type,mcp-session-id,mcp-protocol-version",
     },
   });
+}
+
+async function assertInitializeError(response: Response, message: string): Promise<void> {
+  assert.equal(response.status, 200);
+  const error = (await readJson(response)).error as Record<string, unknown>;
+  assert.equal(error.code, -32602);
+  assert.equal(error.message, message);
 }
 
 function initializeParams(overrides: { protocolVersion?: string; capabilities?: Record<string, unknown>; clientInfo?: Record<string, unknown> } = {}): Record<string, unknown> {

@@ -22,9 +22,9 @@ test("MCP initialize rejects malformed optional client implementation metadata",
       method: "initialize",
       params: { protocolVersion: "2025-11-25", capabilities: {}, clientInfo },
     });
-    assert.equal(response.status, 400);
+    assert.equal(response.status, 200);
     const body = await readJson(response);
-    assert.equal((body.error as Record<string, unknown>).code, -32000);
+    assert.equal((body.error as Record<string, unknown>).code, -32602);
   }
 });
 
