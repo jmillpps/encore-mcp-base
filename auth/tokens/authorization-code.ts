@@ -7,18 +7,17 @@ import { issueTokenResponse, type TokenResponse } from "./token-response.ts";
 export async function authorizationCodeGrant(config: ServiceConfig, store: DiskOAuthStore, client: OAuthClient, form: URLSearchParams): Promise<TokenResponse> {
   const code = requiredParameter(form, "code");
   const redirectUri = requiredParameter(form, "redirect_uri");
-  const requestedResource = optionalParameter(form, "resource");
+  const requestedResource = requiredParameter(form, "resource");
   const record = await store.consumeAuthorizationCode(code, optionalParameter(form, "code_verifier"), {
     clientId: client.clientId,
     redirectUri,
-    ...(requestedResource !== undefined ? { resource: requestedResource } : {}),
+    resource: requestedResource,
     allowedResources: client.allowedResources,
     allowedScopes: client.allowedScopes,
   });
-  const resource = requestedResource ?? record.resource;
   const refreshToken = await store.createRefreshToken({
     clientId: client.clientId,
-    resource,
+    resource: requestedResource,
     scopes: record.scopes,
     userSub: record.userSub,
     authTime: record.authTime,
@@ -26,7 +25,7 @@ export async function authorizationCodeGrant(config: ServiceConfig, store: DiskO
   });
   return issueTokenResponse(config, {
     clientId: client.clientId,
-    resource,
+    resource: requestedResource,
     scopes: record.scopes,
     refreshToken,
     authTime: record.authTime,

@@ -10,6 +10,12 @@ The default local scopes are `openid`, `profile`, and `email`.
 
 The client registry controls allowed scopes per GPT client.
 
+Authorization requests require a `resource` value.
+
+Authorization-code exchanges and refresh-token exchanges require a `resource` value that matches the granted audience.
+
+Issued access tokens use the requested `resource` value as the token audience.
+
 Discovery metadata advertises the union of configured client scopes.
 
 Authorization server metadata advertises Client ID Metadata Document support through `client_id_metadata_document_supported`.

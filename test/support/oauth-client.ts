@@ -96,8 +96,10 @@ export async function completeAuthorizationCodeFlow(
 export async function refreshTokens(
   as: oauth.AuthorizationServer,
   refreshToken: string,
+  resource: string,
 ): Promise<{ response: Response; tokens: oauth.TokenEndpointResponse }> {
   const response = await oauth.refreshTokenGrantRequest(as, localClient, oauth.ClientSecretPost(localClientSecret), refreshToken, {
+    additionalParameters: new URLSearchParams([["resource", resource]]),
     [oauth.allowInsecureRequests]: true,
   });
   const tokens = await oauth.processRefreshTokenResponse(as, localClient, response);

@@ -10,6 +10,9 @@ test("authorization endpoint rejects invalid client request parameters", async (
   await expectOAuthError(await fetch(authorizeUrl(as.authorization_endpoint, service.actionsAudience, { state: "" }), { redirect: "manual" }), 400, "bad_request");
   await expectOAuthError(await fetch(authorizeUrl(as.authorization_endpoint, service.actionsAudience, { redirectUri: "http://evil.test/callback" }), { redirect: "manual" }), 400, "bad_request");
   await expectOAuthError(await fetch(authorizeUrl(as.authorization_endpoint, service.actionsAudience, { scope: "openid admin" }), { redirect: "manual" }), 400, "invalid_scope");
+  const missingResource = authorizeUrl(as.authorization_endpoint, service.actionsAudience, {});
+  missingResource.searchParams.delete("resource");
+  await expectOAuthError(await fetch(missingResource, { redirect: "manual" }), 400, "bad_request");
   const duplicateClient = authorizeUrl(as.authorization_endpoint, service.actionsAudience, {});
   duplicateClient.searchParams.append("client_id", "local-test");
   await expectOAuthError(await fetch(duplicateClient, { redirect: "manual" }), 400, "bad_request");

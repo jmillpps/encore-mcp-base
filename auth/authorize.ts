@@ -31,7 +31,8 @@ export async function createAuthorizationRedirect(
   const state = oauthState(request.state);
   const client = await resolveClient(config, clients, request.clientId);
   assertRedirectUri(client, request.redirectUri);
-  const resource = request.resource ?? config.actionsAudience;
+  if (!request.resource) throw new ServiceError("bad_request", "resource is required", 400);
+  const resource = request.resource;
   assertResource(client, resource);
   const scopes = parseScopes(request.scope);
   assertAllowedScopes(scopes, client.allowedScopes);

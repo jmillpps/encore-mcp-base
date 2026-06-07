@@ -19,14 +19,16 @@ test("refresh token rotation revokes the token family on reuse", async (t) => {
   const service = await startService(t);
   const flow = await completeAuthorizationCodeFlow(service);
   const firstRefreshToken = requireString(flow.tokens.refresh_token, "refresh_token");
-  const rotated = await refreshTokens(flow.as, firstRefreshToken);
+  const rotated = await refreshTokens(flow.as, firstRefreshToken, service.actionsAudience);
   const secondRefreshToken = requireString(rotated.tokens.refresh_token, "refresh_token");
   assert.notEqual(secondRefreshToken, firstRefreshToken);
   const replay = await oauth.refreshTokenGrantRequest(flow.as, localClient, oauth.ClientSecretPost("local-test-secret"), firstRefreshToken, {
+    additionalParameters: new URLSearchParams([["resource", service.actionsAudience]]),
     [oauth.allowInsecureRequests]: true,
   });
   await expectOAuthError(replay, 400, "invalid_grant");
   const revokedFamilyToken = await oauth.refreshTokenGrantRequest(flow.as, localClient, oauth.ClientSecretPost("local-test-secret"), secondRefreshToken, {
+    additionalParameters: new URLSearchParams([["resource", service.actionsAudience]]),
     [oauth.allowInsecureRequests]: true,
   });
   await expectOAuthError(revokedFamilyToken, 400, "invalid_grant");
@@ -37,7 +39,7 @@ test("refresh token responses preserve the original ID token authentication time
   const flow = await completeAuthorizationCodeFlow(service);
   const authTime = numberClaim(flow.idClaims.auth_time, "auth_time");
   await delay(1100);
-  const refreshed = await refreshTokens(flow.as, requireString(flow.tokens.refresh_token, "refresh_token"));
+  const refreshed = await refreshTokens(flow.as, requireString(flow.tokens.refresh_token, "refresh_token"), service.actionsAudience);
   const claims = decodeJwtPayload(requireString(refreshed.tokens.id_token, "id_token"));
   assert.equal(claims.auth_time, authTime);
   assert.ok(numberClaim(claims.iat, "iat") > authTime);
@@ -56,10 +58,11 @@ test("refresh token client mismatch does not rotate the legitimate token", async
       client_id: "gpt-actions",
       client_secret: "gpt-actions-secret",
       refresh_token: refreshToken,
+      resource: service.actionsAudience,
     }),
   });
   await expectOAuthError(mismatch, 400, "invalid_grant");
-  assert.equal((await refreshTokens(flow.as, refreshToken)).tokens.token_type, "bearer");
+  assert.equal((await refreshTokens(flow.as, refreshToken, service.actionsAudience)).tokens.token_type, "bearer");
 });
 
 test("refresh token resource mismatch does not rotate the legitimate token", async (t) => {
@@ -79,13 +82,14 @@ test("refresh token resource mismatch does not rotate the legitimate token", asy
     }),
   });
   await expectOAuthError(mismatch, 400, "invalid_grant");
-  assert.equal((await refreshTokens(flow.as, refreshToken)).tokens.token_type, "bearer");
+  assert.equal((await refreshTokens(flow.as, refreshToken, service.actionsAudience)).tokens.token_type, "bearer");
 });
 
 test("refresh token grant rejects arbitrary invalid tokens", async (t) => {
   const service = await startService(t);
   const as = await discover(service);
   const response = await oauth.refreshTokenGrantRequest(as, localClient, oauth.ClientSecretPost("local-test-secret"), "not-a-valid-refresh-token", {
+    additionalParameters: new URLSearchParams([["resource", service.actionsAudience]]),
     [oauth.allowInsecureRequests]: true,
   });
   await expectOAuthError(response, 400, "invalid_grant");
@@ -106,7 +110,11 @@ test("refresh token grant applies current client resource policy before rotating
     authTime: 1,
     ttlSeconds: 300,
   });
-  const form = new URLSearchParams({ refresh_token: refreshToken });
+  await assert.rejects(
+    () => refreshTokenGrant(config, store, clientWithResources([config.actionsAudience]), new URLSearchParams({ refresh_token: refreshToken })),
+    (error) => error instanceof ServiceError && error.code === "bad_request",
+  );
+  const form = new URLSearchParams({ refresh_token: refreshToken, resource: config.actionsAudience });
   await assert.rejects(
     () => refreshTokenGrant(config, store, clientWithResources([config.mcpResource]), form),
     (error) => error instanceof ServiceError && error.code === "invalid_grant",
