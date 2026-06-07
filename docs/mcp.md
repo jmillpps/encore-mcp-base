@@ -26,6 +26,8 @@ Tool descriptors include per-tool ChatGPT Apps auth schemes.
 
 Tool descriptors mirror auth schemes in `_meta.securitySchemes` for ChatGPT Apps clients that read descriptor metadata.
 
+Tool descriptors are validated before they are listed or executed.
+
 The current tool list is returned as a single page. `tools/list` accepts request metadata and rejects unsupported cursors with `-32602`.
 
 Tool argument validation failures return tool execution errors with `isError: true`. Malformed `tools/call` request shapes and unknown tools return JSON-RPC protocol errors.
