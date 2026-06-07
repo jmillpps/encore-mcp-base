@@ -1,7 +1,8 @@
 import { enforceRateLimit } from "../auth/rate-limit.ts";
 import { ServiceError } from "../shared/errors.ts";
 import { authChallengeResult } from "./auth-challenge.ts";
-import { assertMatchesSchema } from "./schema-validation.ts";
+import { McpProtocolError } from "./protocol-error.ts";
+import { assertMatchesSchema, matchesSchema } from "./schema-validation.ts";
 import { authSessionTool } from "./tools/auth-session.ts";
 import { healthCheckTool } from "./tools/health-check.ts";
 import { identityProfileTool } from "./tools/identity-profile.ts";
@@ -12,14 +13,17 @@ export type { McpTool, ToolContext } from "./tool-types.ts";
 export const tools: McpTool[] = [healthCheckTool, identityProfileTool, authSessionTool];
 
 export function listTools(): Record<string, unknown> {
+  assertToolDefinitions();
   return { tools: tools.map(({ run: _run, requiredScopes: _requiredScopes, ...tool }) => tool) };
 }
 
 export async function callTool(context: ToolContext, name: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {
-  const tool = tools.find((candidate) => candidate.name === name);
-  if (!tool) throw new ServiceError("not_found", "tool not found", 404);
-  assertToolArguments(tool, args);
+  assertToolDefinitions();
   await enforceRateLimit(context.config, "mcp-tool", context.rateLimitSubject ?? "unknown");
+  const tool = tools.find((candidate) => candidate.name === name);
+  if (!tool) throw new McpProtocolError(-32602, `Unknown tool: ${name}`);
+  const argumentError = toolArgumentError(tool, args);
+  if (argumentError) return toolExecutionError(argumentError);
   try {
     const result = await tool.run(context, args);
     if (result.isError !== true) assertMatchesSchema(tool.outputSchema, result.structuredContent);
@@ -32,10 +36,27 @@ export async function callTool(context: ToolContext, name: string, args: Record<
   }
 }
 
-function assertToolArguments(tool: McpTool, args: Record<string, unknown>): void {
-  if (tool.inputSchema.type !== "object" || tool.inputSchema.additionalProperties !== false) return;
+function assertToolDefinitions(): void {
+  const names = new Set<string>();
+  for (const tool of tools) {
+    if (!/^[A-Za-z0-9_.-]{1,128}$/.test(tool.name)) throw new ServiceError("server_error", "invalid tool name", 500);
+    if (names.has(tool.name)) throw new ServiceError("server_error", "duplicate tool name", 500);
+    names.add(tool.name);
+  }
+}
+
+function toolArgumentError(tool: McpTool, args: Record<string, unknown>): string | undefined {
+  if (tool.inputSchema.type !== "object" || tool.inputSchema.additionalProperties !== false) {
+    return matchesSchema(tool.inputSchema, args) ? undefined : "Invalid tool arguments.";
+  }
   const properties = tool.inputSchema.properties;
-  if (typeof properties !== "object" || properties === null || Array.isArray(properties)) throw new ServiceError("bad_request", "invalid tool schema", 400);
+  if (typeof properties !== "object" || properties === null || Array.isArray(properties)) throw new ServiceError("server_error", "invalid tool schema", 500);
   const allowed = new Set(Object.keys(properties));
-  if (Object.keys(args).some((key) => !allowed.has(key))) throw new ServiceError("bad_request", "invalid tool arguments", 400);
+  const unexpected = Object.keys(args).find((key) => !allowed.has(key));
+  if (unexpected) return `Invalid tool arguments: unsupported argument "${unexpected}".`;
+  return matchesSchema(tool.inputSchema, args) ? undefined : "Invalid tool arguments.";
+}
+
+function toolExecutionError(message: string): Record<string, unknown> {
+  return { content: [{ type: "text", text: message }], isError: true };
 }

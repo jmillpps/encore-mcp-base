@@ -18,6 +18,7 @@ test("MCP tools expose metadata and protected tools return auth challenges", asy
   const listBody = await readJson(listed);
   const tools = ((listBody.result as Record<string, unknown>).tools as Record<string, unknown>[]);
   assert.ok(tools.some((tool) => tool.name === "identity.profile" && Array.isArray(tool.securitySchemes)));
+  for (const tool of tools) assert.match(requireString(tool.name, "tool name"), /^[A-Za-z0-9_.-]{1,128}$/);
   const challengeResponse = await postMcp(service, { jsonrpc: "2.0", id: "identity.profile", method: "tools/call", params: { name: "identity.profile", arguments: {} } }, { sessionId });
   assert.equal(challengeResponse.status, 200);
   assert.match(challengeResponse.headers.get("www-authenticate") ?? "", /resource_metadata=/);
@@ -71,7 +72,7 @@ test("MCP protected tools accept the GPT Apps client required-PKCE token flow", 
   assert.equal((session.structuredContent as Record<string, unknown>).clientId, gptAppsMcpClient.client_id);
 });
 
-test("MCP tools reject arguments outside their input schemas", async (t) => {
+test("MCP tools return execution errors for input schema validation failures", async (t) => {
   const service = await startService(t);
   const sessionId = await initializeMcp(service);
   const response = await postMcp(
@@ -79,9 +80,28 @@ test("MCP tools reject arguments outside their input schemas", async (t) => {
     { jsonrpc: "2.0", id: "bad-args", method: "tools/call", params: { name: "health.check", arguments: { unexpected: true } } },
     { sessionId },
   );
-  assert.equal(response.status, 400);
+  assert.equal(response.status, 200);
   const body = await readJson(response);
-  assert.equal((body.error as Record<string, unknown>).message, "invalid tool arguments");
+  const result = body.result as Record<string, unknown>;
+  assert.equal(result.isError, true);
+  assert.match(JSON.stringify(result.content), /unsupported argument/);
+});
+
+test("MCP tools return protocol errors for malformed tool requests and unknown tools", async (t) => {
+  const service = await startService(t);
+  const sessionId = await initializeMcp(service);
+  const malformed = await postMcp(
+    service,
+    { jsonrpc: "2.0", id: "malformed-tool", method: "tools/call", params: { name: "health.check", arguments: [] } },
+    { sessionId },
+  );
+  assert.equal(malformed.status, 200);
+  assert.equal(((await readJson(malformed)).error as Record<string, unknown>).code, -32602);
+  const unknown = await postMcp(service, { jsonrpc: "2.0", id: "unknown-tool", method: "tools/call", params: { name: "missing.tool" } }, { sessionId });
+  assert.equal(unknown.status, 200);
+  const error = (await readJson(unknown)).error as Record<string, unknown>;
+  assert.equal(error.code, -32602);
+  assert.match(requireString(error.message, "error message"), /Unknown tool/);
 });
 
 async function completeGptAppsMcpFlow(service: TestService): Promise<{ tokens: oauth.TokenEndpointResponse; idClaims: oauth.IDToken }> {

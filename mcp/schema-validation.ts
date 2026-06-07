@@ -4,7 +4,7 @@ export function assertMatchesSchema(schema: Record<string, unknown>, value: unkn
   if (!matchesSchema(schema, value)) throw new ServiceError("server_error", "invalid tool output", 500);
 }
 
-function matchesSchema(schema: Record<string, unknown>, value: unknown): boolean {
+export function matchesSchema(schema: Record<string, unknown>, value: unknown): boolean {
   if (Array.isArray(schema.enum) && !schema.enum.some((entry) => Object.is(entry, value))) return false;
   const type = schema.type;
   if (type === "object") return matchesObject(schema, value);

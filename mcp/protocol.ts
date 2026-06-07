@@ -4,7 +4,8 @@ import { asRecord } from "../shared/json.ts";
 import { extractWwwAuthenticate } from "./auth-challenge.ts";
 import { callTool, listTools } from "./tool-registry.ts";
 import { initializeClientId, initializeResult } from "./lifecycle.ts";
-import { isJsonRpcResponse, jsonRpcError, jsonRpcSuccess, methodParamObject, methodParamString, parseJsonRpc, type JsonRpcRequest } from "./json-rpc.ts";
+import { isJsonRpcResponse, jsonRpcError, jsonRpcSuccess, parseJsonRpc, type JsonRpcRequest } from "./json-rpc.ts";
+import { McpProtocolError } from "./protocol-error.ts";
 
 export interface McpContext {
   config: ServiceConfig;
@@ -56,18 +57,18 @@ async function dispatch(context: McpContext, request: JsonRpcRequest): Promise<u
   if (request.method === "ping") return {};
   if (request.method === "tools/list") return listTools();
   if (request.method === "tools/call") {
-    const name = methodParamString(request, "name");
-    const args = methodParamObject(request, "arguments");
+    const { name, args } = toolCallParams(request.params);
     return callTool(context, name, args);
   }
   throw new McpProtocolError(-32601, "method not found");
 }
 
-class McpProtocolError extends Error {
-  readonly rpcCode: number;
-
-  constructor(rpcCode: number, message: string) {
-    super(message);
-    this.rpcCode = rpcCode;
-  }
+function toolCallParams(params: unknown): { name: string; args: Record<string, unknown> } {
+  if (typeof params !== "object" || params === null || Array.isArray(params)) throw new McpProtocolError(-32602, "tools/call params must be an object");
+  const record = params as Record<string, unknown>;
+  if (typeof record.name !== "string" || record.name.length === 0) throw new McpProtocolError(-32602, "tools/call name must be a string");
+  const args = record.arguments;
+  if (args === undefined) return { name: record.name, args: {} };
+  if (typeof args !== "object" || args === null || Array.isArray(args)) throw new McpProtocolError(-32602, "tools/call arguments must be an object");
+  return { name: record.name, args: args as Record<string, unknown> };
 }

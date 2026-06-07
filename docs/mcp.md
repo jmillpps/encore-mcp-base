@@ -2,11 +2,17 @@
 
 The service exposes MCP for GPT Apps through Streamable HTTP and legacy HTTP/SSE.
 
+The protocol baseline is `2025-11-25`.
+
 The first tool set includes a public health tool, a protected identity profile tool, and a protected auth session tool.
 
 Protected tools validate issuer, audience, expiry, client ID, and scopes on every call.
 
 When a protected tool needs authentication, it returns a ChatGPT-compatible `mcp/www_authenticate` challenge.
+
+Tool names use ASCII letters, digits, underscores, hyphens, and dots. Names stay within 128 characters.
+
+Tool argument validation failures return tool execution errors with `isError: true`. Malformed `tools/call` request shapes and unknown tools return JSON-RPC protocol errors.
 
 ## Streamable HTTP
 
@@ -16,7 +22,7 @@ Streamable HTTP is served at `/mcp`.
 
 Clients send `Accept: application/json, text/event-stream` and `Content-Type: application/json`.
 
-The initialize response includes `Mcp-Session-Id`. Clients send that session ID with `MCP-Protocol-Version` on later `/mcp` requests.
+The initialize response includes `MCP-Session-Id`. Clients send that session ID with `MCP-Protocol-Version` on later `/mcp` requests.
 
 Requests return JSON responses. Notifications and client responses return `202 Accepted` with an empty body.
 
