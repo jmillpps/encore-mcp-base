@@ -14,6 +14,8 @@ Tool names use ASCII letters, digits, underscores, hyphens, and dots. Names stay
 
 Tool argument validation failures return tool execution errors with `isError: true`. Malformed `tools/call` request shapes and unknown tools return JSON-RPC protocol errors.
 
+Tool results with structured content include the same payload as serialized JSON text.
+
 ## Streamable HTTP
 
 Streamable HTTP is served at `/mcp`.

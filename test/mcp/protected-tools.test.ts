@@ -3,7 +3,7 @@ import test from "node:test";
 import * as oauth from "oauth4webapi";
 import { completeAuthorizationCodeFlow, discover } from "../support/oauth-client.ts";
 import { callTool, initializeMcp, postMcp, bearer } from "../support/mcp.ts";
-import { readJson, requireString } from "../support/http.ts";
+import { readJson, requireRecord, requireString } from "../support/http.ts";
 import { startService, type TestService } from "../support/service-process.ts";
 
 const gptAppsMcpClient: oauth.Client = { client_id: "gpt-apps-mcp" };
@@ -39,12 +39,14 @@ test("MCP tools return structured content that matches advertised output schemas
   const serviceInfo = healthContent.service as Record<string, unknown>;
   assert.equal(serviceInfo.name, "gpt-mcp-service");
   assert.equal(serviceInfo.version, "0.1.0");
+  assert.deepEqual(readToolTextJson(health), health.structuredContent);
   const validFlow = await completeAuthorizationCodeFlow(service, service.mcpResource);
   const session = await callTool(service, sessionId, "auth.session", bearer(validFlow.tokens.access_token));
   const sessionContent = session.structuredContent as Record<string, unknown>;
   assert.equal(sessionContent.subject, "user_justin_miller");
   assert.equal(sessionContent.clientId, "local-test");
   assert.ok(Array.isArray(sessionContent.scopes));
+  assert.deepEqual(readToolTextJson(session), session.structuredContent);
 });
 
 test("MCP protected tools enforce audience and scopes", async (t) => {
@@ -142,4 +144,11 @@ async function completeGptAppsMcpFlow(service: TestService): Promise<{ tokens: o
   const idClaims = oauth.getValidatedIdTokenClaims(tokens);
   assert.ok(idClaims);
   return { tokens, idClaims };
+}
+
+function readToolTextJson(result: Record<string, unknown>): unknown {
+  const content = result.content;
+  assert.ok(Array.isArray(content));
+  const first = requireRecord(content[0], "tool content");
+  return JSON.parse(requireString(first.text, "tool content text"));
 }

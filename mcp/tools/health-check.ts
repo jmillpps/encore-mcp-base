@@ -15,12 +15,12 @@ export const healthCheckTool: McpTool = {
   }),
   securitySchemes: [{ type: "noauth" }],
   requiredScopes: [],
-  run: async () => ({
-    content: [{ type: "text", text: "ok" }],
-    structuredContent: {
+  run: async () => {
+    const structuredContent = {
       status: "ok",
       timestamp: isoNow(),
       service: { name: serviceName, version: serviceVersion },
-    },
-  }),
+    };
+    return { content: [{ type: "text", text: JSON.stringify(structuredContent) }], structuredContent };
+  },
 };

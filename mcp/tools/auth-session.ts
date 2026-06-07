@@ -19,14 +19,15 @@ export const authSessionTool: McpTool = {
   requiredScopes: [...authSessionScopes],
   run: async (context) => {
     const claims = verifyBearer(context.config, context.authorization, context.config.mcpResource, authSessionScopes);
+    const structuredContent = {
+      subject: claims.sub,
+      clientId: claims.client_id,
+      audience: claims.aud,
+      scopes: claims.scope.split(/\s+/).filter(Boolean),
+    };
     return {
-      content: [{ type: "text", text: claims.sub }],
-      structuredContent: {
-        subject: claims.sub,
-        clientId: claims.client_id,
-        audience: claims.aud,
-        scopes: claims.scope.split(/\s+/).filter(Boolean),
-      },
+      content: [{ type: "text", text: JSON.stringify(structuredContent) }],
+      structuredContent,
     };
   },
 };
