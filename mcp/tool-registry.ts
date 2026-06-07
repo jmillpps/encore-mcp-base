@@ -6,6 +6,7 @@ import { assertMatchesSchema, matchesSchema } from "./schema-validation.ts";
 import { authSessionTool } from "./tools/auth-session.ts";
 import { healthCheckTool } from "./tools/health-check.ts";
 import { identityProfileTool } from "./tools/identity-profile.ts";
+import { toolExecution } from "./tool-execution.ts";
 import { toolSecuritySchemes } from "./tool-security.ts";
 import type { McpTool, ToolContext } from "./tool-types.ts";
 
@@ -52,6 +53,7 @@ function toolDescriptor(tool: McpTool): Record<string, unknown> {
     title: tool.title,
     description: tool.description,
     inputSchema: tool.inputSchema,
+    execution: toolExecution(),
     outputSchema: tool.outputSchema,
     annotations: tool.annotations,
     securitySchemes: toolSecuritySchemes(tool.requiredScopes),

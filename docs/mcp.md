@@ -28,6 +28,8 @@ Tool argument validation failures return tool execution errors with `isError: tr
 
 Task-augmented tool calls are rejected because the service does not advertise task support.
 
+Tool descriptors declare task-augmented execution as forbidden.
+
 Tool results with structured content include the same payload as serialized JSON text.
 
 ## Streamable HTTP
