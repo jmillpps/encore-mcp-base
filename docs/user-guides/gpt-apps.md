@@ -95,4 +95,23 @@ Use these checks when account linking or MCP initialization fails:
 
 ## Production Setup
 
-Production GPT Apps setup needs a public HTTPS service URL and a registered OAuth client record in `OAUTH_CLIENTS_JSON`. Use [Production Deployment](../deployment/production.md), [Client Registry](../deployment/client-registry.md), and [Configuration Reference](../api/configuration.md) for required environment variables.
+Production GPT Apps setup needs a public HTTPS service URL and OAuth discovery metadata. Use [Production Deployment](../deployment/production.md), [Client Registry](../deployment/client-registry.md), and [Configuration Reference](../api/configuration.md) for required environment variables.
+
+Create the custom app from ChatGPT Settings:
+
+1. Open `Settings`.
+2. Open `Apps`.
+3. Select `Create app`.
+4. Set the app name and description.
+5. Set the MCP server URL to the public `/mcp` URL.
+6. Keep OAuth authentication enabled.
+7. Review advanced OAuth settings.
+8. Use the ChatGPT-generated Client Identifier Metadata Document setting when the form selects it.
+9. Acknowledge the custom MCP server warning.
+10. Create the app.
+11. Sign in with the app.
+12. Refresh the app after sign-in so ChatGPT reloads the MCP tool list.
+
+After refresh, ChatGPT should list `health.check`, `identity.profile`, and `auth.session` in the app actions section.
+
+Connected custom apps are available from normal ChatGPT chats through app invocation. Current ChatGPT custom GPT chats omit connected app tools in the GPT preview and live GPT chat. Use a normal ChatGPT chat for Apps tool execution until ChatGPT exposes custom apps to custom GPT chats.
