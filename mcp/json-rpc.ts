@@ -17,6 +17,7 @@ export function isJsonRpcResponse(value: unknown): boolean {
   const hasResult = Object.hasOwn(record, "result");
   const hasError = Object.hasOwn(record, "error");
   if (!hasResult && !hasError) return false;
+  assertOnlyKeys(record, hasResult ? ["jsonrpc", "id", "result"] : ["jsonrpc", "id", "error"], "invalid json-rpc response");
   if (hasResult === hasError) throw new ServiceError("bad_request", "invalid json-rpc response", 400);
   if (hasResult && !Object.hasOwn(record, "id")) throw new ServiceError("bad_request", "invalid json-rpc response", 400);
   if (Object.hasOwn(record, "id")) validateJsonRpcId(record.id);
@@ -27,6 +28,7 @@ export function isJsonRpcResponse(value: unknown): boolean {
 
 export function parseJsonRpc(value: unknown): JsonRpcRequest {
   const record = asRecord(value, "json-rpc");
+  assertOnlyKeys(record, ["jsonrpc", "id", "method", "params"], "invalid json-rpc message");
   if (record.jsonrpc !== "2.0") throw new ServiceError("bad_request", "invalid json-rpc version", 400);
   if (Object.hasOwn(record, "result") || Object.hasOwn(record, "error")) throw new ServiceError("bad_request", "invalid json-rpc message", 400);
   const method = requiredString(record, "method");
@@ -61,6 +63,7 @@ export function optionalParamString(request: JsonRpcRequest, key: string): strin
 
 function validateJsonRpcError(value: unknown): void {
   const record = asRecord(value, "error");
+  assertOnlyKeys(record, ["code", "message", "data"], "invalid json-rpc error");
   if (!Number.isInteger(record.code)) throw new ServiceError("bad_request", "invalid json-rpc error", 400);
   if (typeof record.message !== "string") throw new ServiceError("bad_request", "invalid json-rpc error", 400);
 }
@@ -77,4 +80,8 @@ function jsonRpcParams(value: unknown): Record<string, unknown> {
 function validateJsonRpcId(value: unknown): asserts value is JsonRpcId {
   if (typeof value !== "string" && typeof value !== "number") throw new ServiceError("bad_request", "invalid json-rpc id", 400);
   if (typeof value === "number" && !Number.isSafeInteger(value)) throw new ServiceError("bad_request", "invalid json-rpc id", 400);
+}
+
+function assertOnlyKeys(record: Record<string, unknown>, allowed: readonly string[], message: string): void {
+  if (Object.keys(record).some((key) => !allowed.includes(key))) throw new ServiceError("bad_request", message, 400);
 }
