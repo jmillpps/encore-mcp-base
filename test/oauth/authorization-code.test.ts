@@ -202,7 +202,7 @@ async function createStoredCode(store: DiskOAuthStore, config: ReturnType<typeof
     redirectUri: localRedirectUri,
     resource: config.actionsAudience,
     scopes,
-    userSub: testStaticUser.sub,
+    user: testStaticUser,
     ttlSeconds: 300,
   });
 }

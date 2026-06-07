@@ -1,6 +1,6 @@
 # Production Deployment
 
-Production deployment runs the Encore service with explicit public URLs, registered OAuth clients, durable storage, allowed origins, signing keys, token lifetimes, and rate limits.
+Production deployment runs the Encore service with explicit public URLs, registered OAuth clients, Cognito upstream login, durable storage, allowed origins, signing keys, token lifetimes, and rate limits.
 
 ## Required Setup
 
@@ -12,7 +12,7 @@ Production deployment runs the Encore service with explicit public URLs, registe
 6. Register GPT clients in `OAUTH_CLIENTS_JSON`.
 7. Configure `ALLOWED_ORIGINS` for ChatGPT origins.
 8. Configure RSA signing key material.
-9. Configure the static identity profile.
+9. Configure Cognito upstream login.
 10. Set token lifetimes, rate limits, and SSE connection limits.
 
 ## Client Registry
@@ -67,15 +67,8 @@ Legacy `/sse` and `/messages` sessions are process-bound. Use sticky routing for
 Keep these values in the deployment secret manager:
 
 - `OAUTH_PRIVATE_KEY_PEM`
-- `STATIC_USER_SUB`
-- `STATIC_USER_GIVEN_NAME`
-- `STATIC_USER_FAMILY_NAME`
-- `STATIC_USER_NAME`
-- `STATIC_USER_PREFERRED_USERNAME`
-- `STATIC_USER_EMAIL`
-- `STATIC_USER_EMAIL_VERIFIED`
+- `COGNITO_CLIENT_SECRET`
 - OAuth client raw secrets configured in ChatGPT
-- Any future upstream identity provider secrets
 
 Keep `OAUTH_CLIENTS_JSON` in environment configuration or a secret-backed config source. It contains secret hashes and operational client policy.
 

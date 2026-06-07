@@ -1,6 +1,6 @@
 # OAuth Provider Architecture
 
-The service acts as a private OAuth and OIDC provider for configured GPT clients. It supports authorization code flow, refresh tokens, signed access tokens, ID tokens, userinfo, JWKS, discovery metadata, static clients, and Client ID Metadata Document clients.
+The service acts as a private OAuth and OIDC provider for configured GPT clients. It supports authorization code flow, Cognito upstream login, refresh tokens, signed access tokens, ID tokens, userinfo, JWKS, discovery metadata, static clients, and Client ID Metadata Document clients.
 
 ## Client Types
 
@@ -34,9 +34,13 @@ The client registry controls allowed scopes per client. Token grants reject scop
 
 ## Token Handling
 
-Access tokens and ID tokens are signed with RS256. ID tokens include OIDC profile claims for the static user. Refresh tokens rotate on use. Reuse of an older refresh token revokes the token family.
+Access tokens and ID tokens are signed with RS256. ID tokens and profile endpoints return the user profile bound to the authorization grant. Refresh tokens rotate on use. Reuse of an older refresh token revokes the token family.
 
-Authorization codes and refresh tokens are stored as SHA-256 hashes. Token grant failures preserve valid authorization codes and refresh tokens when no consuming step completed.
+Authorization codes, upstream login states, and refresh tokens are stored as SHA-256 hashes. Token grant failures preserve valid authorization codes and refresh tokens when no consuming step completed.
+
+## Cognito Login
+
+When Cognito is enabled, `/oauth/authorize` validates the GPT client request and stores an upstream login state. The service redirects the browser to Cognito hosted login with PKCE. `/oauth/cognito/callback` consumes the upstream state once, exchanges the Cognito code, reads Cognito userinfo, then issues the service authorization code to the original GPT redirect URI.
 
 ## Discovery
 

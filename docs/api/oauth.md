@@ -18,6 +18,7 @@ The service implements private OAuth and OIDC endpoints for GPT account linking 
 | Method | Path | Auth | Purpose |
 | --- | --- | --- | --- |
 | `GET` | `/oauth/authorize` | client request parameters | Authorization code request. |
+| `GET` | `/oauth/cognito/callback` | Cognito callback parameters | Upstream login callback. |
 | `POST` | `/oauth/token` | client authentication | Authorization code and refresh token grants. |
 | `GET` | `/oauth/userinfo` | bearer token with `openid` | OIDC userinfo. |
 | `GET` | `/oauth/jwks` | none | Public signing keys. |
@@ -50,7 +51,7 @@ Optional parameters:
 
 The endpoint rejects duplicate parameters, unsupported parameters, query access tokens, unregistered redirect URIs, unknown clients, unsupported scopes, and unapproved resources.
 
-Successful authorization returns a redirect to the registered `redirect_uri` with `code` and optional `state`.
+Successful local authorization returns a redirect to the registered `redirect_uri` with `code` and optional `state`. Cognito-enabled authorization redirects to Cognito first, then returns the service code after Cognito callback processing.
 
 ## Token Grants
 
@@ -113,13 +114,13 @@ Status `200` returns:
 
 ## Token Claims
 
-Access tokens include issuer, subject, audience, expiration, issued-at time, not-before time, JWT ID, client ID, and scopes. The `aud` claim is the resolved OAuth resource.
+Access tokens include issuer, subject, audience, expiration, issued-at time, not-before time, JWT ID, client ID, scopes, and profile claims. The `aud` claim is the resolved OAuth resource.
 
-ID tokens include the static user profile, client audience, authentication time, and nonce when the authorization request supplied one.
+ID tokens include the grant-bound user profile, client audience, authentication time, and nonce when the authorization request supplied one.
 
 ## Userinfo Response
 
-`GET /oauth/userinfo` accepts Actions and MCP audience tokens with `openid`. Status `200` returns the static OIDC profile documented in [Identity Profile](identity-profile.md).
+`GET /oauth/userinfo` accepts Actions and MCP audience tokens with `openid`. Status `200` returns the profile bound to the access token.
 
 ## Discovery Metadata
 

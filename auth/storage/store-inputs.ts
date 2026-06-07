@@ -1,3 +1,5 @@
+import type { StaticUser } from "../static-user.ts";
+
 export interface AuthorizationCodeInput {
   clientId: string;
   redirectUri: string;
@@ -6,7 +8,7 @@ export interface AuthorizationCodeInput {
   nonce?: string;
   codeChallenge?: string;
   codeChallengeMethod?: "S256";
-  userSub: string;
+  user: StaticUser;
   ttlSeconds: number;
 }
 
@@ -20,9 +22,22 @@ export interface AuthorizationCodeExpectation {
 
 export interface RefreshTokenInput {
   clientId: string;
-  userSub: string;
+  user: StaticUser;
   resource: string;
   scopes: string[];
   authTime: number;
+  ttlSeconds: number;
+}
+
+export interface UpstreamAuthorizationStateInput {
+  clientId: string;
+  redirectUri: string;
+  resource: string;
+  scopes: string[];
+  clientState: string;
+  codeVerifier: string;
+  nonce?: string;
+  codeChallenge?: string;
+  codeChallengeMethod?: "S256";
   ttlSeconds: number;
 }

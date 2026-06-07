@@ -50,7 +50,7 @@ Current tools:
 | Tool | Scopes | Purpose |
 | --- | --- | --- |
 | `health.check` | none | Confirm service reachability. |
-| `identity.profile` | `openid profile email` | Return the static OIDC user profile. |
+| `identity.profile` | `openid profile email` | Return the authenticated OIDC user profile. |
 | `auth.session` | `openid` | Return token subject, client ID, audience, and scopes. |
 
 Tool descriptors include input schemas, output schemas, annotations, security schemes, invocation status text, and ChatGPT metadata.

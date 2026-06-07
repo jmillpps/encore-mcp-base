@@ -1,3 +1,5 @@
+import type { StaticUser } from "../static-user.ts";
+
 export interface AuthorizationCodeRecord {
   codeHash: string;
   clientId: string;
@@ -7,7 +9,7 @@ export interface AuthorizationCodeRecord {
   nonce?: string;
   codeChallenge?: string;
   codeChallengeMethod?: "S256";
-  userSub: string;
+  user: StaticUser;
   expiresAt: number;
   consumedAt?: number;
   authTime: number;
@@ -18,7 +20,7 @@ export interface RefreshTokenRecord {
   tokenHash: string;
   familyId: string;
   clientId: string;
-  userSub: string;
+  user: StaticUser;
   resource: string;
   scopes: string[];
   expiresAt: number;
@@ -27,6 +29,21 @@ export interface RefreshTokenRecord {
   revokedAt?: number;
   createdAt: number;
   lastUsedAt?: number;
+}
+
+export interface UpstreamAuthorizationStateRecord {
+  stateHash: string;
+  clientId: string;
+  redirectUri: string;
+  resource: string;
+  scopes: string[];
+  clientState: string;
+  codeVerifier: string;
+  nonce?: string;
+  codeChallenge?: string;
+  codeChallengeMethod?: "S256";
+  expiresAt: number;
+  createdAt: number;
 }
 
 export interface McpSessionRecord {
@@ -44,6 +61,7 @@ export interface McpSessionRecord {
 export interface OAuthStoreState {
   authorizationCodes: Record<string, AuthorizationCodeRecord>;
   refreshTokens: Record<string, RefreshTokenRecord>;
+  upstreamAuthorizationStates: Record<string, UpstreamAuthorizationStateRecord>;
   mcpSessions: Record<string, McpSessionRecord>;
   rateLimits: Record<string, { count: number; resetAt: number }>;
 }
@@ -52,6 +70,7 @@ export function emptyStoreState(): OAuthStoreState {
   return {
     authorizationCodes: {},
     refreshTokens: {},
+    upstreamAuthorizationStates: {},
     mcpSessions: {},
     rateLimits: {},
   };

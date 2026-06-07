@@ -89,6 +89,12 @@ function accessClaims(config: ServiceConfig, overrides: Record<string, unknown>)
     jti: "token-claim-test",
     client_id: "local-test",
     scope: "openid profile email",
+    name: testStaticUser.name,
+    given_name: testStaticUser.given_name,
+    family_name: testStaticUser.family_name,
+    preferred_username: testStaticUser.preferred_username,
+    email: testStaticUser.email,
+    email_verified: testStaticUser.email_verified,
     ...overrides,
   };
 }

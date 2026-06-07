@@ -20,7 +20,7 @@ export async function authorizationCodeGrant(config: ServiceConfig, store: DiskO
     clientId: client.clientId,
     resource: requestedResource,
     scopes: record.scopes,
-    userSub: record.userSub,
+    user: record.user,
     authTime: record.authTime,
     ttlSeconds: config.refreshTokenTtlSeconds,
   });
@@ -30,6 +30,7 @@ export async function authorizationCodeGrant(config: ServiceConfig, store: DiskO
     scopes: record.scopes,
     refreshToken,
     authTime: record.authTime,
+    user: record.user,
     nonce: record.nonce,
   });
 }

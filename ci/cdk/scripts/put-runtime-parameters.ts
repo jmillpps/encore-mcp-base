@@ -7,17 +7,6 @@ interface Options {
   stackName: string;
   actionsRedirectUris: string[];
   mcpRedirectUris: string[];
-  staticUser: StaticUserInput;
-}
-
-interface StaticUserInput {
-  sub: string;
-  givenName: string;
-  familyName: string;
-  name: string;
-  preferredUsername: string;
-  email: string;
-  emailVerified: string;
 }
 
 const options = parseArgs(process.argv.slice(2));
@@ -39,13 +28,6 @@ await putString(prefix, "OAUTH_KEY_ID", keyName);
 await putSecure(prefix, keyId, "COGNITO_CLIENT_SECRET", cognitoSecret);
 await putSecure(prefix, keyId, "CHATGPT_ACTIONS_CLIENT_SECRET", actionsSecret);
 await putSecure(prefix, keyId, "CHATGPT_MCP_CLIENT_SECRET", mcpSecret);
-await putSecure(prefix, keyId, "STATIC_USER_SUB", options.staticUser.sub);
-await putSecure(prefix, keyId, "STATIC_USER_GIVEN_NAME", options.staticUser.givenName);
-await putSecure(prefix, keyId, "STATIC_USER_FAMILY_NAME", options.staticUser.familyName);
-await putSecure(prefix, keyId, "STATIC_USER_NAME", options.staticUser.name);
-await putSecure(prefix, keyId, "STATIC_USER_PREFERRED_USERNAME", options.staticUser.preferredUsername);
-await putSecure(prefix, keyId, "STATIC_USER_EMAIL", options.staticUser.email);
-await putSecure(prefix, keyId, "STATIC_USER_EMAIL_VERIFIED", options.staticUser.emailVerified);
 await putSecure(prefix, keyId, "OAUTH_CLIENTS_JSON", JSON.stringify([
   {
     clientId: "gpt-actions-prod",
@@ -86,20 +68,12 @@ function parseArgs(args: string[]): Options {
     stackName: "GptMcpServiceProd",
     actionsRedirectUris: [] as string[],
     mcpRedirectUris: [] as string[],
-    staticUser: {} as Partial<StaticUserInput>,
   };
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index] ?? "";
     if (arg === "--stack-name") parsed.stackName = requiredArg(args, (index += 1), arg);
     else if (arg === "--actions-redirect-uri") parsed.actionsRedirectUris.push(requiredArg(args, (index += 1), arg));
     else if (arg === "--mcp-redirect-uri") parsed.mcpRedirectUris.push(requiredArg(args, (index += 1), arg));
-    else if (arg === "--static-user-sub") parsed.staticUser.sub = requiredArg(args, (index += 1), arg);
-    else if (arg === "--static-user-given-name") parsed.staticUser.givenName = requiredArg(args, (index += 1), arg);
-    else if (arg === "--static-user-family-name") parsed.staticUser.familyName = requiredArg(args, (index += 1), arg);
-    else if (arg === "--static-user-name") parsed.staticUser.name = requiredArg(args, (index += 1), arg);
-    else if (arg === "--static-user-preferred-username") parsed.staticUser.preferredUsername = requiredArg(args, (index += 1), arg);
-    else if (arg === "--static-user-email") parsed.staticUser.email = requiredArg(args, (index += 1), arg);
-    else if (arg === "--static-user-email-verified") parsed.staticUser.emailVerified = requiredArg(args, (index += 1), arg);
     else throw new Error(`unknown argument: ${arg}`);
   }
   if (parsed.actionsRedirectUris.length === 0) throw new Error("--actions-redirect-uri is required");
@@ -108,15 +82,6 @@ function parseArgs(args: string[]): Options {
     stackName: parsed.stackName,
     actionsRedirectUris: parsed.actionsRedirectUris,
     mcpRedirectUris: parsed.mcpRedirectUris,
-    staticUser: {
-      sub: requiredProfileValue(parsed.staticUser.sub ?? process.env.STATIC_USER_SUB, "STATIC_USER_SUB", "--static-user-sub"),
-      givenName: requiredProfileValue(parsed.staticUser.givenName ?? process.env.STATIC_USER_GIVEN_NAME, "STATIC_USER_GIVEN_NAME", "--static-user-given-name"),
-      familyName: requiredProfileValue(parsed.staticUser.familyName ?? process.env.STATIC_USER_FAMILY_NAME, "STATIC_USER_FAMILY_NAME", "--static-user-family-name"),
-      name: requiredProfileValue(parsed.staticUser.name ?? process.env.STATIC_USER_NAME, "STATIC_USER_NAME", "--static-user-name"),
-      preferredUsername: requiredProfileValue(parsed.staticUser.preferredUsername ?? process.env.STATIC_USER_PREFERRED_USERNAME, "STATIC_USER_PREFERRED_USERNAME", "--static-user-preferred-username"),
-      email: requiredEmail(parsed.staticUser.email ?? process.env.STATIC_USER_EMAIL),
-      emailVerified: requiredBoolean(parsed.staticUser.emailVerified ?? process.env.STATIC_USER_EMAIL_VERIFIED, "STATIC_USER_EMAIL_VERIFIED", "--static-user-email-verified"),
-    },
   };
 }
 
@@ -124,26 +89,6 @@ function requiredArg(args: string[], index: number, name: string): string {
   const value = args[index];
   if (!value) throw new Error(`${name} requires a value`);
   return value;
-}
-
-function requiredProfileValue(value: string | undefined, envName: string, optionName: string): string {
-  const trimmed = value?.trim();
-  if (!trimmed) throw new Error(`${optionName} or ${envName} is required`);
-  if (trimmed.length > 256) throw new Error(`${envName} must be at most 256 characters`);
-  if (/[\r\n]/.test(trimmed)) throw new Error(`${envName} cannot contain line breaks`);
-  return trimmed;
-}
-
-function requiredEmail(value: string | undefined): string {
-  const email = requiredProfileValue(value, "STATIC_USER_EMAIL", "--static-user-email");
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("STATIC_USER_EMAIL must be an email address");
-  return email;
-}
-
-function requiredBoolean(value: string | undefined, envName: string, optionName: string): string {
-  const trimmed = requiredProfileValue(value, envName, optionName);
-  if (trimmed === "true" || trimmed === "false") return trimmed;
-  throw new Error(`${envName} must be true or false`);
 }
 
 function requiredOutput(outputs: Record<string, string>, name: string): string {

@@ -3,12 +3,13 @@ import { randomToken } from "../../shared/crypto.ts";
 import { ServiceError } from "../../shared/errors.ts";
 import { nowSeconds } from "../../shared/time.ts";
 import { hasScopes } from "../scopes.ts";
+import type { StaticUser } from "../static-user.ts";
 import { getSigningKey, getVerificationKeys } from "./signing-keys.ts";
 import { jwtKid, signJwt, verifyJwt } from "./jwt.ts";
 import type { AccessTokenClaims } from "./token-claims.ts";
 
 export interface AccessTokenInput {
-  sub: string;
+  user: StaticUser;
   clientId: string;
   audience: string;
   scopes: string[];
@@ -19,7 +20,7 @@ export function issueAccessToken(config: ServiceConfig, input: AccessTokenInput)
   const key = getSigningKey(config);
   const claims: AccessTokenClaims = {
     iss: config.issuer,
-    sub: input.sub,
+    sub: input.user.sub,
     aud: input.audience,
     exp: now + config.accessTokenTtlSeconds,
     iat: now,
@@ -27,6 +28,12 @@ export function issueAccessToken(config: ServiceConfig, input: AccessTokenInput)
     jti: randomToken(18),
     client_id: input.clientId,
     scope: input.scopes.join(" "),
+    name: input.user.name,
+    given_name: input.user.given_name,
+    family_name: input.user.family_name,
+    preferred_username: input.user.preferred_username,
+    email: input.user.email,
+    email_verified: input.user.email_verified,
   };
   return signJwt({ ...claims }, key.kid, key.privateKey);
 }
@@ -48,9 +55,10 @@ export function verifyAccessToken(config: ServiceConfig, token: string, audience
 }
 
 function accessClaims(payload: Record<string, unknown>): AccessTokenClaims {
-  const required = ["iss", "sub", "aud", "jti", "client_id", "scope"];
+  const required = ["iss", "sub", "aud", "jti", "client_id", "scope", "name", "given_name", "family_name", "preferred_username", "email"];
   if (!required.every((key) => nonEmptyString(payload[key]))) throw new ServiceError("unauthorized", "invalid token", 401);
   if (!validScopeString(payload.scope)) throw new ServiceError("unauthorized", "invalid token", 401);
+  if (typeof payload.email_verified !== "boolean") throw new ServiceError("unauthorized", "invalid token", 401);
   if (!isNumericDate(payload.exp) || !isNumericDate(payload.iat) || !isNumericDate(payload.nbf)) {
     throw new ServiceError("unauthorized", "invalid token", 401);
   }

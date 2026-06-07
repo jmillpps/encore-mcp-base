@@ -17,16 +17,18 @@ export interface TestService {
   stop: () => Promise<void>;
 }
 
+export type ServiceEnvOverrides = NodeJS.ProcessEnv | ((origin: string, storePath: string) => NodeJS.ProcessEnv);
+
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
-export async function startService(t: TestContext, envOverrides: NodeJS.ProcessEnv = {}): Promise<TestService> {
+export async function startService(t: TestContext, envOverrides: ServiceEnvOverrides = {}): Promise<TestService> {
   const port = await freePort();
   const origin = `http://127.0.0.1:${port}`;
   const tempDir = await mkdtemp(join(tmpdir(), "mcp-service-test-"));
   const storePath = join(tempDir, "oauth-store.json");
   const child = spawn("encore", ["run", "--browser=never", "--port", String(port)], {
     cwd: projectRoot,
-    env: serviceEnv(origin, storePath, envOverrides),
+    env: serviceEnv(origin, storePath, envOverridesFor(origin, storePath, envOverrides)),
     stdio: ["ignore", "pipe", "pipe"],
   });
   let output = "";
@@ -90,6 +92,10 @@ function serviceEnv(origin: string, storePath: string, envOverrides: NodeJS.Proc
   };
   delete env.NODE_ENV;
   return env;
+}
+
+function envOverridesFor(origin: string, storePath: string, envOverrides: ServiceEnvOverrides): NodeJS.ProcessEnv {
+  return typeof envOverrides === "function" ? envOverrides(origin, storePath) : envOverrides;
 }
 
 function cleanEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {

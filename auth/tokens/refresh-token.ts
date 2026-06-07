@@ -15,5 +15,6 @@ export async function refreshTokenGrant(config: ServiceConfig, store: DiskOAuthS
     scopes: rotated.oldRecord.scopes,
     refreshToken: rotated.newToken,
     authTime: rotated.oldRecord.authTime,
+    user: rotated.oldRecord.user,
   });
 }

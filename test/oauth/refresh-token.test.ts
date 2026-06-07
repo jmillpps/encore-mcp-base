@@ -104,7 +104,7 @@ test("refresh token grant applies current client resource policy before rotating
   const store = new DiskOAuthStore(config.oauthStorePath);
   const refreshToken = await store.createRefreshToken({
     clientId: "local-test",
-    userSub: testStaticUser.sub,
+    user: testStaticUser,
     resource: config.actionsAudience,
     scopes: ["openid"],
     authTime: 1,

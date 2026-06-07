@@ -170,6 +170,17 @@ function testConfig(oauthStorePath: string): ServiceConfig {
     rateLimitWindowSeconds: 60,
     rateLimitMaxRequests: 120,
     mcpSseMaxConnections: 1024,
+    cognito: {
+      enabled: false,
+      issuer: "",
+      authorizationUrl: "",
+      tokenUrl: "",
+      userinfoUrl: "",
+      clientId: "",
+      clientSecret: "",
+      redirectUri: "",
+      scopes: [],
+    },
     production: false,
   };
 }

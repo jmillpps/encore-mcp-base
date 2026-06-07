@@ -1,3 +1,4 @@
+import { userProfileFromJson, userProfileJson } from "../static-user.ts";
 import type { RefreshTokenRecord } from "./store-records.ts";
 import { compact, hash, optionalHash, row, scopes, scopesJson, seconds, text, type DiskRow } from "./store-row-primitives.ts";
 import { authTime, optionalOrderedSeconds, orderedSeconds } from "./store-row-time.ts";
@@ -7,7 +8,7 @@ export function refreshTokenFromDisk(value: unknown): RefreshTokenRecord {
     "token_hash",
     "family_id",
     "client_id",
-    "user_sub",
+    "user_json",
     "resource",
     "scopes_json",
     "expires_at",
@@ -22,7 +23,7 @@ export function refreshTokenFromDisk(value: unknown): RefreshTokenRecord {
     tokenHash: hash(record, "token_hash"),
     familyId: text(record, "family_id"),
     clientId: text(record, "client_id"),
-    userSub: text(record, "user_sub"),
+    user: userProfileFromJson(text(record, "user_json")),
     resource: text(record, "resource"),
     scopes: scopes(record),
     expiresAt: orderedSeconds(record, "expires_at", createdAt),
@@ -39,7 +40,7 @@ export function refreshTokenToDisk(record: RefreshTokenRecord): DiskRow {
     token_hash: record.tokenHash,
     family_id: record.familyId,
     client_id: record.clientId,
-    user_sub: record.userSub,
+    user_json: userProfileJson(record.user),
     resource: record.resource,
     scopes_json: scopesJson(record.scopes),
     expires_at: record.expiresAt,

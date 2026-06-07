@@ -4,6 +4,7 @@ import { mcpSessionFromDisk, mcpSessionToDisk } from "./mcp-session-row.ts";
 import { rateLimitFromDisk, rateLimitToDisk } from "./rate-limit-row.ts";
 import { refreshTokenFromDisk, refreshTokenToDisk } from "./refresh-token-row.ts";
 import { malformed, type DiskRow } from "./store-row-primitives.ts";
+import { upstreamAuthorizationStateFromDisk, upstreamAuthorizationStateToDisk } from "./upstream-authorization-state-row.ts";
 
 const mapKeyPattern = /^[A-Za-z0-9_-]{43}$/;
 
@@ -12,6 +13,7 @@ export function normalizeStore(value: unknown): OAuthStoreState {
   const state = emptyStoreState();
   state.authorizationCodes = normalizeMap(record.authorizationCodes, authorizationCodeFromDisk);
   state.refreshTokens = normalizeMap(record.refreshTokens, refreshTokenFromDisk);
+  state.upstreamAuthorizationStates = normalizeMap(record.upstreamAuthorizationStates, upstreamAuthorizationStateFromDisk);
   state.mcpSessions = normalizeMap(record.mcpSessions, mcpSessionFromDisk);
   state.rateLimits = normalizeMap(record.rateLimits, rateLimitFromDisk);
   return state;
@@ -21,6 +23,7 @@ export function serializeStore(state: OAuthStoreState): DiskRow {
   return {
     authorizationCodes: serializeMap(state.authorizationCodes, authorizationCodeToDisk),
     refreshTokens: serializeMap(state.refreshTokens, refreshTokenToDisk),
+    upstreamAuthorizationStates: serializeMap(state.upstreamAuthorizationStates, upstreamAuthorizationStateToDisk),
     mcpSessions: serializeMap(state.mcpSessions, mcpSessionToDisk),
     rateLimits: serializeMap(state.rateLimits, rateLimitToDisk),
   };
@@ -29,7 +32,7 @@ export function serializeStore(state: OAuthStoreState): DiskRow {
 function storeRecord(value: unknown): DiskRow {
   if (typeof value !== "object" || value === null || Array.isArray(value)) malformed();
   const record = value as DiskRow;
-  if (Object.keys(record).some((key) => !["authorizationCodes", "refreshTokens", "mcpSessions", "rateLimits"].includes(key))) malformed();
+  if (Object.keys(record).some((key) => !["authorizationCodes", "refreshTokens", "upstreamAuthorizationStates", "mcpSessions", "rateLimits"].includes(key))) malformed();
   return record;
 }
 

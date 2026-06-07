@@ -15,13 +15,15 @@ Production mode is active when `NODE_ENV=production`.
 | `OAUTH_PRIVATE_KEY_PEM` | PEM | Active RSA private key for token signing. |
 | `OAUTH_PRIVATE_KEY_PEM_FILE` | file path | Active RSA private key file used when the key is loaded from Parameter Store onto the instance filesystem. |
 | `OAUTH_KEY_ID` | string | Active signing key ID. |
-| `STATIC_USER_SUB` | string | Stable subject identifier for the configured static identity. |
-| `STATIC_USER_GIVEN_NAME` | string | Given name for the configured static identity. |
-| `STATIC_USER_FAMILY_NAME` | string | Family name for the configured static identity. |
-| `STATIC_USER_NAME` | string | Display name for the configured static identity. |
-| `STATIC_USER_PREFERRED_USERNAME` | string | Preferred username for the configured static identity. |
-| `STATIC_USER_EMAIL` | email | Email address for the configured static identity. |
-| `STATIC_USER_EMAIL_VERIFIED` | boolean | Email verification claim for the configured static identity. |
+| `COGNITO_ENABLED` | boolean | Enables Cognito upstream login. |
+| `COGNITO_ISSUER_URL` | URL | Cognito issuer URL. Required when Cognito is enabled. |
+| `COGNITO_AUTHORIZATION_URL` | URL | Cognito authorization endpoint. Required when Cognito is enabled. |
+| `COGNITO_TOKEN_URL` | URL | Cognito token endpoint. Required when Cognito is enabled. |
+| `COGNITO_USERINFO_URL` | URL | Cognito userinfo endpoint. Required when Cognito is enabled. |
+| `COGNITO_CLIENT_ID` | string | Cognito OAuth app client ID. Required when Cognito is enabled. |
+| `COGNITO_CLIENT_SECRET` | string | Cognito OAuth app client secret. Required when Cognito is enabled. |
+| `COGNITO_REDIRECT_URI` | URL | Service callback URL for Cognito. Required when Cognito is enabled. |
+| `COGNITO_SCOPES` | string list | Cognito scopes. Must include `openid`. Required when Cognito is enabled. |
 | `ACCESS_TOKEN_TTL_SECONDS` | integer | Access token lifetime. |
 | `ID_TOKEN_TTL_SECONDS` | integer | ID token lifetime. |
 | `AUTHORIZATION_CODE_TTL_SECONDS` | integer | Authorization code lifetime. |
@@ -35,6 +37,13 @@ Production mode is active when `NODE_ENV=production`.
 | Variable | Purpose |
 | --- | --- |
 | `OAUTH_PREVIOUS_PUBLIC_KEYS_JSON` | Previous public signing keys kept available for token verification and JWKS publication. |
+| `STATIC_USER_SUB` | Stable subject identifier for static profile mode. |
+| `STATIC_USER_GIVEN_NAME` | Given name for static profile mode. |
+| `STATIC_USER_FAMILY_NAME` | Family name for static profile mode. |
+| `STATIC_USER_NAME` | Display name for static profile mode. |
+| `STATIC_USER_PREFERRED_USERNAME` | Preferred username for static profile mode. |
+| `STATIC_USER_EMAIL` | Email address for static profile mode. |
+| `STATIC_USER_EMAIL_VERIFIED` | Email verification claim for static profile mode. |
 
 ## Local Defaults
 
@@ -74,8 +83,12 @@ Integer environment variables use positive safe integers. Production startup fai
 
 ## Static Identity Rules
 
-Production static identity variables use operator-supplied values. Profile string values must be present, must be at most 256 characters, and must omit line breaks. `STATIC_USER_EMAIL` must be an email address. `STATIC_USER_EMAIL_VERIFIED` must be `true` or `false`.
+Cognito mode reads profile claims from Cognito userinfo. Static profile mode reads `STATIC_USER_*` values. Profile string values must be present, must be at most 256 characters, and must omit line breaks. `STATIC_USER_EMAIL` must be an email address. `STATIC_USER_EMAIL_VERIFIED` must be `true` or `false`.
+
+## Cognito Rules
+
+Cognito endpoint URLs use HTTPS and public hostnames in production. `COGNITO_SCOPES` must include `openid`. The service uses PKCE for Cognito authorization and exchanges Cognito codes through the configured token endpoint.
 
 ## Startup Validation
 
-Startup validation reads configuration, resolves the store path, loads clients, validates the static identity, and loads signing keys. Production startup fails when required security material is missing or unsafe.
+Startup validation reads configuration, resolves the store path, loads clients, validates identity mode, and loads signing keys. Production startup fails when required security material is missing or unsafe.

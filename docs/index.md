@@ -17,7 +17,7 @@ The documentation is organized by reader task.
 - [OAuth API Reference](api/oauth.md) lists OAuth and OIDC endpoints.
 - [MCP API Reference](api/mcp.md) lists MCP endpoints, protocol behavior, and tools.
 - [Actions API Reference](api/actions.md) lists REST endpoints and OpenAPI behavior.
-- [Identity Profile](api/identity-profile.md) lists the current static OIDC user.
+- [Identity Profile](api/identity-profile.md) lists profile claim behavior.
 - [Configuration Reference](api/configuration.md) lists runtime environment variables.
 - [OpenAPI Contract](api/openapi.md) describes the generated Actions schema.
 

@@ -1,57 +1,53 @@
 import { isOidcNonce } from "../nonce.ts";
-import { userProfileFromJson, userProfileJson } from "../static-user.ts";
-import type { AuthorizationCodeRecord } from "./store-records.ts";
+import type { UpstreamAuthorizationStateRecord } from "./store-records.ts";
 import { compact, hash, malformed, methodS256, optionalHash, optionalText, row, scopes, scopesJson, seconds, text, type DiskRow } from "./store-row-primitives.ts";
-import { authTime, optionalOrderedSeconds, orderedSeconds } from "./store-row-time.ts";
+import { orderedSeconds } from "./store-row-time.ts";
 
-export function authorizationCodeFromDisk(value: unknown): AuthorizationCodeRecord {
+export function upstreamAuthorizationStateFromDisk(value: unknown): UpstreamAuthorizationStateRecord {
   const record = row(value, [
-    "code_hash",
+    "state_hash",
     "client_id",
     "redirect_uri",
     "resource",
     "scopes_json",
+    "client_state",
+    "code_verifier",
     "nonce",
     "code_challenge",
     "code_challenge_method",
-    "user_json",
     "expires_at",
-    "consumed_at",
-    "auth_time",
     "created_at",
   ]);
   const createdAt = seconds(record, "created_at");
   return {
-    codeHash: hash(record, "code_hash"),
+    stateHash: hash(record, "state_hash"),
     clientId: text(record, "client_id"),
     redirectUri: text(record, "redirect_uri"),
     resource: text(record, "resource"),
     scopes: scopes(record),
+    clientState: text(record, "client_state"),
+    codeVerifier: text(record, "code_verifier"),
     nonce: optionalNonce(record, "nonce"),
     codeChallenge: optionalHash(record, "code_challenge"),
     codeChallengeMethod: methodS256(record, "code_challenge_method"),
-    user: userProfileFromJson(text(record, "user_json")),
     expiresAt: orderedSeconds(record, "expires_at", createdAt),
-    consumedAt: optionalOrderedSeconds(record, "consumed_at", createdAt),
-    authTime: authTime(record, createdAt),
     createdAt,
   };
 }
 
-export function authorizationCodeToDisk(record: AuthorizationCodeRecord): DiskRow {
+export function upstreamAuthorizationStateToDisk(record: UpstreamAuthorizationStateRecord): DiskRow {
   return compact({
-    code_hash: record.codeHash,
+    state_hash: record.stateHash,
     client_id: record.clientId,
     redirect_uri: record.redirectUri,
     resource: record.resource,
     scopes_json: scopesJson(record.scopes),
+    client_state: record.clientState,
+    code_verifier: record.codeVerifier,
     nonce: record.nonce,
     code_challenge: record.codeChallenge,
     code_challenge_method: record.codeChallengeMethod,
-    user_json: userProfileJson(record.user),
     expires_at: record.expiresAt,
-    consumed_at: record.consumedAt,
-    auth_time: record.authTime,
     created_at: record.createdAt,
   });
 }

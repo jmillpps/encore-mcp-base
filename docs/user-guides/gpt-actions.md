@@ -79,7 +79,7 @@ After account linking, ChatGPT can call `/actions/profile` and `/actions/session
 | Endpoint | OAuth scopes | Purpose |
 | --- | --- | --- |
 | `GET /health` | none | Check service reachability. |
-| `GET /actions/profile` | `openid profile email` | Return the static OIDC user profile. |
+| `GET /actions/profile` | `openid profile email` | Return the authenticated OIDC user profile. |
 | `GET /actions/session` | `openid` | Return token metadata. |
 
 The Actions client may omit `resource` during authorization, token exchange, and refresh. The service binds omitted Actions resources to the configured Actions audience.

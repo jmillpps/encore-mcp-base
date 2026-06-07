@@ -33,19 +33,12 @@ The bootstrap process writes the signing private key to an instance-local file a
 
 ## Seed Runtime Parameters
 
-After deployment, seed runtime parameters with redirect URIs and the configured static identity:
+After deployment, seed runtime parameters with ChatGPT redirect URIs:
 
 ```sh
 npm --prefix ci/cdk run seed:parameters -- \
   --actions-redirect-uri https://chatgpt.com/aip/g-prod/oauth/callback \
-  --mcp-redirect-uri https://chatgpt.com/connector/oauth/local-callback \
-  --static-user-sub user_example \
-  --static-user-given-name Example \
-  --static-user-family-name User \
-  --static-user-name "Example User" \
-  --static-user-preferred-username example.user \
-  --static-user-email user@example.test \
-  --static-user-email-verified true
+  --mcp-redirect-uri https://chatgpt.com/connector/oauth/local-callback
 ```
 
 The command also creates GPT Actions and GPT Apps OAuth client secrets. Read those secrets from the printed Parameter Store names when configuring ChatGPT.

@@ -1,6 +1,6 @@
 # Identity Profile
 
-The current service identity is a configured static OpenID Connect user. Production deployments supply the identity through environment variables or the deployment secret store.
+Production identity claims come from Cognito userinfo during OAuth login. Local development uses a configured profile for deterministic OAuth, MCP, and Actions behavior.
 
 ## Profile Fields
 
@@ -14,7 +14,7 @@ The current service identity is a configured static OpenID Connect user. Product
 | `email` | `user@example.test` |
 | `email_verified` | `true` |
 
-These values are local examples. Production values come from `STATIC_USER_*` configuration.
+These values are local examples. Cognito-enabled production returns claims from the authenticated Cognito user.
 
 ## Surfaces
 

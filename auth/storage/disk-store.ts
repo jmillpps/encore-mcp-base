@@ -4,8 +4,8 @@ import { nowSeconds } from "../../shared/time.ts";
 import { pkceVerifier } from "../pkce.ts";
 import { isExpired } from "./expiration.ts";
 import { StoreFile } from "./store-file.ts";
-import type { AuthorizationCodeExpectation, AuthorizationCodeInput, RefreshTokenInput } from "./store-inputs.ts";
-import type { AuthorizationCodeRecord, McpSessionRecord, RefreshTokenRecord } from "./store-records.ts";
+import type { AuthorizationCodeExpectation, AuthorizationCodeInput, RefreshTokenInput, UpstreamAuthorizationStateInput } from "./store-inputs.ts";
+import type { AuthorizationCodeRecord, McpSessionRecord, RefreshTokenRecord, UpstreamAuthorizationStateRecord } from "./store-records.ts";
 
 const maxMcpRequestIds = 4096;
 
@@ -25,7 +25,7 @@ export class DiskOAuthStore {
       redirectUri: input.redirectUri,
       resource: input.resource,
       scopes: input.scopes,
-      userSub: input.userSub,
+      user: input.user,
       expiresAt: createdAt + input.ttlSeconds,
       authTime: createdAt,
       createdAt,
@@ -74,7 +74,7 @@ export class DiskOAuthStore {
       tokenHash: sha256Base64Url(token),
       familyId: randomToken(18),
       clientId: input.clientId,
-      userSub: input.userSub,
+      user: input.user,
       resource: input.resource,
       scopes: input.scopes,
       expiresAt: createdAt + input.ttlSeconds,
@@ -115,7 +115,7 @@ export class DiskOAuthStore {
         tokenHash: sha256Base64Url(newToken),
         familyId: oldRecord.familyId,
         clientId: oldRecord.clientId,
-        userSub: oldRecord.userSub,
+        user: oldRecord.user,
         resource: oldRecord.resource,
         scopes: oldRecord.scopes,
         expiresAt: now + ttlSeconds,
@@ -129,6 +129,42 @@ export class DiskOAuthStore {
     });
     if (result.reused) throw new ServiceError("invalid_grant", "invalid grant", 400);
     return { oldRecord: result.oldRecord, newToken: result.newToken };
+  }
+
+  async createUpstreamAuthorizationState(input: UpstreamAuthorizationStateInput): Promise<string> {
+    const state = randomToken(32);
+    const createdAt = nowSeconds();
+    const record: UpstreamAuthorizationStateRecord = {
+      stateHash: sha256Base64Url(state),
+      clientId: input.clientId,
+      redirectUri: input.redirectUri,
+      resource: input.resource,
+      scopes: input.scopes,
+      clientState: input.clientState,
+      codeVerifier: input.codeVerifier,
+      expiresAt: createdAt + input.ttlSeconds,
+      createdAt,
+      ...(input.nonce ? { nonce: input.nonce } : {}),
+      ...(input.codeChallenge ? { codeChallenge: input.codeChallenge } : {}),
+      ...(input.codeChallengeMethod ? { codeChallengeMethod: input.codeChallengeMethod } : {}),
+    };
+    await this.file.update((store) => {
+      pruneExpiredUpstreamStates(store.upstreamAuthorizationStates, createdAt);
+      store.upstreamAuthorizationStates[record.stateHash] = record;
+    });
+    return state;
+  }
+
+  async consumeUpstreamAuthorizationState(state: string): Promise<UpstreamAuthorizationStateRecord> {
+    const hash = sha256Base64Url(state);
+    return this.file.update((store) => {
+      const now = nowSeconds();
+      pruneExpiredUpstreamStates(store.upstreamAuthorizationStates, now);
+      const record = store.upstreamAuthorizationStates[hash];
+      if (!record || isExpired(record.expiresAt, now)) throw new ServiceError("invalid_grant", "invalid grant", 400);
+      delete store.upstreamAuthorizationStates[hash];
+      return record;
+    });
   }
 
   async saveMcpSession(record: McpSessionRecord): Promise<void> {
@@ -170,5 +206,11 @@ export class DiskOAuthStore {
       record.terminatedAt = now;
       record.lastSeenAt = now;
     });
+  }
+}
+
+function pruneExpiredUpstreamStates(records: Record<string, UpstreamAuthorizationStateRecord>, now: number): void {
+  for (const [hash, record] of Object.entries(records)) {
+    if (isExpired(record.expiresAt, now)) delete records[hash];
   }
 }

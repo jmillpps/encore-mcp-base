@@ -83,7 +83,7 @@ async function issueCode(store: DiskOAuthStore, config: ServiceConfig, client: O
     redirectUri: "http://localhost:4000/callback",
     resource: config.actionsAudience,
     scopes: ["openid"],
-    userSub: testStaticUser.sub,
+    user: testStaticUser,
     ttlSeconds: 300,
   });
 }

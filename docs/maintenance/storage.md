@@ -1,6 +1,6 @@
 # Storage Maintenance
 
-The OAuth store is a security boundary. It contains grant state, refresh token metadata, MCP session metadata, and rate-limit counters.
+The OAuth store is a security boundary. It contains grant state, upstream login state, refresh token metadata, MCP session metadata, and rate-limit counters.
 
 ## File Protection
 
@@ -10,7 +10,7 @@ The reader rejects symlinks, malformed JSON, unexpected record shapes, and files
 
 ## Secret Handling
 
-Authorization codes, refresh tokens, and MCP session IDs are stored as SHA-256 hashes. Raw client secrets are stored outside the JSON registry. `OAUTH_CLIENTS_JSON` stores only client secret hashes.
+Authorization codes, upstream login states, refresh tokens, and MCP session IDs are stored as SHA-256 hashes. Raw client secrets are stored outside the JSON registry. `OAUTH_CLIENTS_JSON` stores only client secret hashes.
 
 ## Concurrent Updates
 
@@ -20,7 +20,7 @@ The lock wait times out after five seconds. Operators may remove a leftover lock
 
 ## Backup And Restore
 
-Back up the store with file permissions preserved. A backup contains active OAuth grant state, refresh token families, MCP session metadata, and rate-limit counters.
+Back up the store with file permissions preserved. A backup contains active OAuth grant state, upstream login state, refresh token families, MCP session metadata, and rate-limit counters.
 
 Restore steps:
 

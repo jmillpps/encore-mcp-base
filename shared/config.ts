@@ -15,7 +15,20 @@ export interface ServiceConfig {
   rateLimitWindowSeconds: number;
   rateLimitMaxRequests: number;
   mcpSseMaxConnections: number;
+  cognito: CognitoConfig;
   production: boolean;
+}
+
+export interface CognitoConfig {
+  enabled: boolean;
+  issuer: string;
+  authorizationUrl: string;
+  tokenUrl: string;
+  userinfoUrl: string;
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+  scopes: string[];
 }
 
 export function readConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig {
@@ -39,6 +52,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
     rateLimitWindowSeconds: readNumber(env, "RATE_LIMIT_WINDOW_SECONDS", 60, production),
     rateLimitMaxRequests: readNumber(env, "RATE_LIMIT_MAX_REQUESTS", 120, production),
     mcpSseMaxConnections: readNumber(env, "MCP_SSE_MAX_CONNECTIONS", 1024, production),
+    cognito: readCognitoConfig(env, production),
     production,
   };
 }
@@ -91,4 +105,49 @@ function readNumber(env: NodeJS.ProcessEnv, key: string, fallback: number, produ
   if (production && value.trim() === "") throw new Error(`${key} is required`);
   if (!Number.isSafeInteger(parsed) || parsed <= 0) throw new Error(`${key} must be a positive safe integer`);
   return parsed;
+}
+
+function readCognitoConfig(env: NodeJS.ProcessEnv, production: boolean): CognitoConfig {
+  const enabled = readBoolean(env, "COGNITO_ENABLED", false);
+  if (!enabled) {
+    return {
+      enabled: false,
+      issuer: "",
+      authorizationUrl: "",
+      tokenUrl: "",
+      userinfoUrl: "",
+      clientId: "",
+      clientSecret: "",
+      redirectUri: "",
+      scopes: [],
+    };
+  }
+  const scopes = parseList(env.COGNITO_SCOPES ?? "openid profile email");
+  if (!scopes.includes("openid")) throw new Error("COGNITO_SCOPES must include openid");
+  return {
+    enabled,
+    issuer: readHttpUrl(env, "COGNITO_ISSUER_URL", "", production),
+    authorizationUrl: readHttpUrl(env, "COGNITO_AUTHORIZATION_URL", "", production),
+    tokenUrl: readHttpUrl(env, "COGNITO_TOKEN_URL", "", production),
+    userinfoUrl: readHttpUrl(env, "COGNITO_USERINFO_URL", "", production),
+    clientId: readRequiredText(env, "COGNITO_CLIENT_ID"),
+    clientSecret: readRequiredText(env, "COGNITO_CLIENT_SECRET"),
+    redirectUri: readHttpUrl(env, "COGNITO_REDIRECT_URI", "", production),
+    scopes,
+  };
+}
+
+function readRequiredText(env: NodeJS.ProcessEnv, key: string): string {
+  const value = env[key]?.trim();
+  if (!value) throw new Error(`${key} is required`);
+  if (/[\r\n]/.test(value)) throw new Error(`${key} cannot contain line breaks`);
+  return value;
+}
+
+function readBoolean(env: NodeJS.ProcessEnv, key: string, fallback: boolean): boolean {
+  const value = env[key];
+  if (value === undefined) return fallback;
+  if (value === "true") return true;
+  if (value === "false") return false;
+  throw new Error(`${key} must be true or false`);
 }

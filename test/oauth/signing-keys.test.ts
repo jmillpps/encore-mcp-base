@@ -121,7 +121,23 @@ function productionConfig() {
 
 function accessClaims(config: ReturnType<typeof productionConfig>, kid: string): Record<string, unknown> {
   const now = nowSeconds();
-  return { iss: config.issuer, sub: testStaticUser.sub, aud: config.actionsAudience, exp: now + 900, iat: now, nbf: now, jti: kid, client_id: "local-test", scope: "openid profile email" };
+  return {
+    iss: config.issuer,
+    sub: testStaticUser.sub,
+    aud: config.actionsAudience,
+    exp: now + 900,
+    iat: now,
+    nbf: now,
+    jti: kid,
+    client_id: "local-test",
+    scope: "openid profile email",
+    name: testStaticUser.name,
+    given_name: testStaticUser.given_name,
+    family_name: testStaticUser.family_name,
+    preferred_username: testStaticUser.preferred_username,
+    email: testStaticUser.email,
+    email_verified: testStaticUser.email_verified,
+  };
 }
 
 interface TestKeyPair {

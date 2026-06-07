@@ -8,6 +8,9 @@ import { testStaticUserEnv } from "../support/static-user.ts";
 
 test("startup validation accepts complete production OAuth configuration", () => {
   assert.doesNotThrow(() => validateStartup(productionEnv({ OAUTH_PRIVATE_KEY_PEM: privateKeyPem(), OAUTH_KEY_ID: "prod-key-1" })));
+  assert.doesNotThrow(() =>
+    validateStartup(productionEnv({ ...cognitoEnv(), ...withoutStaticUser(), OAUTH_PRIVATE_KEY_PEM: privateKeyPem(), OAUTH_KEY_ID: "prod-key-1" })),
+  );
 });
 
 test("startup validation rejects incomplete production OAuth configuration", () => {
@@ -19,6 +22,7 @@ test("startup validation rejects incomplete production OAuth configuration", () 
   assert.throws(() => validateStartup(productionEnv({ OAUTH_STORE_PATH: "../oauth-store.json" })), /store path cannot traverse upward/);
   assert.throws(() => validateStartup(productionEnv({ STATIC_USER_EMAIL: "" })), /STATIC_USER_EMAIL is required/);
   assert.throws(() => validateStartup(productionEnv({ STATIC_USER_EMAIL_VERIFIED: "" })), /STATIC_USER_EMAIL_VERIFIED is required/);
+  assert.throws(() => validateStartup(productionEnv({ ...cognitoEnv(), COGNITO_CLIENT_SECRET: "" })), /COGNITO_CLIENT_SECRET is required/);
 });
 
 test("Encore production startup fails closed when signing key material is missing", async (t) => {
@@ -63,4 +67,22 @@ function clientRecord(): Record<string, unknown> {
 
 function privateKeyPem(): string {
   return generateKeyPairSync("rsa", { modulusLength: 2048 }).privateKey.export({ type: "pkcs8", format: "pem" }).toString();
+}
+
+function cognitoEnv(): NodeJS.ProcessEnv {
+  return {
+    COGNITO_ENABLED: "true",
+    COGNITO_ISSUER_URL: "https://cognito-idp.example.test/pool",
+    COGNITO_AUTHORIZATION_URL: "https://auth.example.test/oauth2/authorize",
+    COGNITO_TOKEN_URL: "https://auth.example.test/oauth2/token",
+    COGNITO_USERINFO_URL: "https://auth.example.test/oauth2/userInfo",
+    COGNITO_CLIENT_ID: "cognito-client",
+    COGNITO_CLIENT_SECRET: "cognito-secret",
+    COGNITO_REDIRECT_URI: "https://issuer.example.test/oauth/cognito/callback",
+    COGNITO_SCOPES: "openid profile email",
+  };
+}
+
+function withoutStaticUser(): NodeJS.ProcessEnv {
+  return Object.fromEntries(Object.keys(testStaticUserEnv).map((key) => [key, undefined]));
 }

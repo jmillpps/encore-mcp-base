@@ -8,6 +8,6 @@ export function validateStartup(env: NodeJS.ProcessEnv = process.env): void {
   const config = readConfig(env);
   resolveStorePath(config.oauthStorePath);
   loadClients(config, env);
-  readStaticUser(env);
+  if (!config.cognito.enabled) readStaticUser(env);
   getSigningKey(config, env);
 }
