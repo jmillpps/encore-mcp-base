@@ -21,6 +21,7 @@ test("client registry accepts validated production metadata", () => {
   assert.equal(clients.length, 1);
   assert.equal(clients[0]?.clientId, "gpt-actions-prod");
   assert.equal(clients[0]?.clientClass, "gpt-actions");
+  assert.equal(clients[0]?.pkcePolicy, "optional");
   assert.deepEqual(clients[0]?.allowedScopes, ["openid", "profile", "email"]);
 });
 
@@ -54,7 +55,7 @@ test("client registry rejects unsafe or malformed metadata", () => {
   assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ redirectUris: [" https://chatgpt.com/callback"] })]), true), /whitespace/);
   assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ redirectUris: ["https://user:pass@chatgpt.com/callback"] })]), true), /credentials/);
   assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ tokenEndpointAuthMethod: "none" })]), true), /not supported/);
-  assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ pkcePolicy: "optional" })]), true), /PKCE/);
+  assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ clientClass: "gpt-apps-mcp", pkcePolicy: "optional" })]), true), /PKCE/);
   assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ allowedResources: ["http://api.example.test"] })]), true), /https/);
   assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ allowedResources: ["https://user:pass@api.example.test"] })]), true), /credentials/);
   assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ shadowPolicy: "ignored" })]), true), /unsupported fields/);
@@ -78,7 +79,7 @@ function clientRecord(overrides: Record<string, unknown> = {}): Record<string, u
     allowedScopes: ["openid", "profile", "email"],
     allowedResources: ["https://api.example.test/actions"],
     tokenEndpointAuthMethod: "client_secret_post",
-    pkcePolicy: "required",
+    pkcePolicy: "optional",
     clientClass: "gpt-actions",
     ...overrides,
   };

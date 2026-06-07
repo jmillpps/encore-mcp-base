@@ -31,7 +31,7 @@ Example Actions client:
   "allowedScopes": ["openid", "profile", "email"],
   "allowedResources": ["https://service.example.com/actions"],
   "tokenEndpointAuthMethod": "client_secret_post",
-  "pkcePolicy": "required",
+  "pkcePolicy": "optional",
   "clientClass": "gpt-actions"
 }
 ```

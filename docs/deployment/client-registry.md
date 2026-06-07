@@ -13,14 +13,14 @@ Production clients are configured through `OAUTH_CLIENTS_JSON`. Each record decl
 | `allowedScopes` | string[] | Scopes the client may request. Must be unique. |
 | `allowedResources` | string[] | Token audiences the client may request. Must be unique. |
 | `tokenEndpointAuthMethod` | string | `client_secret_post` or `client_secret_basic` for static registry clients. |
-| `pkcePolicy` | string | `required` or `optional`. Production clients use `required`. |
+| `pkcePolicy` | string | `required` or `optional`. Production GPT Apps MCP clients use `required`. Confidential GPT Actions clients use `optional` when ChatGPT omits PKCE. |
 | `clientClass` | string | Service policy class for resource default behavior. |
 
 `OAUTH_CLIENTS_JSON` must be a non-empty JSON array. Records reject unsupported fields, empty strings, duplicate values, malformed URLs, wildcard URLs, credential-bearing URLs, and fragment-bearing resource URLs.
 
 ## GPT Actions Client
 
-Actions clients usually use `client_secret_post`, `pkcePolicy` value `required`, `clientClass` value `gpt-actions`, and one Actions audience in `allowedResources`.
+Actions clients use `client_secret_post`, `pkcePolicy` value `optional`, `clientClass` value `gpt-actions`, and one Actions audience in `allowedResources`.
 
 Actions clients may omit `resource` during authorization, token exchange, and refresh when exactly one allowed resource is configured.
 
@@ -45,5 +45,5 @@ Before deployment, review each record:
 1. Confirm every redirect URI belongs to the expected GPT product callback.
 2. Confirm scopes match the specific GPT behavior.
 3. Confirm resources contain the intended Actions audience or MCP resource.
-4. Confirm PKCE is required.
+4. Confirm PKCE policy matches the ChatGPT product flow.
 5. Confirm raw secrets appear only in the GPT configuration and the secret manager.

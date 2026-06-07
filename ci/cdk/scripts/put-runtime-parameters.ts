@@ -38,7 +38,7 @@ await putSecure(prefix, keyId, "OAUTH_CLIENTS_JSON", JSON.stringify([
     allowedScopes: ["openid", "profile", "email"],
     allowedResources: [actionsAudience],
     tokenEndpointAuthMethod: "client_secret_post",
-    pkcePolicy: "required",
+    pkcePolicy: "optional",
     clientClass: "gpt-actions",
   },
   {

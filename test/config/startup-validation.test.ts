@@ -60,7 +60,7 @@ function clientRecord(): Record<string, unknown> {
     allowedScopes: ["openid", "profile", "email"],
     allowedResources: ["https://api.example.test/actions"],
     tokenEndpointAuthMethod: "client_secret_post",
-    pkcePolicy: "required",
+    pkcePolicy: "optional",
     clientClass: "gpt-actions",
   };
 }
