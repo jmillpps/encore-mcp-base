@@ -7,6 +7,7 @@ import { authSessionTool } from "./tools/auth-session.ts";
 import { healthCheckTool } from "./tools/health-check.ts";
 import { identityProfileTool } from "./tools/identity-profile.ts";
 import { toolExecution } from "./tool-execution.ts";
+import { assertCallToolResult } from "./tool-result.ts";
 import { toolSecuritySchemes } from "./tool-security.ts";
 import type { McpTool, ToolContext } from "./tool-types.ts";
 
@@ -28,11 +29,14 @@ export async function callTool(context: ToolContext, name: string, args: Record<
   if (argumentError) return toolExecutionError(argumentError);
   try {
     const result = await tool.run(context, args);
+    assertCallToolResult(result);
     if (result.isError !== true) assertMatchesSchema(tool.outputSchema, result.structuredContent);
     return result;
   } catch (error) {
     if (error instanceof ServiceError && (error.status === 401 || error.status === 403)) {
-      return authChallengeResult(context.config, tool.requiredScopes, error);
+      const result = authChallengeResult(context.config, tool.requiredScopes, error);
+      assertCallToolResult(result);
+      return result;
     }
     throw error;
   }

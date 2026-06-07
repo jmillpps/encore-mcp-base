@@ -30,6 +30,8 @@ The current tool list is returned as a single page. `tools/list` accepts request
 
 Tool argument validation failures return tool execution errors with `isError: true`. Malformed `tools/call` request shapes and unknown tools return JSON-RPC protocol errors.
 
+Tool results must use MCP `CallToolResult` content, structured content, error flag, and metadata shapes before leaving the tool boundary.
+
 Task-augmented tool calls are rejected because the service does not advertise task support.
 
 Tool descriptors declare task-augmented execution as forbidden.

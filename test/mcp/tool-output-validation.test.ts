@@ -32,6 +32,38 @@ test("callTool rejects successful results that violate the tool output schema", 
   }
 });
 
+test("callTool rejects malformed tool result envelopes", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "mcp-result-validation-"));
+  for (const [index, result] of [
+    { content: "bad", structuredContent: { status: "ok" } },
+    { content: [{ type: "text", text: 1 }], structuredContent: { status: "ok" } },
+    { content: [{ type: "text", text: "ok" }], structuredContent: [], isError: false },
+    { content: [{ type: "text", text: "ok" }], structuredContent: { status: "ok" }, isError: "false" },
+    { content: [{ type: "text", text: "ok" }], structuredContent: { status: "ok" }, _meta: [] },
+  ].entries()) {
+    const tool: McpTool = {
+      name: `test.invalid-result-${index}`,
+      title: "Invalid Result",
+      description: "Return invalid result envelope for validator testing.",
+      inputSchema: emptyInputSchema(),
+      outputSchema: objectSchema({ status: stringSchema() }),
+      annotations: { readOnlyHint: true },
+      requiredScopes: [],
+      run: async () => result,
+    };
+    tools.push(tool);
+    try {
+      await assert.rejects(
+        () => callTool({ config: testConfig(join(dir, "store.json")), rateLimitSubject: `result-validation-${index}` }, tool.name, {}),
+        (error) => error instanceof ServiceError && error.code === "server_error" && error.status === 500 && error.message === "invalid tool result",
+      );
+    } finally {
+      tools.splice(tools.indexOf(tool), 1);
+    }
+  }
+  await rm(dir, { recursive: true, force: true });
+});
+
 function testConfig(oauthStorePath: string): ServiceConfig {
   return {
     issuer: "http://localhost:4000",
