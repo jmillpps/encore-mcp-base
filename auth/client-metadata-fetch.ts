@@ -21,14 +21,14 @@ export async function fetchMetadataDocument(url: URL, networkAddress: NetworkAdd
     throw invalidMetadataClient();
   }
   if (!validStatus(response.statusCode)) return rejectResponse(response);
-  const contentType = singleHeader(response.headers, "content-type");
-  if (contentType && mediaType(contentType) !== "application/json") return rejectResponse(response);
-  const contentLength = singleHeader(response.headers, "content-length");
-  if (contentLength && Number(contentLength) > maximumMetadataBytes) return rejectResponse(response);
+  const contentType = singletonHeader(response, "content-type");
+  if (contentType !== null && mediaType(contentType) !== "application/json") return rejectResponse(response);
+  const contentLength = singletonHeader(response, "content-length");
+  if (contentLength !== null && !validContentLength(contentLength)) return rejectResponse(response);
   const bodyText = await readMetadataBody(response);
   if (Buffer.byteLength(bodyText, "utf8") > maximumMetadataBytes) throw invalidMetadataClient();
   try {
-    return { body: JSON.parse(bodyText), cacheSeconds: cacheSeconds(singleHeader(response.headers, "cache-control")) };
+    return { body: JSON.parse(bodyText), cacheSeconds: cacheSeconds(combinedHeader(response.headers, "cache-control")) };
   } catch {
     throw invalidMetadataClient();
   }
@@ -89,10 +89,28 @@ function rejectResponse(response: IncomingMessage): never {
   throw invalidMetadataClient();
 }
 
-function singleHeader(headers: IncomingHttpHeaders, key: string): string | null {
-  const value = headers[key];
-  if (Array.isArray(value)) return value[0] ?? null;
+function singletonHeader(response: IncomingMessage, key: string): string | null {
+  const distinct = response.headersDistinct?.[key];
+  if (distinct !== undefined) {
+    if (distinct.length !== 1) return rejectResponse(response);
+    return distinct[0] ?? null;
+  }
+  const value = response.headers[key];
+  if (Array.isArray(value)) {
+    if (value.length !== 1) return rejectResponse(response);
+    return value[0] ?? null;
+  }
   return value ?? null;
+}
+
+function combinedHeader(headers: IncomingHttpHeaders, key: string): string | null {
+  const value = headers[key];
+  if (Array.isArray(value)) return value.join(",");
+  return value ?? null;
+}
+
+function validContentLength(value: string): boolean {
+  return /^[0-9]+$/.test(value) && Number(value) <= maximumMetadataBytes;
 }
 
 function cacheSeconds(value: string | null): number {
