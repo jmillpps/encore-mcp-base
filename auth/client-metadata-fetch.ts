@@ -56,8 +56,13 @@ async function openMetadataRequest(url: URL, networkAddress: NetworkAddress | un
 }
 
 function pinnedLookup(networkAddress: NetworkAddress): RequestOptions["lookup"] {
-  return (_hostname, _options, callback) => {
-    callback(null, networkAddress.address, networkAddress.family);
+  return (_hostname, options, callback) => {
+    const complete = callback as (error: NodeJS.ErrnoException | null, address: string | NetworkAddress[], family?: 4 | 6) => void;
+    if (typeof options === "object" && options !== null && "all" in options && options.all === true) {
+      complete(null, [networkAddress]);
+      return;
+    }
+    complete(null, networkAddress.address, networkAddress.family);
   };
 }
 

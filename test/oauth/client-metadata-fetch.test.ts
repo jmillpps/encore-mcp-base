@@ -18,6 +18,13 @@ test("metadata document fetch accepts JSON metadata response", async (t) => {
   assert.deepEqual(result, { body: { ok: true }, cacheSeconds: 0 });
 });
 
+test("metadata document fetch supports pinned network addresses", async (t) => {
+  const body = metadataBody();
+  const server = await startQueuedMetadataServer(t, [{ body, headers: ["Content-Type: application/json", "Cache-Control: no-store"] }]);
+  const result = await fetchMetadataDocument(new URL(`http://metadata.example.test:${server.port}/client.json`), { address: "127.0.0.1", family: 4 });
+  assert.deepEqual(result, { body: { ok: true }, cacheSeconds: 0 });
+});
+
 test("metadata document fetch rejects duplicate singleton metadata headers and continues serving", async (t) => {
   const body = metadataBody();
   const server = await startQueuedMetadataServer(t, [
@@ -32,7 +39,7 @@ test("metadata document fetch rejects duplicate singleton metadata headers and c
   assert.deepEqual(result, { body: { ok: true }, cacheSeconds: 0 });
 });
 
-async function startQueuedMetadataServer(t: TestContext, responses: readonly QueuedMetadataResponse[]): Promise<{ origin: string }> {
+async function startQueuedMetadataServer(t: TestContext, responses: readonly QueuedMetadataResponse[]): Promise<{ origin: string; port: number }> {
   const pending = [...responses];
   const server = createServer((socket) => {
     socket.once("data", () => {
@@ -49,7 +56,8 @@ async function startQueuedMetadataServer(t: TestContext, responses: readonly Que
   t.after(() => server.close());
   const address = server.address();
   if (!address || typeof address === "string") throw new Error("metadata server did not bind TCP");
-  return { origin: `http://127.0.0.1:${(address as AddressInfo).port}` };
+  const port = (address as AddressInfo).port;
+  return { origin: `http://127.0.0.1:${port}`, port };
 }
 
 function rawResponse(response: QueuedMetadataResponse): string {
