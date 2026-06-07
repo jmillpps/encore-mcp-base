@@ -4,7 +4,7 @@ export function mediaType(value: string): string {
 
 export function acceptsMediaType(value: string, expected: string): boolean {
   const normalized = expected.toLowerCase();
-  return value.split(",").some((range) => mediaType(range) === normalized);
+  return value.split(",").some((range) => mediaType(range) === normalized && mediaRangeAccepted(range));
 }
 
 export function contentTypeUsesUtf8(value: string): boolean {
@@ -25,6 +25,13 @@ function mediaTypeParameter(value: string, name: string): string | undefined {
     matched = unquote(part.slice(separator + 1).trim()).toLowerCase();
   }
   return matched;
+}
+
+function mediaRangeAccepted(value: string): boolean {
+  const quality = mediaTypeParameter(value, "q");
+  if (quality === undefined) return true;
+  if (!/^(?:0(?:\.[0-9]{0,3})?|1(?:\.0{0,3})?)$/.test(quality)) return false;
+  return Number(quality) > 0;
 }
 
 function unquote(value: string): string {
