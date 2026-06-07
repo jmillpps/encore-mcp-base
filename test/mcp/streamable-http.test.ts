@@ -185,6 +185,17 @@ test("MCP Streamable HTTP validates transport headers and session lifecycle", as
   await expectOAuthError(await postMcp(service, { jsonrpc: "2.0", id: "after-delete", method: "ping" }, { sessionId }), 404, "not_found");
 });
 
+test("MCP Streamable HTTP rejects unsafe numeric JSON-RPC ids", async (t) => {
+  const service = await startService(t);
+  for (const id of ["1e999", "9007199254740993", "1.5"]) {
+    const response = await postRawMcp(service, `{"jsonrpc":"2.0","id":${id},"method":"initialize","params":${JSON.stringify(initializeParams())}}`);
+    assert.equal(response.status, 400);
+    const body = await readJson(response);
+    assert.equal((body.error as Record<string, unknown>).code, -32600);
+    assert.equal(Object.hasOwn(body, "id"), false);
+  }
+});
+
 function getMcp(
   service: { origin: string },
   sessionId?: string,

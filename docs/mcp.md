@@ -44,6 +44,8 @@ Streamable HTTP is served at `/mcp`.
 
 JSON-RPC request and response identifiers are strings or numbers. Protocol errors omit `id` when no valid request identifier exists.
 
+Numeric JSON-RPC identifiers must be finite safe integers.
+
 Clients send `Accept: application/json, text/event-stream` and `Content-Type: application/json`.
 
 JSON request bodies use UTF-8.

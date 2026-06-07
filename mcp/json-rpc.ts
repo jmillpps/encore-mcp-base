@@ -65,4 +65,5 @@ function validateJsonRpcError(value: unknown): void {
 
 function validateJsonRpcId(value: unknown): asserts value is JsonRpcId {
   if (typeof value !== "string" && typeof value !== "number") throw new ServiceError("bad_request", "invalid json-rpc id", 400);
+  if (typeof value === "number" && !Number.isSafeInteger(value)) throw new ServiceError("bad_request", "invalid json-rpc id", 400);
 }
