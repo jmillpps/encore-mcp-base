@@ -24,20 +24,44 @@ test("MCP Streamable HTTP validates transport headers and session lifecycle", as
   const initializedNotification = await postMcp(service, { jsonrpc: "2.0", method: "notifications/initialized" }, { sessionId });
   assert.equal(initializedNotification.status, 202);
   assert.equal(await initializedNotification.text(), "");
+  const oldVersionInitialize = await postMcp(
+    service,
+    { jsonrpc: "2.0", id: "old-version-init", method: "initialize", params: initializeParams({ protocolVersion: "2025-06-18", clientInfo: { name: "old-test", version: "0.1.0" } }) },
+  );
+  assert.equal(oldVersionInitialize.status, 200);
+  assert.equal(((await readJson(oldVersionInitialize)).result as Record<string, unknown>).protocolVersion, "2025-11-25");
   const charsetInitialize = await postMcp(
     service,
-    { jsonrpc: "2.0", id: "charset-init", method: "initialize", params: {} },
+    { jsonrpc: "2.0", id: "charset-init", method: "initialize", params: initializeParams({ clientInfo: { name: "charset-test", version: "0.1.0" } }) },
     { contentType: "application/json; charset=utf-8" },
   );
   assert.equal(charsetInitialize.status, 200);
   assert.match(charsetInitialize.headers.get("access-control-allow-headers") ?? "", /MCP-Session-Id/);
   assert.match(charsetInitialize.headers.get("access-control-allow-headers") ?? "", /MCP-Protocol-Version/);
+  const missingProtocolVersion = await postMcp(service, { jsonrpc: "2.0", id: "missing-version", method: "initialize", params: initializeParams({ protocolVersion: undefined }) });
+  assert.equal(missingProtocolVersion.status, 400);
+  assert.equal(((await readJson(missingProtocolVersion)).error as Record<string, unknown>).message, "protocolVersion is required");
+  const missingCapabilities = await postMcp(service, { jsonrpc: "2.0", id: "missing-capabilities", method: "initialize", params: initializeParams({ capabilities: undefined }) });
+  assert.equal(missingCapabilities.status, 400);
+  assert.equal(((await readJson(missingCapabilities)).error as Record<string, unknown>).message, "capabilities must be an object");
+  const missingClientInfoVersion = await postMcp(
+    service,
+    { jsonrpc: "2.0", id: "missing-client-version", method: "initialize", params: initializeParams({ clientInfo: { name: "bad-client" } }) },
+  );
+  assert.equal(missingClientInfoVersion.status, 400);
+  assert.equal(((await readJson(missingClientInfoVersion)).error as Record<string, unknown>).message, "version is required");
   const invalidClientInfo = await postMcp(
     service,
-    { jsonrpc: "2.0", id: "bad-client-info", method: "initialize", params: { clientInfo: { name: "bad\nclient" } } },
+    { jsonrpc: "2.0", id: "bad-client-info", method: "initialize", params: initializeParams({ clientInfo: { name: "bad\nclient", version: "0.1.0" } }) },
   );
   assert.equal(invalidClientInfo.status, 400);
   assert.equal(((await readJson(invalidClientInfo)).error as Record<string, unknown>).message, "clientInfo.name is invalid");
+  const invalidClientVersion = await postMcp(
+    service,
+    { jsonrpc: "2.0", id: "bad-client-version", method: "initialize", params: initializeParams({ clientInfo: { name: "bad-client", version: "bad\nversion" } }) },
+  );
+  assert.equal(invalidClientVersion.status, 400);
+  assert.equal(((await readJson(invalidClientVersion)).error as Record<string, unknown>).message, "clientInfo.version is invalid");
   await expectOAuthError(await postMcp(service, { jsonrpc: "2.0", id: "bad-origin", method: "initialize", params: {} }, { origin: "https://evil.test" }), 403, "forbidden");
   await expectOAuthError(await postMcp(service, { jsonrpc: "2.0", id: "bad-type", method: "initialize", params: {} }, { contentType: "text/plain" }), 415, "bad_request");
   await expectOAuthError(
@@ -110,4 +134,13 @@ function postRawMcp(service: { origin: string }, body: string | Buffer): Promise
     headers: { accept: "application/json, text/event-stream", "content-type": "application/json", origin: "https://chatgpt.com" },
     body,
   });
+}
+
+function initializeParams(overrides: { protocolVersion?: string; capabilities?: Record<string, unknown>; clientInfo?: Record<string, unknown> } = {}): Record<string, unknown> {
+  return {
+    protocolVersion: "2025-11-25",
+    capabilities: {},
+    clientInfo: { name: "test", version: "0.1.0" },
+    ...overrides,
+  };
 }

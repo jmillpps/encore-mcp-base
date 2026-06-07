@@ -32,6 +32,10 @@ Clients send `Accept: application/json, text/event-stream` and `Content-Type: ap
 
 The initialize response includes `MCP-Session-Id`. Clients send that session ID with `MCP-Protocol-Version` on later `/mcp` requests.
 
+Initialize requests must include `protocolVersion`, `capabilities`, and `clientInfo`.
+
+The service negotiates unsupported declared protocol versions to `2025-11-25`.
+
 Requests return JSON responses. Notifications and client responses return `202 Accepted` with an empty body.
 
 `GET /mcp` opens an SSE receive stream for a valid session. The stream sends heartbeat comments and stays available for later server-originated messages.
