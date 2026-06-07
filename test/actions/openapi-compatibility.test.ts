@@ -15,8 +15,26 @@ test("OpenAPI Actions compatibility enforces ChatGPT production limits", () => {
     profileOperation(document).description = "x".repeat(301);
   }, /description/);
   assertRejects((document) => {
+    delete profileOperation(document).operationId;
+  }, /operationId/);
+  assertRejects((document) => {
+    profileOperation(document).operationId = "getAuthenticatedSession";
+  }, /duplicate operationId/);
+  assertRejects((document) => {
+    profileOperation(document).operationId = "bad operation";
+  }, /operationId/);
+  assertRejects((document) => {
     profileOperation(document)["x-openai-isConsequential"] = undefined;
   }, /x-openai-isConsequential/);
+  assertRejects((document) => {
+    delete profileOperation(document).security;
+  }, /OAuth2 security/);
+  assertRejects((document) => {
+    profileOperation(document).security = [{ OAuth2: [] }];
+  }, /OAuth2 security/);
+  assertRejects((document) => {
+    delete object(profileOperation(document).responses, "profile responses")["403"];
+  }, /OAuth2 error responses/);
   assertRejects((document) => {
     profileOperation(document).parameters = [{ in: "header", name: "X-Custom", schema: { type: "string" }, description: "custom header" }];
   }, /custom headers/);
