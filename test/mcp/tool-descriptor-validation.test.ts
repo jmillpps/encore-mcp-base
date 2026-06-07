@@ -18,6 +18,7 @@ test("listTools rejects malformed tool descriptors before exposure", () => {
     { invocation: { invoking: "Running", invoked: "Done", extra: true } },
     { inputSchema: { type: "string" } },
     { outputSchema: { type: "array" } },
+    { outputSchema: objectSchema("Descriptor test output.", { status: { type: "string" } }) },
     { icons: [{ src: "javascript:alert(1)" }] },
     { run: "not-a-function" },
   ].entries()) {
@@ -52,7 +53,7 @@ function baseTool(index: number): McpTool {
     title: "Descriptor Test",
     description: "Validate descriptor shape.",
     inputSchema: emptyInputSchema(),
-    outputSchema: objectSchema({ status: stringSchema() }),
+    outputSchema: objectSchema("Descriptor test output.", { status: stringSchema("Descriptor test status.") }),
     annotations: readOnlyToolAnnotations(),
     invocation: { invoking: "Running descriptor test", invoked: "Descriptor test ready" },
     requiredScopes: [],

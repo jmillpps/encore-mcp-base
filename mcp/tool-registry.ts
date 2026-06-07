@@ -106,18 +106,29 @@ function toolExecutionError(message: string): Record<string, unknown> {
 }
 
 function isObjectSchema(schema: unknown): schema is Record<string, unknown> {
+  if (!isDescribedSchema(schema)) return false;
+  return (schema as Record<string, unknown>).type === "object";
+}
+
+function isDescribedSchema(schema: unknown): schema is Record<string, unknown> {
   if (typeof schema !== "object" || schema === null || Array.isArray(schema)) return false;
   const record = schema as Record<string, unknown>;
   if (record.$schema !== undefined && typeof record.$schema !== "string") return false;
-  if (record.type !== "object") return false;
-  if (record.properties !== undefined && !isSchemaProperties(record.properties)) return false;
+  if (typeof record.description !== "string" || record.description.length === 0) return false;
+  if (record.type === "object") {
+    if (record.properties !== undefined && !isSchemaProperties(record.properties)) return false;
+    if (record.required !== undefined && (!Array.isArray(record.required) || record.required.some((entry) => typeof entry !== "string"))) return false;
+    if (record.additionalProperties !== undefined && typeof record.additionalProperties !== "boolean") return false;
+    return true;
+  }
+  if (record.type === "array") return isDescribedSchema(record.items);
+  if (!["string", "boolean", "number", "integer"].includes(String(record.type))) return false;
   if (record.required !== undefined && (!Array.isArray(record.required) || record.required.some((entry) => typeof entry !== "string"))) return false;
-  if (record.additionalProperties !== undefined && typeof record.additionalProperties !== "boolean") return false;
   return true;
 }
 
 function isSchemaProperties(value: unknown): boolean {
-  return typeof value === "object" && value !== null && !Array.isArray(value) && Object.values(value).every((entry) => typeof entry === "object" && entry !== null && !Array.isArray(entry));
+  return typeof value === "object" && value !== null && !Array.isArray(value) && Object.values(value).every(isDescribedSchema);
 }
 
 function isToolAnnotations(value: unknown): boolean {

@@ -9,10 +9,13 @@ export const healthCheckTool: McpTool = {
   title: "Health Check",
   description: "Use this when ChatGPT needs to confirm the MCP service is reachable.",
   inputSchema: emptyInputSchema(),
-  outputSchema: objectSchema({
-    status: stringSchema(),
-    timestamp: stringSchema(),
-    service: objectSchema({ name: stringSchema(), version: stringSchema() }),
+  outputSchema: objectSchema("Service health response.", {
+    status: stringSchema("Fixed status value returned by a reachable service."),
+    timestamp: stringSchema("ISO timestamp when the health check was produced."),
+    service: objectSchema("Service identity returned by the health check.", {
+      name: stringSchema("Service package name."),
+      version: stringSchema("Service package version."),
+    }),
   }),
   annotations: readOnlyToolAnnotations(),
   invocation: { invoking: "Checking service health", invoked: "Service health ready" },

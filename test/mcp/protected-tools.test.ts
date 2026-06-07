@@ -21,6 +21,8 @@ test("MCP tools expose metadata and protected tools return auth challenges", asy
   for (const tool of tools) {
     assert.match(requireString(tool.name, "tool name"), /^[A-Za-z0-9_.-]{1,128}$/);
     assert.match(requireString(tool.description, "tool description"), /^Use this when /);
+    assertSchemaDescriptions(requireRecord(tool.inputSchema, "tool input schema"));
+    assertSchemaDescriptions(requireRecord(tool.outputSchema, "tool output schema"));
     assert.equal(requireRecord(tool.annotations, "tool annotations").readOnlyHint, true);
     assert.deepEqual(tool.execution, { taskSupport: "forbidden" });
     const meta = requireRecord(tool._meta, "tool metadata");
@@ -216,4 +218,14 @@ function toolByName(tools: Record<string, unknown>[], name: string): Record<stri
   const tool = tools.find((candidate) => candidate.name === name);
   assert.ok(tool);
   return tool;
+}
+
+function assertSchemaDescriptions(schema: Record<string, unknown>): void {
+  assert.ok(requireString(schema.description, "schema description").length > 0);
+  if (schema.properties !== undefined) {
+    for (const property of Object.values(requireRecord(schema.properties, "schema properties"))) {
+      assertSchemaDescriptions(requireRecord(property, "schema property"));
+    }
+  }
+  if (schema.items !== undefined) assertSchemaDescriptions(requireRecord(schema.items, "schema items"));
 }

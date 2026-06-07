@@ -9,11 +9,11 @@ export const authSessionTool: McpTool = {
   title: "Auth Session",
   description: "Use this when ChatGPT needs OAuth token session metadata.",
   inputSchema: emptyInputSchema(),
-  outputSchema: objectSchema({
-    subject: stringSchema(),
-    clientId: stringSchema(),
-    audience: stringSchema(),
-    scopes: stringArraySchema(),
+  outputSchema: objectSchema("OAuth token session metadata.", {
+    subject: stringSchema("Subject identifier bound to the access token."),
+    clientId: stringSchema("OAuth client identifier bound to the access token."),
+    audience: stringSchema("Audience accepted for the access token."),
+    scopes: stringArraySchema("OAuth scopes granted to the access token.", "Granted OAuth scope."),
   }),
   annotations: readOnlyToolAnnotations(),
   invocation: { invoking: "Reading auth session", invoked: "Auth session ready" },
