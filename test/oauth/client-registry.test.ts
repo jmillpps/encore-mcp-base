@@ -19,7 +19,7 @@ test("local client registry carries explicit classes and PKCE policies", () => {
 test("client registry accepts validated production metadata", () => {
   const clients = parseClientJson(JSON.stringify([clientRecord()]), true);
   assert.equal(clients.length, 1);
-  assert.equal(clients[0]?.clientId, "gpt-actions-prod");
+  assert.equal(clients[0]?.clientId, "actions-client");
   assert.equal(clients[0]?.clientClass, "gpt-actions");
   assert.equal(clients[0]?.pkcePolicy, "optional");
   assert.deepEqual(clients[0]?.allowedScopes, ["openid", "profile", "email"]);
@@ -72,9 +72,9 @@ test("client registry rejects unsafe or malformed metadata", () => {
 
 function clientRecord(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    clientId: "gpt-actions-prod",
-    clientSecretHash: sha256Base64Url("prod-secret"),
-    displayName: "GPT Actions Production",
+    clientId: "actions-client",
+    clientSecretHash: sha256Base64Url("actions-secret"),
+    displayName: "GPT Actions",
     redirectUris: ["https://chatgpt.com/aip/g-prod/oauth/callback"],
     allowedScopes: ["openid", "profile", "email"],
     allowedResources: ["https://api.example.test/actions"],

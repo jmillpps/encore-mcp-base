@@ -24,9 +24,9 @@ Example Actions client:
 
 ```json
 {
-  "clientId": "gpt-actions-prod",
+  "clientId": "actions-client",
   "clientSecretHash": "6-sAVn33y2sGHZl6331AmzWK0yMi6Qy5IXhdetApm38",
-  "displayName": "GPT Actions Production",
+  "displayName": "GPT Actions",
   "redirectUris": ["https://chatgpt.com/aip/g-prod/oauth/callback"],
   "allowedScopes": ["openid", "profile", "email"],
   "allowedResources": ["https://service.example.com/actions"],

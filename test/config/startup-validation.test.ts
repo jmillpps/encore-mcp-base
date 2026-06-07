@@ -53,9 +53,9 @@ function productionEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
 
 function clientRecord(): Record<string, unknown> {
   return {
-    clientId: "gpt-actions-prod",
-    clientSecretHash: sha256Base64Url("prod-secret"),
-    displayName: "GPT Actions Production",
+    clientId: "actions-client",
+    clientSecretHash: sha256Base64Url("actions-secret"),
+    displayName: "GPT Actions",
     redirectUris: ["https://chatgpt.com/aip/g-prod/oauth/callback"],
     allowedScopes: ["openid", "profile", "email"],
     allowedResources: ["https://api.example.test/actions"],

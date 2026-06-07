@@ -38,7 +38,9 @@ After deployment, seed runtime parameters with ChatGPT redirect URIs:
 
 ```sh
 npm --prefix ci/cdk run seed:parameters -- \
+  --actions-client-id actions-client \
   --actions-redirect-uri https://chatgpt.com/aip/g-prod/oauth/callback \
+  --mcp-client-id mcp-client \
   --mcp-redirect-uri https://chatgpt.com/connector/oauth/local-callback
 ```
 
