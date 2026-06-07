@@ -23,9 +23,13 @@ function validateClientMeta(value: unknown, context: string): Record<string, unk
   const record = value as Record<string, unknown>;
   for (const key of Object.keys(record)) {
     if (!validMetaKey(key)) return `${context} _meta key has invalid format`;
-    if (reservedMcpPrefix(key)) return `${context} _meta key uses reserved MCP prefix`;
+    if (reservedMcpPrefix(key) && !ignoredTaskMetadataKey(key)) return `${context} _meta key uses reserved MCP prefix`;
   }
   return record;
+}
+
+function ignoredTaskMetadataKey(key: string): boolean {
+  return key === "io.modelcontextprotocol/related-task";
 }
 
 function validMetaKey(key: string): boolean {

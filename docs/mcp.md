@@ -40,7 +40,9 @@ Tool results must use MCP `CallToolResult` content, structured content, error fl
 
 Tool result content blocks are validated against supported MCP content shapes.
 
-Task-augmented tool calls are rejected because the service does not advertise task support.
+Task-augmented tool calls run normally when task support is not advertised.
+
+The service ignores `params.task` and `io.modelcontextprotocol/related-task` request metadata.
 
 Tool descriptors declare task-augmented execution as forbidden.
 

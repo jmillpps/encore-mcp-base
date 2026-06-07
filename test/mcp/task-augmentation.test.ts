@@ -22,6 +22,34 @@ test("MCP tools ignore undeclared task augmentation while preserving auth", asyn
   assert.ok(Array.isArray(meta["mcp/www_authenticate"]));
 });
 
+test("MCP tools ignore task-related metadata when task support is undeclared", async (t) => {
+  const service = await startService(t);
+  const sessionId = await initializeMcp(service);
+  const health = await postMcp(service, relatedTaskToolCall("health.check"), { sessionId });
+  assert.equal(health.status, 200);
+  const healthResult = requireRecord((await readJson(health)).result, "health result");
+  const structuredContent = requireRecord(healthResult.structuredContent, "health structuredContent");
+  assert.equal(structuredContent.status, "ok");
+  const profile = await postMcp(service, relatedTaskToolCall("identity.profile"), { sessionId });
+  assert.equal(profile.status, 200);
+  assert.match(profile.headers.get("www-authenticate") ?? "", /invalid_token/);
+  const profileResult = requireRecord((await readJson(profile)).result, "profile result");
+  assert.equal(profileResult.isError, true);
+});
+
 function taskToolCall(name: string): Record<string, unknown> {
   return { jsonrpc: "2.0", id: name, method: "tools/call", params: { name, arguments: {}, task: { ttl: 60000 } } };
+}
+
+function relatedTaskToolCall(name: string): Record<string, unknown> {
+  return {
+    jsonrpc: "2.0",
+    id: `${name}.related-task`,
+    method: "tools/call",
+    params: {
+      name,
+      arguments: {},
+      _meta: { "io.modelcontextprotocol/related-task": { taskId: "task-1" } },
+    },
+  };
 }
