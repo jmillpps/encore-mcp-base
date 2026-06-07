@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { mkdir, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { isLoopbackHostname, isNonPublicHostname } from "../shared/network-address.ts";
 import { openApiDocument } from "./openapi-document.ts";
@@ -19,8 +19,9 @@ await loadValidatedEncoreGraph(root, options.build);
 const document = openApiDocument(options.baseUrl);
 const output = `${JSON.stringify(document, null, 2)}\n`;
 if (options.out) {
-  await mkdir(dirname(resolve(root, options.out)), { recursive: true });
-  await writeFile(resolve(root, options.out), output, { mode: 0o600 });
+  const outPath = resolveOutputPath(root, options.out);
+  await mkdir(dirname(outPath), { recursive: true });
+  await writeFile(outPath, output, { mode: 0o600 });
 } else {
   process.stdout.write(output);
 }
@@ -56,4 +57,15 @@ function normalizeBaseUrl(value: string): string {
 
 function isLocalHttpHost(hostname: string): boolean {
   return isLoopbackHostname(hostname);
+}
+
+function resolveOutputPath(projectRoot: string, value: string): string {
+  if (value.trim() !== value) throw new Error("output path cannot include surrounding whitespace");
+  if (!value.endsWith(".json")) throw new Error("output path must end with .json");
+  const path = resolve(projectRoot, value);
+  const projectRelative = relative(projectRoot, path);
+  if (!projectRelative || projectRelative.startsWith("..") || isAbsolute(projectRelative)) {
+    throw new Error("output path must stay inside the project");
+  }
+  return path;
 }

@@ -53,6 +53,28 @@ test("OpenAPI export can write a generated artifact", async (t) => {
   assert.equal(requireString((document.servers as Record<string, unknown>[])[0]?.url, "server url"), "http://localhost:4000");
 });
 
+test("OpenAPI export rejects output paths outside the project", async (t) => {
+  const out = "../mcp-service-openapi-escape.json";
+  t.after(async () => {
+    await import("node:fs/promises").then((fs) => fs.rm(out, { force: true }));
+  });
+  const result = spawnSync(process.execPath, ["--experimental-strip-types", "tools/export-openapi.ts", "--base-url", "http://localhost:4000", "--out", out], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /output path must stay inside the project/);
+});
+
+test("OpenAPI export writes only JSON artifacts", () => {
+  const result = spawnSync(process.execPath, ["--experimental-strip-types", "tools/export-openapi.ts", "--base-url", "http://localhost:4000", "--out", "var/test-openapi.txt"], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /output path must end with \.json/);
+});
+
 test("OpenAPI export rejects base URLs with unsupported URL parts", () => {
   const result = spawnSync(process.execPath, ["--experimental-strip-types", "tools/export-openapi.ts", "--base-url", "https://example.test?debug=true"], {
     cwd: process.cwd(),
