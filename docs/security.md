@@ -8,6 +8,8 @@ JWT validation limits compact tokens to 8192 characters, requires `alg` to be `R
 
 Authentication failures return generic client errors and redacted diagnostics.
 
+Durable rate-limit updates remove expired buckets before recording the current request.
+
 Origin validation protects MCP HTTP transports from browser-origin attacks.
 
 Raw MCP handlers return HTTP 403 for invalid present `Origin` headers.

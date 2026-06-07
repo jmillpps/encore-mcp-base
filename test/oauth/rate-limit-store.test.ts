@@ -31,3 +31,17 @@ test("rate limit store resets counters after the configured window", async (t) =
   await delay(1100);
   await store.hit("oauth-authorize:client", 1, 1);
 });
+
+test("rate limit store prunes expired durable buckets while recording new hits", async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), "mcp-rate-limit-prune-"));
+  t.after(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+  const path = join(dir, "store.json");
+  const store = new DiskRateLimitStore(path);
+  await store.hit("oauth-authorize:expired-client", 1, 1);
+  await delay(1100);
+  await store.hit("oauth-token:fresh-client", 60, 1);
+  const state = JSON.parse(await readFile(path, "utf8")) as { rateLimits: Record<string, unknown> };
+  assert.equal(Object.keys(state.rateLimits).length, 1);
+});
