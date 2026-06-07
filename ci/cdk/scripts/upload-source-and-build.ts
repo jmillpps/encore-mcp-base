@@ -2,7 +2,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { deploymentStackName } from "../src/config.ts";
+import { stackName } from "../src/config.ts";
 import { createSourceArchive } from "../../../tools/source-archive.ts";
 import { awsJson, awsText } from "./aws.ts";
 import { stackOutputs } from "./stack-outputs.ts";
@@ -40,13 +40,14 @@ try {
 }
 
 function parseArgs(args: string[]): Options {
-  const parsed: Options = { stackName: deploymentStackName(), imageTag: "latest" };
+  const parsed: Options = { stackName: process.env.CDK_STACK_NAME ?? "", imageTag: "latest" };
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index] ?? "";
     if (arg === "--stack-name") parsed.stackName = requiredArg(args, (index += 1), arg);
     else if (arg === "--image-tag") parsed.imageTag = requiredArg(args, (index += 1), arg);
     else throw new Error(`unknown argument: ${arg}`);
   }
+  parsed.stackName = stackName(parsed.stackName);
   return parsed;
 }
 

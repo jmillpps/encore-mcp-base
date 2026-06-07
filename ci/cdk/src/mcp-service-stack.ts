@@ -10,7 +10,7 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as ssm from "aws-cdk-lib/aws-ssm";
 import type { Construct } from "constructs";
 import type { DeploymentConfig } from "./config.ts";
-import { userDataCommands } from "./user-data.ts";
+import { oauthStorePath, userDataCommands } from "./user-data.ts";
 
 export interface McpServiceStackProps extends cdk.StackProps {
   config: DeploymentConfig;
@@ -24,12 +24,12 @@ export class McpServiceStack extends cdk.Stack {
     const mcpResource = `${publicUrl}/mcp`;
     const actionsAudience = `${publicUrl}/actions`;
     const parameterKey = new kms.Key(this, "ParameterKey", {
-      alias: `${props.config.appName}-${props.config.environmentName}-parameters`,
+      alias: `${props.config.resourceName}-parameters`,
       enableKeyRotation: true,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
     const repository = new ecr.Repository(this, "Repository", {
-      repositoryName: `${props.config.appName}-${props.config.environmentName}`,
+      repositoryName: props.config.resourceName,
       imageScanOnPush: true,
       lifecycleRules: [{ maxImageCount: 10 }],
       removalPolicy: cdk.RemovalPolicy.DESTROY,
@@ -43,7 +43,7 @@ export class McpServiceStack extends cdk.Stack {
       autoDeleteObjects: true,
     });
     const userPool = new cognito.UserPool(this, "UserPool", {
-      userPoolName: `${props.config.appName}-${props.config.environmentName}`,
+      userPoolName: props.config.resourceName,
       selfSignUpEnabled: false,
       signInAliases: { email: true },
       standardAttributes: {
@@ -73,7 +73,7 @@ export class McpServiceStack extends cdk.Stack {
         scopes: [cognito.OAuthScope.OPENID, cognito.OAuthScope.PROFILE, cognito.OAuthScope.EMAIL],
       },
     });
-    const cognitoDomainPrefix = safeDomainPrefix(props.config.cognitoDomainPrefix);
+    const cognitoDomainPrefix = props.config.cognitoDomainPrefix;
     new cognito.UserPoolDomain(this, "UserPoolDomain", {
       userPool,
       cognitoDomain: { domainPrefix: cognitoDomainPrefix },
@@ -178,7 +178,7 @@ export class McpServiceStack extends cdk.Stack {
     this.stringParameter("IssuerUrl", config, "PUBLIC_ISSUER_URL", values.publicUrl);
     this.stringParameter("McpResourceUrl", config, "MCP_RESOURCE_URL", values.mcpResource);
     this.stringParameter("ActionsAudience", config, "ACTIONS_AUDIENCE", values.actionsAudience);
-    this.stringParameter("StorePath", config, "OAUTH_STORE_PATH", "/var/lib/gpt-mcp-service/oauth-store.json");
+    this.stringParameter("StorePath", config, "OAUTH_STORE_PATH", oauthStorePath(config.resourceName));
     this.stringParameter("AllowedOrigins", config, "ALLOWED_ORIGINS", config.allowedOrigins);
     this.stringParameter("AccessTokenTtl", config, "ACCESS_TOKEN_TTL_SECONDS", "900");
     this.stringParameter("IdTokenTtl", config, "ID_TOKEN_TTL_SECONDS", "300");
@@ -264,10 +264,7 @@ function parameterPath(value: string): string {
 }
 
 function relativeRecordName(domainName: string, hostedZoneName: string): string {
+  if (domainName === hostedZoneName) return "";
   const suffix = `.${hostedZoneName}`;
   return domainName.endsWith(suffix) ? domainName.slice(0, -suffix.length) : domainName;
-}
-
-function safeDomainPrefix(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/^-+|-+$/g, "").slice(0, 63);
 }

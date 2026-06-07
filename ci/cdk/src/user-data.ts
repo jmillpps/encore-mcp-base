@@ -6,24 +6,41 @@ export interface UserDataInput {
   repositoryUri: string;
 }
 
+interface RuntimePaths {
+  optDir: string;
+  dataDir: string;
+  runDir: string;
+  runScript: string;
+  serviceUnit: string;
+  bootstrapLog: string;
+  parameterFile: string;
+  envFile: string;
+  privateKeyFile: string;
+}
+
 export function userDataCommands(input: UserDataInput): string[] {
+  const paths = runtimePaths(input.config.resourceName);
   return [
     "set -euo pipefail",
-    "exec > >(tee -a /var/log/gpt-mcp-service-bootstrap.log) 2>&1",
+    `exec > >(tee -a ${paths.bootstrapLog}) 2>&1`,
     "dnf update -y",
     "dnf install -y docker jq awscli tar gzip",
     "systemctl enable --now docker",
     installCaddy(),
-    "mkdir -p /etc/caddy /opt/gpt-mcp-service /var/lib/gpt-mcp-service /var/lib/caddy /run/gpt-mcp-service",
+    `mkdir -p /etc/caddy ${paths.optDir} ${paths.dataDir} /var/lib/caddy ${paths.runDir}`,
     caddyfile(input.config.domainName),
     caddyServiceUnit(),
-    runScript(input),
-    "chmod 0500 /opt/gpt-mcp-service/run.sh",
-    serviceUnit(),
+    runScript(input, paths),
+    `chmod 0500 ${paths.runScript}`,
+    serviceUnit(input.config.resourceName, paths),
     "systemctl daemon-reload",
     "systemctl enable --now caddy.service",
-    "systemctl enable --now gpt-mcp-service.service",
+    `systemctl enable --now ${input.config.resourceName}.service`,
   ];
+}
+
+export function oauthStorePath(resourceName: string): string {
+  return `${runtimePaths(resourceName).dataDir}/oauth-store.json`;
 }
 
 function installCaddy(): string {
@@ -48,18 +65,18 @@ function caddyServiceUnit(): string {
   return "cat > /etc/systemd/system/caddy.service <<'UNIT'\n[Unit]\nDescription=Caddy web server\nAfter=network-online.target\nWants=network-online.target\n\n[Service]\nType=simple\nEnvironment=XDG_DATA_HOME=/var/lib/caddy\nEnvironment=XDG_CONFIG_HOME=/var/lib/caddy\nExecStart=/usr/local/bin/caddy run --environ --config /etc/caddy/Caddyfile\nExecReload=/usr/local/bin/caddy reload --config /etc/caddy/Caddyfile --force\nRestart=on-failure\nRestartSec=5s\nLimitNOFILE=1048576\n\n[Install]\nWantedBy=multi-user.target\nUNIT";
 }
 
-function runScript(input: UserDataInput): string {
+function runScript(input: UserDataInput, paths: RuntimePaths): string {
   return [
-    "cat > /opt/gpt-mcp-service/run.sh <<'SERVICE'",
+    `cat > ${paths.runScript} <<'SERVICE'`,
     "#!/bin/bash",
     "set -euo pipefail",
     `PARAMETER_PREFIX="${input.config.parameterPrefix}"`,
     `AWS_REGION="${input.region}"`,
     `IMAGE_REPOSITORY_URI="${input.repositoryUri}"`,
-    'PARAMETER_FILE="/run/gpt-mcp-service/parameters.json"',
-    'ENV_FILE="/run/gpt-mcp-service/service.env"',
-    'PRIVATE_KEY_FILE="/run/gpt-mcp-service/oauth-private-key.pem"',
-    "mkdir -p /run/gpt-mcp-service /var/lib/gpt-mcp-service",
+    `PARAMETER_FILE="${paths.parameterFile}"`,
+    `ENV_FILE="${paths.envFile}"`,
+    `PRIVATE_KEY_FILE="${paths.privateKeyFile}"`,
+    `mkdir -p ${paths.runDir} ${paths.dataDir}`,
     'aws ssm get-parameters-by-path --path "$PARAMETER_PREFIX" --recursive --with-decryption --region "$AWS_REGION" --output json > "$PARAMETER_FILE"',
     ': > "$ENV_FILE"',
     "printf 'NODE_ENV=production\\n' >> \"$ENV_FILE\"",
@@ -78,12 +95,29 @@ function runScript(input: UserDataInput): string {
     "fi",
     'aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$IMAGE_REPOSITORY_URI"',
     'docker pull "$IMAGE_REPOSITORY_URI:$IMAGE_TAG"',
-    "docker rm -f gpt-mcp-service 2>/dev/null || true",
-    'docker run -d --name gpt-mcp-service --restart unless-stopped --env-file "$ENV_FILE" -v /var/lib/gpt-mcp-service:/var/lib/gpt-mcp-service -v /run/gpt-mcp-service:/run/gpt-mcp-service:ro -p 127.0.0.1:8080:8080 "$IMAGE_REPOSITORY_URI:$IMAGE_TAG"',
+    `docker rm -f ${input.config.resourceName} 2>/dev/null || true`,
+    `docker run -d --name ${input.config.resourceName} --restart unless-stopped --env-file "$ENV_FILE" -v ${paths.dataDir}:${paths.dataDir} -v ${paths.runDir}:${paths.runDir}:ro -p 127.0.0.1:8080:8080 "$IMAGE_REPOSITORY_URI:$IMAGE_TAG"`,
     "SERVICE",
   ].join("\n");
 }
 
-function serviceUnit(): string {
-  return "cat > /etc/systemd/system/gpt-mcp-service.service <<'UNIT'\n[Unit]\nDescription=GPT MCP Service container\nAfter=docker.service network-online.target\nWants=network-online.target\n\n[Service]\nType=oneshot\nRemainAfterExit=yes\nExecStart=/opt/gpt-mcp-service/run.sh\n\n[Install]\nWantedBy=multi-user.target\nUNIT";
+function serviceUnit(resourceName: string, paths: RuntimePaths): string {
+  return `cat > ${paths.serviceUnit} <<'UNIT'\n[Unit]\nDescription=MCP Service container\nAfter=docker.service network-online.target\nWants=network-online.target\n\n[Service]\nType=oneshot\nRemainAfterExit=yes\nExecStart=${paths.runScript}\n\n[Install]\nWantedBy=multi-user.target\nUNIT`;
+}
+
+function runtimePaths(resourceName: string): RuntimePaths {
+  const optDir = `/opt/${resourceName}`;
+  const dataDir = `/var/lib/${resourceName}`;
+  const runDir = `/run/${resourceName}`;
+  return {
+    optDir,
+    dataDir,
+    runDir,
+    runScript: `${optDir}/run.sh`,
+    serviceUnit: `/etc/systemd/system/${resourceName}.service`,
+    bootstrapLog: `/var/log/${resourceName}-bootstrap.log`,
+    parameterFile: `${runDir}/parameters.json`,
+    envFile: `${runDir}/service.env`,
+    privateKeyFile: `${runDir}/oauth-private-key.pem`,
+  };
 }

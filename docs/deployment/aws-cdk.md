@@ -8,23 +8,27 @@ Set these values before running CDK commands:
 
 | Variable | Purpose |
 | --- | --- |
+| `CDK_APP_NAME` | Lowercase deployment resource prefix. |
+| `CDK_ENVIRONMENT_NAME` | Lowercase deployment environment name. |
+| `CDK_STACK_NAME` | CloudFormation stack name. |
 | `CDK_DEFAULT_ACCOUNT` | AWS account selected by the authenticated CDK environment. |
 | `CDK_DEFAULT_REGION` | AWS region selected by the authenticated CDK environment. |
 | `CDK_DOMAIN_NAME` | Public service hostname. |
 | `CDK_HOSTED_ZONE_ID` | Route53 hosted zone ID for the service hostname. |
 | `CDK_HOSTED_ZONE_NAME` | Route53 hosted zone name for the service hostname. |
 | `CDK_COGNITO_DOMAIN_PREFIX` | Globally unique Cognito hosted UI domain prefix. |
+| `CDK_PARAMETER_PREFIX` | Parameter Store path for runtime configuration. |
+| `CDK_INSTANCE_TYPE` | EC2 instance type. |
 
 Optional deployment inputs:
 
 | Variable | Purpose |
 | --- | --- |
-| `CDK_APP_NAME` | Resource name prefix. Default is `gpt-mcp-service`. |
-| `CDK_ENVIRONMENT_NAME` | Environment name. Default is `prod`. |
-| `CDK_STACK_NAME` | CloudFormation stack name. Default is derived from `CDK_APP_NAME` and `CDK_ENVIRONMENT_NAME`. |
-| `CDK_PARAMETER_PREFIX` | Parameter Store path. Default is `/$CDK_APP_NAME/$CDK_ENVIRONMENT_NAME/env`. |
-| `CDK_INSTANCE_TYPE` | EC2 instance type. Default is `t4g.micro`. |
 | `CDK_ALLOWED_ORIGINS` | Browser origins allowed by the service. Default allows ChatGPT origins. |
+
+`CDK_APP_NAME` and `CDK_ENVIRONMENT_NAME` form the EC2 service resource name. The instance uses that resource name for systemd unit name, Docker container name, runtime directories, and bootstrap logs.
+
+Store operator-specific values in an ignored local shell file, CI secret store, or secure operator runbook. Keep account IDs, hosted zone IDs, real domains, Cognito prefixes, stack names, and parameter paths out of tracked source files.
 
 ## Parameter Store
 
@@ -60,7 +64,7 @@ Restart the instance service after the image build completes:
 aws ssm send-command \
   --instance-ids INSTANCE_ID \
   --document-name AWS-RunShellScript \
-  --parameters commands='["systemctl restart gpt-mcp-service.service"]'
+  --parameters commands='["systemctl restart SERVICE_RESOURCE_NAME.service"]'
 ```
 
 ## Teardown

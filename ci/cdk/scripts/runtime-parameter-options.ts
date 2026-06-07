@@ -1,4 +1,4 @@
-import { deploymentStackName } from "../src/config.ts";
+import { stackName } from "../src/config.ts";
 
 export interface RuntimeParameterOptions {
   stackName: string;
@@ -16,7 +16,7 @@ const maximumDisplayNameLength = 128;
 
 export function parseRuntimeParameterOptions(args: string[], env: NodeJS.ProcessEnv = process.env): RuntimeParameterOptions {
   const parsed = {
-    stackName: deploymentStackName(env),
+    stackName: env.CDK_STACK_NAME ?? "",
     actionsClientId: "",
     actionsDisplayName: "GPT Actions",
     actionsRedirectUris: [] as string[],
@@ -35,6 +35,7 @@ export function parseRuntimeParameterOptions(args: string[], env: NodeJS.Process
     else if (arg === "--mcp-redirect-uri") parsed.mcpRedirectUris.push(requiredArg(args, (index += 1), arg));
     else throw new Error(`unknown argument: ${arg}`);
   }
+  parsed.stackName = stackName(parsed.stackName);
   validateIdentifier(parsed.actionsClientId, "--actions-client-id");
   validateDisplayName(parsed.actionsDisplayName, "--actions-display-name");
   if (parsed.actionsRedirectUris.length === 0) throw new Error("--actions-redirect-uri is required");

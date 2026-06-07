@@ -18,6 +18,11 @@ test("runtime parameter options require operator supplied client IDs", () => {
   assert.throws(() => optionsModule.parseRuntimeParameterOptions(argsWithout("--mcp-client-id")), /--mcp-client-id is required/);
 });
 
+test("runtime parameter options require an explicit stack name", () => {
+  assert.throws(() => optionsModule.parseRuntimeParameterOptions(argsWithout("--stack-name"), {}), /CDK_STACK_NAME is required/);
+  assert.equal(optionsModule.parseRuntimeParameterOptions(argsWithout("--stack-name"), { CDK_STACK_NAME: "EnvStack" }).stackName, "EnvStack");
+});
+
 test("runtime parameter options accept explicit deployment identifiers", () => {
   const options = optionsModule.parseRuntimeParameterOptions([
     "--stack-name",
@@ -58,6 +63,8 @@ test("runtime parameter options require redirect URIs", () => {
 
 function baseArgs(): string[] {
   return [
+    "--stack-name",
+    "OperatorStack",
     "--actions-client-id",
     "actions-client",
     "--actions-redirect-uri",
