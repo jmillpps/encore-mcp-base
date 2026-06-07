@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readJson, requireRecord } from "../support/http.ts";
-import { initializeMcp, postMcp } from "../support/mcp.ts";
+import { initializeMcp, mcpAuthorization, postMcp } from "../support/mcp.ts";
 import { startService } from "../support/service-process.ts";
 import { SseReader } from "../support/sse.ts";
 
@@ -39,7 +39,7 @@ test("SSE messages reject client JSON shaped like an internal body result", asyn
   t.after(() => controller.abort());
   const stream = await fetch(`${service.origin}/sse`, {
     signal: controller.signal,
-    headers: { accept: "text/event-stream", origin: "https://chatgpt.com" },
+    headers: { accept: "text/event-stream", authorization: await mcpAuthorization(service), origin: "https://chatgpt.com" },
   });
   assert.equal(stream.status, 200);
   assert.ok(stream.body);
@@ -47,7 +47,7 @@ test("SSE messages reject client JSON shaped like an internal body result", asyn
   const endpoint = (await events.readEvent()).data;
   const response = await fetch(`${service.origin}${endpoint}`, {
     method: "POST",
-    headers: { "content-type": "application/json", origin: "https://chatgpt.com" },
+    headers: { authorization: await mcpAuthorization(service), "content-type": "application/json", origin: "https://chatgpt.com" },
     body: JSON.stringify(collisionBody),
   });
   assert.equal(response.status, 202);
@@ -60,7 +60,7 @@ test("SSE messages reject JSON-RPC requests that also contain responses", async 
   t.after(() => controller.abort());
   const stream = await fetch(`${service.origin}/sse`, {
     signal: controller.signal,
-    headers: { accept: "text/event-stream", origin: "https://chatgpt.com" },
+    headers: { accept: "text/event-stream", authorization: await mcpAuthorization(service), origin: "https://chatgpt.com" },
   });
   assert.equal(stream.status, 200);
   assert.ok(stream.body);
@@ -69,7 +69,7 @@ test("SSE messages reject JSON-RPC requests that also contain responses", async 
   for (const message of [requestResultCollision, requestErrorCollision]) {
     const response = await fetch(`${service.origin}${endpoint}`, {
       method: "POST",
-      headers: { "content-type": "application/json", origin: "https://chatgpt.com" },
+      headers: { authorization: await mcpAuthorization(service), "content-type": "application/json", origin: "https://chatgpt.com" },
       body: JSON.stringify(message),
     });
     assert.equal(response.status, 202);
@@ -83,7 +83,7 @@ test("SSE messages reject JSON-RPC envelopes with unsupported fields", async (t)
   t.after(() => controller.abort());
   const stream = await fetch(`${service.origin}/sse`, {
     signal: controller.signal,
-    headers: { accept: "text/event-stream", origin: "https://chatgpt.com" },
+    headers: { accept: "text/event-stream", authorization: await mcpAuthorization(service), origin: "https://chatgpt.com" },
   });
   assert.equal(stream.status, 200);
   assert.ok(stream.body);
@@ -92,7 +92,7 @@ test("SSE messages reject JSON-RPC envelopes with unsupported fields", async (t)
   for (const message of [requestExtraField, responseExtraField, responseErrorExtraField]) {
     const response = await fetch(`${service.origin}${endpoint}`, {
       method: "POST",
-      headers: { "content-type": "application/json", origin: "https://chatgpt.com" },
+      headers: { authorization: await mcpAuthorization(service), "content-type": "application/json", origin: "https://chatgpt.com" },
       body: JSON.stringify(message),
     });
     assert.equal(response.status, 202);

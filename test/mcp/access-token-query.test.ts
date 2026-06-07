@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readJson } from "../support/http.ts";
+import { mcpAuthorization } from "../support/mcp.ts";
 import { startService } from "../support/service-process.ts";
 import { SseReader } from "../support/sse.ts";
 
@@ -28,7 +29,7 @@ test("MCP legacy messages reject access tokens in the URI query", async (t) => {
   t.after(() => controller.abort());
   const stream = await fetch(`${service.origin}/sse`, {
     signal: controller.signal,
-    headers: { accept: "text/event-stream", origin: "https://chatgpt.com" },
+    headers: { accept: "text/event-stream", authorization: await mcpAuthorization(service), origin: "https://chatgpt.com" },
   });
   assert.equal(stream.status, 200);
   assert.ok(stream.body);

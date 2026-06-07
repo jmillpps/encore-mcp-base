@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { readJson, requireRecord } from "../support/http.ts";
-import { initializeMcp, postMcp } from "../support/mcp.ts";
+import { initializeMcp, mcpAuthorization, postMcp } from "../support/mcp.ts";
 import { startService } from "../support/service-process.ts";
 import { SseReader } from "../support/sse.ts";
 
@@ -36,7 +36,7 @@ test("MCP legacy messages deliver notification contract errors on the receive st
   t.after(() => controller.abort());
   const stream = await fetch(`${service.origin}/sse`, {
     signal: controller.signal,
-    headers: { accept: "text/event-stream", origin: "https://chatgpt.com" },
+    headers: { accept: "text/event-stream", authorization: await mcpAuthorization(service), origin: "https://chatgpt.com" },
   });
   assert.equal(stream.status, 200);
   assert.ok(stream.body);
@@ -44,7 +44,7 @@ test("MCP legacy messages deliver notification contract errors on the receive st
   const endpoint = (await events.readEvent()).data;
   const response = await fetch(`${service.origin}${endpoint}`, {
     method: "POST",
-    headers: { "content-type": "application/json", origin: "https://chatgpt.com" },
+    headers: { authorization: await mcpAuthorization(service), "content-type": "application/json", origin: "https://chatgpt.com" },
     body: JSON.stringify({ jsonrpc: "2.0", method: "notifications/tools/list_changed" }),
   });
   assert.equal(response.status, 202);

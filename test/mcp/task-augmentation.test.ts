@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readJson, requireRecord } from "../support/http.ts";
-import { initializeMcp, postMcp } from "../support/mcp.ts";
+import { bearer, initializeMcp, postMcp } from "../support/mcp.ts";
+import { completeAuthorizationCodeFlow } from "../support/oauth-client.ts";
 import { startService } from "../support/service-process.ts";
 
 test("MCP tools ignore undeclared task augmentation while preserving auth", async (t) => {
@@ -13,9 +14,10 @@ test("MCP tools ignore undeclared task augmentation while preserving auth", asyn
   const structuredContent = requireRecord(healthResult.structuredContent, "health structuredContent");
   assert.equal(structuredContent.status, "ok");
   assert.equal(Object.hasOwn(healthResult, "task"), false);
-  const profile = await postMcp(service, taskToolCall("identity.profile"), { sessionId });
+  const narrowFlow = await completeAuthorizationCodeFlow(service, service.mcpResource, "openid");
+  const profile = await postMcp(service, taskToolCall("identity.profile"), { sessionId, authorization: bearer(narrowFlow.tokens.access_token) });
   assert.equal(profile.status, 200);
-  assert.match(profile.headers.get("www-authenticate") ?? "", /invalid_token/);
+  assert.match(profile.headers.get("www-authenticate") ?? "", /insufficient_scope/);
   const profileResult = requireRecord((await readJson(profile)).result, "profile result");
   assert.equal(profileResult.isError, true);
   const meta = requireRecord(profileResult._meta, "profile metadata");
@@ -30,9 +32,10 @@ test("MCP tools ignore task-related metadata when task support is undeclared", a
   const healthResult = requireRecord((await readJson(health)).result, "health result");
   const structuredContent = requireRecord(healthResult.structuredContent, "health structuredContent");
   assert.equal(structuredContent.status, "ok");
-  const profile = await postMcp(service, relatedTaskToolCall("identity.profile"), { sessionId });
+  const narrowFlow = await completeAuthorizationCodeFlow(service, service.mcpResource, "openid");
+  const profile = await postMcp(service, relatedTaskToolCall("identity.profile"), { sessionId, authorization: bearer(narrowFlow.tokens.access_token) });
   assert.equal(profile.status, 200);
-  assert.match(profile.headers.get("www-authenticate") ?? "", /invalid_token/);
+  assert.match(profile.headers.get("www-authenticate") ?? "", /insufficient_scope/);
   const profileResult = requireRecord((await readJson(profile)).result, "profile result");
   assert.equal(profileResult.isError, true);
 });

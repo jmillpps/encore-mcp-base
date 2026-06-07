@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readJson, requireRecord } from "../support/http.ts";
-import { initializeMcp, postMcp } from "../support/mcp.ts";
+import { initializeMcp, mcpAuthorization, postMcp } from "../support/mcp.ts";
 import { startService } from "../support/service-process.ts";
 import { assertSseOpen, SseReader } from "../support/sse.ts";
 
@@ -58,21 +58,21 @@ test("MCP legacy HTTP SSE sends request parameter errors on the receive stream",
   t.after(() => controller.abort());
   const stream = await fetch(`${service.origin}/sse`, {
     signal: controller.signal,
-    headers: { accept: "text/event-stream", origin: "https://chatgpt.com" },
+    headers: { accept: "text/event-stream", authorization: await mcpAuthorization(service), origin: "https://chatgpt.com" },
   });
   assert.equal(stream.status, 200);
   assert.ok(stream.body);
   const events = new SseReader(stream.body.getReader());
   const endpoint = (await events.readEvent()).data;
   await assertSseOpen(events);
-  const invalid = await postLegacyMessage(service.origin, endpoint, { jsonrpc: "2.0", id: "unsupported-ping", method: "ping", params: { unsupported: true } });
+  const invalid = await postLegacyMessage(service.origin, endpoint, await mcpAuthorization(service), { jsonrpc: "2.0", id: "unsupported-ping", method: "ping", params: { unsupported: true } });
   assert.equal(invalid.status, 202);
   assert.equal(await invalid.text(), "");
   assert.equal(requireRecord(JSON.parse((await events.readEvent()).data).error, "json-rpc error").code, -32602);
-  const invalidMeta = await postLegacyMessage(service.origin, endpoint, { jsonrpc: "2.0", id: "bad-meta", method: "ping", params: { _meta: { "dev.mcp/trace": true } } });
+  const invalidMeta = await postLegacyMessage(service.origin, endpoint, await mcpAuthorization(service), { jsonrpc: "2.0", id: "bad-meta", method: "ping", params: { _meta: { "dev.mcp/trace": true } } });
   assert.equal(invalidMeta.status, 202);
   assert.equal(requireRecord(JSON.parse((await events.readEvent()).data).error, "json-rpc error").code, -32602);
-  const recovery = await postLegacyMessage(service.origin, endpoint, { jsonrpc: "2.0", id: "recovery", method: "ping", params: { _meta: { progressToken: "recovery" } } });
+  const recovery = await postLegacyMessage(service.origin, endpoint, await mcpAuthorization(service), { jsonrpc: "2.0", id: "recovery", method: "ping", params: { _meta: { progressToken: "recovery" } } });
   assert.equal(recovery.status, 202);
   assert.deepEqual(JSON.parse((await events.readEvent()).data).result, {});
 });
@@ -82,10 +82,10 @@ async function expectJsonRpcError(response: Response, code: number): Promise<voi
   assert.equal(requireRecord((await readJson(response)).error, "json-rpc error").code, code);
 }
 
-function postLegacyMessage(origin: string, endpoint: string, body: Record<string, unknown>): Promise<Response> {
+function postLegacyMessage(origin: string, endpoint: string, authorization: string, body: Record<string, unknown>): Promise<Response> {
   return fetch(`${origin}${endpoint}`, {
     method: "POST",
-    headers: { "content-type": "application/json", origin: "https://chatgpt.com" },
+    headers: { authorization, "content-type": "application/json", origin: "https://chatgpt.com" },
     body: JSON.stringify(body),
   });
 }

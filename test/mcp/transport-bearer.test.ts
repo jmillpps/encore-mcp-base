@@ -1,10 +1,17 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { bearer, initializeMcp, postMcp } from "../support/mcp.ts";
+import { bearer, initializeMcp, mcpAuthorization, postMcp } from "../support/mcp.ts";
 import { completeAuthorizationCodeFlow } from "../support/oauth-client.ts";
 import { expectOAuthError, readJson } from "../support/http.ts";
 import { startService } from "../support/service-process.ts";
 import { SseReader } from "../support/sse.ts";
+
+test("MCP receive transports require bearer tokens", async (t) => {
+  const service = await startService(t);
+  const sessionId = await initializeMcp(service);
+  await expectOAuthError(await assertScopedChallenge(getMcp(service, sessionId)), 401, "unauthorized");
+  await expectOAuthError(await assertScopedChallenge(getLegacySse(service.origin)), 401, "unauthorized");
+});
 
 test("MCP receive transports reject presented bearer tokens for other audiences", async (t) => {
   const service = await startService(t);
@@ -18,22 +25,24 @@ test("MCP receive transports reject presented bearer tokens for other audiences"
   assert.equal(recovery.status, 200);
 });
 
-test("MCP message transports defer presented bearer validation to tools", async (t) => {
+test("MCP message transports reject bearer tokens for other audiences before tool handling", async (t) => {
   const service = await startService(t);
   const sessionId = await initializeMcp(service);
   const actionsFlow = await completeAuthorizationCodeFlow(service, service.actionsAudience);
   const wrongAudience = bearer(actionsFlow.tokens.access_token);
   const post = await postMcp(service, healthCall(), { sessionId, authorization: wrongAudience });
-  assert.equal(post.status, 200);
-  assert.equal((((await readJson(post)).result as Record<string, unknown>).structuredContent as Record<string, unknown>).status, "ok");
+  await expectOAuthError(await assertScopedChallenge(Promise.resolve(post)), 401, "unauthorized");
   const controller = new AbortController();
   t.after(() => controller.abort());
-  const stream = await fetch(`${service.origin}/sse`, { signal: controller.signal, headers: { accept: "text/event-stream", origin: "https://chatgpt.com" } });
+  const stream = await fetch(`${service.origin}/sse`, { signal: controller.signal, headers: { accept: "text/event-stream", authorization: await mcpAuthorization(service), origin: "https://chatgpt.com" } });
   assert.equal(stream.status, 200);
   assert.ok(stream.body);
   const endpoint = (await new SseReader(stream.body.getReader()).readEvent()).data;
   const legacyPost = await postLegacyMessage(service.origin, endpoint, wrongAudience);
-  assert.equal(legacyPost.status, 202);
+  await expectOAuthError(await assertScopedChallenge(Promise.resolve(legacyPost)), 401, "unauthorized");
+  const recovery = await postMcp(service, healthCall(), { sessionId });
+  assert.equal(recovery.status, 200);
+  assert.equal((((await readJson(recovery)).result as Record<string, unknown>).structuredContent as Record<string, unknown>).status, "ok");
 });
 
 test("MCP transports accept presented bearer tokens for the MCP resource", async (t) => {
@@ -50,9 +59,11 @@ function healthCall(): Record<string, unknown> {
   return { jsonrpc: "2.0", id: "health", method: "tools/call", params: { name: "health.check", arguments: {} } };
 }
 
-function getMcp(service: { origin: string }, sessionId: string, authorization: string): Promise<Response> {
+function getMcp(service: { origin: string }, sessionId: string, authorization?: string): Promise<Response> {
+  const headers = new Headers({ accept: "text/event-stream", origin: "https://chatgpt.com", "mcp-session-id": sessionId, "mcp-protocol-version": "2025-11-25" });
+  if (authorization) headers.set("authorization", authorization);
   return fetch(`${service.origin}/mcp`, {
-    headers: { accept: "text/event-stream", authorization, origin: "https://chatgpt.com", "mcp-session-id": sessionId, "mcp-protocol-version": "2025-11-25" },
+    headers,
   });
 }
 
@@ -63,8 +74,10 @@ function deleteMcp(service: { origin: string }, sessionId: string, authorization
   });
 }
 
-function getLegacySse(origin: string, authorization: string): Promise<Response> {
-  return fetch(`${origin}/sse`, { headers: { accept: "text/event-stream", authorization, origin: "https://chatgpt.com" } });
+function getLegacySse(origin: string, authorization?: string): Promise<Response> {
+  const headers = new Headers({ accept: "text/event-stream", origin: "https://chatgpt.com" });
+  if (authorization) headers.set("authorization", authorization);
+  return fetch(`${origin}/sse`, { headers });
 }
 
 function postLegacyMessage(origin: string, endpoint: string, authorization: string): Promise<Response> {

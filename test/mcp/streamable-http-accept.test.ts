@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { expectOAuthError, readJson } from "../support/http.ts";
-import { initializeMcp, postMcp } from "../support/mcp.ts";
-import { startService } from "../support/service-process.ts";
+import { initializeMcp, mcpAuthorization, postMcp } from "../support/mcp.ts";
+import { startService, type TestService } from "../support/service-process.ts";
 
 test("MCP Streamable HTTP rejects unacceptable Accept quality values", async (t) => {
   const service = await startService(t);
@@ -35,9 +35,9 @@ function initializeParams(clientName: string): Record<string, unknown> {
   return { protocolVersion: "2025-11-25", capabilities: {}, clientInfo: { name: clientName, version: "0.1.0" } };
 }
 
-function getMcp(service: { origin: string }, sessionId: string, accept: string): Promise<Response> {
+async function getMcp(service: TestService, sessionId: string, accept: string): Promise<Response> {
   return fetch(`${service.origin}/mcp`, {
     method: "GET",
-    headers: { accept, origin: "https://chatgpt.com", "mcp-session-id": sessionId, "mcp-protocol-version": "2025-11-25" },
+    headers: { accept, authorization: await mcpAuthorization(service), origin: "https://chatgpt.com", "mcp-session-id": sessionId, "mcp-protocol-version": "2025-11-25" },
   });
 }

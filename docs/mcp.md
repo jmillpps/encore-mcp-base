@@ -74,11 +74,13 @@ JSON request bodies use UTF-8.
 
 Bearer tokens use the `Authorization` header. MCP routes reject `access_token` URI query parameters.
 
-MCP message transports defer bearer validation to tool handlers.
+Session-bound MCP message transports require MCP-audience bearer tokens before JSON-RPC handling.
+
+Initialize requests may include MCP-audience bearer tokens. Presented invalid tokens are rejected.
 
 Protected tool handlers validate issuer, audience, expiry, client ID, and scopes before returning protected data.
 
-Streamable receive and DELETE transports validate presented bearer tokens before opening or terminating sessions.
+Streamable receive and DELETE transports require MCP-audience bearer tokens before opening or terminating sessions.
 
 Client JSON objects must pass JSON-RPC message validation to reach transport response handling.
 
@@ -124,9 +126,9 @@ SSE receive streams are bounded by `MCP_SSE_MAX_CONNECTIONS`.
 
 Legacy HTTP/SSE is served through `/sse` and `/messages`.
 
-`GET /sse` validates the origin and keeps the receive stream open. The first event is `endpoint`, and the event data is the session-bound `/messages` URI for client POSTs.
+`GET /sse` validates the origin and bearer token, then keeps the receive stream open. The first event is `endpoint`, and the event data is the session-bound `/messages` URI for client POSTs.
 
-`POST /messages` requires the `sessionId` value from the endpoint event. Accepted JSON-RPC requests return `202 Accepted` with an empty body. The JSON-RPC response is delivered on the open SSE stream as a `message` event.
+`POST /messages` requires the `sessionId` value from the endpoint event and an MCP-audience bearer token. Accepted JSON-RPC requests return `202 Accepted` with an empty body. The JSON-RPC response is delivered on the open SSE stream as a `message` event.
 
 JSON-RPC notifications and client responses return `202 Accepted` and do not create SSE response events.
 

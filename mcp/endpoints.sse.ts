@@ -1,6 +1,6 @@
 import { api } from "encore.dev/api";
 import { validateSingleAuthorizationHeader } from "../auth/authorization-header.ts";
-import { verifyPresentedBearer } from "../auth/bearer.ts";
+import { verifyBearer } from "../auth/bearer.ts";
 import { readConfig } from "../shared/config.ts";
 import { requestSubject, writeJson } from "../shared/http.ts";
 import { readLegacySseSessionId, reserveLegacyRequestId, runLegacySseSession, sendLegacySseMessage } from "./legacy-sse-session.ts";
@@ -16,7 +16,7 @@ export const sse = api.raw({ expose: true, method: "GET", path: "/sse" }, async 
     validateOrigin(config, req);
     validateNoAccessTokenQuery(req);
     validateSingleAuthorizationHeader(req);
-    verifyPresentedBearer(config, req.headers.authorization, config.mcpResource);
+    verifyBearer(config, req.headers.authorization, config.mcpResource);
     validateSseAccept(req);
     writeCors(config, req, res);
     await runLegacySseSession(res, config.mcpSseMaxConnections);
@@ -33,6 +33,7 @@ export const messages = api.raw({ expose: true, method: "POST", path: "/messages
     validateOrigin(config, req);
     validateNoAccessTokenQuery(req);
     validateSingleAuthorizationHeader(req);
+    verifyBearer(config, req.headers.authorization, config.mcpResource);
     validatePostContentType(req);
     writeCors(config, req, res);
     const sessionId = readLegacySseSessionId(req.url);

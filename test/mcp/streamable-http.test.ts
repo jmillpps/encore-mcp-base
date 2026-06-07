@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { assertExposesHeader, expectOAuthError, readJson, requireString } from "../support/http.ts";
-import { deleteSession, initializeMcp, postMcp } from "../support/mcp.ts";
-import { startService } from "../support/service-process.ts";
+import { deleteSession, initializeMcp, mcpAuthorization, postMcp } from "../support/mcp.ts";
+import { startService, type TestService } from "../support/service-process.ts";
 import { assertSseOpen, SseReader } from "../support/sse.ts";
 
 test("MCP Streamable HTTP validates transport headers and session lifecycle", async (t) => {
@@ -232,8 +232,8 @@ test("MCP Streamable HTTP rejects non-object JSON-RPC params", async (t) => {
   }
 });
 
-function getMcp(
-  service: { origin: string },
+async function getMcp(
+  service: TestService,
   sessionId?: string,
   protocolVersion = "2025-11-25",
   accept = "text/event-stream",
@@ -241,15 +241,18 @@ function getMcp(
   origin = "https://chatgpt.com",
 ): Promise<Response> {
   const headers = new Headers({ accept, origin });
+  if (origin === "https://chatgpt.com") headers.set("authorization", await mcpAuthorization(service));
   if (sessionId) headers.set("mcp-session-id", sessionId);
   if (sessionId) headers.set("mcp-protocol-version", protocolVersion);
   return fetch(`${service.origin}/mcp`, { method: "GET", headers, signal });
 }
 
-function deleteMcp(service: { origin: string }, sessionId: string, origin = "https://chatgpt.com"): Promise<Response> {
+async function deleteMcp(service: TestService, sessionId: string, origin = "https://chatgpt.com"): Promise<Response> {
+  const headers = new Headers({ origin, "mcp-session-id": sessionId, "mcp-protocol-version": "2025-11-25" });
+  if (origin === "https://chatgpt.com") headers.set("authorization", await mcpAuthorization(service));
   return fetch(`${service.origin}/mcp`, {
     method: "DELETE",
-    headers: { origin, "mcp-session-id": sessionId, "mcp-protocol-version": "2025-11-25" },
+    headers,
   });
 }
 
