@@ -11,9 +11,9 @@ test("MCP receive transports reject presented bearer tokens for other audiences"
   const sessionId = await initializeMcp(service);
   const actionsFlow = await completeAuthorizationCodeFlow(service, service.actionsAudience);
   const wrongAudience = bearer(actionsFlow.tokens.access_token);
-  await expectOAuthError(await getMcp(service, sessionId, wrongAudience), 401, "unauthorized");
-  await expectOAuthError(await deleteMcp(service, sessionId, wrongAudience), 401, "unauthorized");
-  await expectOAuthError(await getLegacySse(service.origin, wrongAudience), 401, "unauthorized");
+  await expectOAuthError(await assertScopedChallenge(getMcp(service, sessionId, wrongAudience)), 401, "unauthorized");
+  await expectOAuthError(await assertScopedChallenge(deleteMcp(service, sessionId, wrongAudience)), 401, "unauthorized");
+  await expectOAuthError(await assertScopedChallenge(getLegacySse(service.origin, wrongAudience)), 401, "unauthorized");
   const recovery = await postMcp(service, { jsonrpc: "2.0", id: "recovery", method: "ping" }, { sessionId });
   assert.equal(recovery.status, 200);
 });
@@ -73,4 +73,12 @@ function postLegacyMessage(origin: string, endpoint: string, authorization: stri
     headers: { authorization, "content-type": "application/json", origin: "https://chatgpt.com" },
     body: JSON.stringify({ jsonrpc: "2.0", id: "health", method: "tools/call", params: { name: "health.check", arguments: {} } }),
   });
+}
+
+async function assertScopedChallenge(responsePromise: Promise<Response>): Promise<Response> {
+  const response = await responsePromise;
+  const challenge = response.headers.get("www-authenticate") ?? "";
+  assert.match(challenge, /resource_metadata=/);
+  assert.match(challenge, /scope="openid profile email"/);
+  return response;
 }
