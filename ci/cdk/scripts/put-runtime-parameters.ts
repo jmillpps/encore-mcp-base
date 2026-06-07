@@ -18,9 +18,9 @@ const mcpResource = requiredOutput(outputs, "McpResourceUrl");
 const cognitoUserPoolId = requiredOutput(outputs, "CognitoUserPoolId");
 const cognitoClientId = requiredOutput(outputs, "CognitoClientId");
 const cognitoSecret = await cognitoClientSecret(cognitoUserPoolId, cognitoClientId);
-const actionsSecret = randomToken(32);
-const mcpSecret = randomToken(32);
-const privateKeyPem = generateKeyPairSync("rsa", { modulusLength: 2048 }).privateKey.export({ type: "pkcs8", format: "pem" }).toString();
+const actionsSecret = await existingSecure(prefix, "CHATGPT_ACTIONS_CLIENT_SECRET") ?? randomToken(32);
+const mcpSecret = await existingSecure(prefix, "CHATGPT_MCP_CLIENT_SECRET") ?? randomToken(32);
+const privateKeyPem = await existingSecure(prefix, "OAUTH_PRIVATE_KEY_PEM") ?? generatePrivateKeyPem();
 const keyName = sha256(privateKeyPem).slice(0, 24);
 
 await putSecure(prefix, keyId, "OAUTH_PRIVATE_KEY_PEM", privateKeyPem);
@@ -110,6 +110,22 @@ async function putString(prefix: string, name: string, value: string): Promise<v
 
 async function putSecure(prefix: string, keyId: string, name: string, value: string): Promise<void> {
   await awsText(["ssm", "put-parameter", "--name", `${prefix}/${name}`, "--type", "SecureString", "--key-id", keyId, "--value", value, "--overwrite"]);
+}
+
+async function existingSecure(prefix: string, name: string): Promise<string | undefined> {
+  try {
+    const response = await awsJson(["ssm", "get-parameter", "--name", `${prefix}/${name}`, "--with-decryption"]);
+    const value = (response as { Parameter?: { Value?: unknown } }).Parameter?.Value;
+    if (typeof value !== "string" || value.length === 0) throw new Error(`${name} parameter value is invalid`);
+    return value;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("ParameterNotFound")) return undefined;
+    throw error;
+  }
+}
+
+function generatePrivateKeyPem(): string {
+  return generateKeyPairSync("rsa", { modulusLength: 2048 }).privateKey.export({ type: "pkcs8", format: "pem" }).toString();
 }
 
 function randomToken(bytes: number): string {
