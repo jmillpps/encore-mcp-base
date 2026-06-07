@@ -30,7 +30,7 @@ export async function callTool(context: ToolContext, name: string, args: Record<
     return result;
   } catch (error) {
     if (error instanceof ServiceError && (error.status === 401 || error.status === 403)) {
-      return authChallengeResult(context.config, tool.requiredScopes);
+      return authChallengeResult(context.config, tool.requiredScopes, error);
     }
     throw error;
   }

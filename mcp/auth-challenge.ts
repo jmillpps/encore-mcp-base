@@ -1,15 +1,19 @@
 import type { ServiceConfig } from "../shared/config.ts";
+import type { ServiceError } from "../shared/errors.ts";
 
-export function wwwAuthenticate(config: ServiceConfig, scopes: string[]): string {
+export function wwwAuthenticate(config: ServiceConfig, scopes: string[], error?: ServiceError): string {
   const scope = scopes.join(" ");
-  return `Bearer resource_metadata="${config.issuer}/.well-known/oauth-protected-resource", error="insufficient_scope", error_description="Authorization required", scope="${scope}"`;
+  const resourceMetadata = `resource_metadata="${config.issuer}/.well-known/oauth-protected-resource"`;
+  const scopeValue = `scope="${scope}"`;
+  if (error?.status === 403) return `Bearer error="insufficient_scope", ${resourceMetadata}, ${scopeValue}`;
+  return `Bearer ${resourceMetadata}, ${scopeValue}`;
 }
 
-export function authChallengeResult(config: ServiceConfig, scopes: string[]): Record<string, unknown> {
+export function authChallengeResult(config: ServiceConfig, scopes: string[], error?: ServiceError): Record<string, unknown> {
   return {
-    content: [{ type: "text", text: "Authentication required." }],
+    content: [{ type: "text", text: error?.status === 403 ? "Additional authorization scopes required." : "Authentication required." }],
     isError: true,
-    _meta: { "mcp/www_authenticate": [wwwAuthenticate(config, scopes)] },
+    _meta: { "mcp/www_authenticate": [wwwAuthenticate(config, scopes, error)] },
   };
 }
 

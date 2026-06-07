@@ -25,8 +25,10 @@ test("MCP tools expose metadata and protected tools return auth challenges", asy
   }
   const challengeResponse = await postMcp(service, { jsonrpc: "2.0", id: "identity.profile", method: "tools/call", params: { name: "identity.profile", arguments: {} } }, { sessionId });
   assert.equal(challengeResponse.status, 200);
-  assert.match(challengeResponse.headers.get("www-authenticate") ?? "", /resource_metadata=/);
-  assert.match(challengeResponse.headers.get("www-authenticate") ?? "", /scope="openid profile email"/);
+  const challengeHeader = challengeResponse.headers.get("www-authenticate") ?? "";
+  assert.match(challengeHeader, /resource_metadata=/);
+  assert.match(challengeHeader, /scope="openid profile email"/);
+  assert.doesNotMatch(challengeHeader, /insufficient_scope/);
   const challenge = (await readJson(challengeResponse)).result as Record<string, unknown>;
   assert.equal(challenge.isError, true);
   const meta = challenge._meta as Record<string, unknown>;
@@ -63,7 +65,17 @@ test("MCP protected tools enforce audience and scopes", async (t) => {
   const wrongAudience = await callTool(service, sessionId, "identity.profile", bearer(actionsFlow.tokens.access_token));
   assert.equal(wrongAudience.isError, true);
   const narrowFlow = await completeAuthorizationCodeFlow(service, service.mcpResource, "openid");
-  const missingScopes = await callTool(service, sessionId, "identity.profile", bearer(narrowFlow.tokens.access_token));
+  const missingScopeResponse = await postMcp(
+    service,
+    { jsonrpc: "2.0", id: "identity.profile", method: "tools/call", params: { name: "identity.profile", arguments: {} } },
+    { sessionId, authorization: bearer(narrowFlow.tokens.access_token) },
+  );
+  assert.equal(missingScopeResponse.status, 200);
+  const scopeChallenge = missingScopeResponse.headers.get("www-authenticate") ?? "";
+  assert.match(scopeChallenge, /error="insufficient_scope"/);
+  assert.match(scopeChallenge, /resource_metadata=/);
+  assert.match(scopeChallenge, /scope="openid profile email"/);
+  const missingScopes = ((await readJson(missingScopeResponse)).result as Record<string, unknown>);
   assert.equal(missingScopes.isError, true);
 });
 
