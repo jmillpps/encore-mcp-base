@@ -82,31 +82,31 @@ function oauthScheme(baseUrl: string): JsonObject {
 
 function schemas(): JsonObject {
   return {
-    HealthResponse: objectSchema(["status", "time", "service"], {
-      status: { type: "string", enum: ["ok"] },
-      time: { type: "string", format: "date-time" },
-      service: { type: "string" },
+    HealthResponse: objectSchema("Service reachability response for GPT Actions.", ["status", "time", "service"], {
+      status: property("Fixed health status value returned when the service is reachable.", { type: "string", enum: ["ok"] }),
+      time: property("Server time when the health response was produced.", { type: "string", format: "date-time" }),
+      service: property("Service identifier that produced the health response.", { type: "string" }),
     }),
-    StaticUser: objectSchema(["sub", "given_name", "family_name", "name", "preferred_username", "email", "email_verified"], {
-      sub: { type: "string" },
-      given_name: { type: "string" },
-      family_name: { type: "string" },
-      name: { type: "string" },
-      preferred_username: { type: "string" },
-      email: { type: "string", format: "email" },
-      email_verified: { type: "boolean" },
+    StaticUser: objectSchema("Static OpenID Connect profile for the authenticated user.", ["sub", "given_name", "family_name", "name", "preferred_username", "email", "email_verified"], {
+      sub: property("Stable subject identifier for the authenticated user.", { type: "string" }),
+      given_name: property("Given name for the authenticated user.", { type: "string" }),
+      family_name: property("Family name for the authenticated user.", { type: "string" }),
+      name: property("Full display name for the authenticated user.", { type: "string" }),
+      preferred_username: property("Preferred username for the authenticated user.", { type: "string" }),
+      email: property("Verified email address for the authenticated user.", { type: "string", format: "email" }),
+      email_verified: property("Email verification status for the authenticated user.", { type: "boolean" }),
     }),
-    SessionResponse: objectSchema(["subject", "clientId", "audience", "scopes"], {
-      subject: { type: "string" },
-      clientId: { type: "string" },
-      audience: { type: "string" },
-      scopes: { type: "array", items: { type: "string" } },
+    SessionResponse: objectSchema("OAuth token session metadata for the authenticated request.", ["subject", "clientId", "audience", "scopes"], {
+      subject: property("Subject identifier bound to the access token.", { type: "string" }),
+      clientId: property("OAuth client identifier bound to the access token.", { type: "string" }),
+      audience: property("Audience value accepted for the access token.", { type: "string" }),
+      scopes: property("OAuth scopes granted to the access token.", { type: "array", items: { type: "string", description: "Granted OAuth scope." } }),
     }),
-    ErrorResponse: objectSchema(["code", "message", "details", "internal_message"], {
-      code: { type: "string" },
-      message: { type: "string" },
-      details: {},
-      internal_message: { type: ["string", "null"] },
+    ErrorResponse: objectSchema("Standard Encore error response exposed to GPT Actions.", ["code", "message", "details", "internal_message"], {
+      code: property("Stable error code returned by the service.", { type: "string" }),
+      message: property("Safe error message returned to the caller.", { type: "string" }),
+      details: property("Structured error details when available.", {}),
+      internal_message: property("Nullable field retained for the live error contract.", { type: ["string", "null"] }),
     }),
   };
 }
@@ -118,6 +118,10 @@ function jsonResponse(description: string, schema: string): JsonObject {
   };
 }
 
-function objectSchema(required: string[], properties: JsonObject): JsonObject {
-  return { type: "object", additionalProperties: false, required, properties };
+function objectSchema(description: string, required: string[], properties: JsonObject): JsonObject {
+  return { type: "object", description, additionalProperties: false, required, properties };
+}
+
+function property(description: string, schema: JsonObject): JsonObject {
+  return { ...schema, description };
 }

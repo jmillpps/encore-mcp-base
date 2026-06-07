@@ -24,6 +24,12 @@ test("OpenAPI Actions compatibility enforces ChatGPT production limits", () => {
     profileOperation(document).parameters = [{ in: "query", name: "q", schema: { type: "string" }, description: "x".repeat(701) }];
   }, /parameter description/);
   assertRejects((document) => {
+    schema(document, "StaticUser").description = "";
+  }, /StaticUser schema description/);
+  assertRejects((document) => {
+    property(schema(document, "StaticUser"), "email").description = "";
+  }, /StaticUser.email property description/);
+  assertRejects((document) => {
     oauthFlow(document).authorizationUrl = "https://auth.example.test/oauth/authorize";
   }, /authorizationUrl/);
   assertRejects((document) => {
@@ -55,6 +61,17 @@ function profileOkContent(document: JsonObject): JsonObject {
   const responses = object(profileOperation(document).responses, "profile responses");
   const ok = object(responses["200"], "profile response 200");
   return object(ok.content, "profile response 200 content");
+}
+
+function schema(document: JsonObject, name: string): JsonObject {
+  const components = object(document.components, "components");
+  const schemas = object(components.schemas, "schemas");
+  return object(schemas[name], `${name} schema`);
+}
+
+function property(schemaValue: JsonObject, name: string): JsonObject {
+  const properties = object(schemaValue.properties, "schema properties");
+  return object(properties[name], `${name} property`);
 }
 
 function object(value: unknown, name: string): JsonObject {

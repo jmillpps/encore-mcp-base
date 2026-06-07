@@ -9,6 +9,7 @@ export function assertChatGptActionsOpenApi(document: JsonObject): void {
   assertInfo(document);
   const serverOrigin = readServerOrigin(document);
   assertOAuthOrigin(document, serverOrigin);
+  assertComponentSchemas(document);
   for (const operation of operations(document)) {
     assertTextLimit(operation.operation.summary, operationDescriptionLimit, `${operation.name} summary`);
     assertTextLimit(operation.operation.description, operationDescriptionLimit, `${operation.name} description`);
@@ -47,6 +48,21 @@ function assertOAuthOrigin(document: JsonObject, serverOrigin: string): void {
   for (const key of ["authorizationUrl", "tokenUrl"]) {
     const origin = new URL(text(authorizationCode[key], `OAuth2 ${key}`)).origin;
     if (origin !== serverOrigin) throw new Error(`OAuth2 ${key} must share the server origin`);
+  }
+}
+
+function assertComponentSchemas(document: JsonObject): void {
+  const components = object(document.components, "components");
+  const schemas = object(components.schemas, "components.schemas");
+  for (const [schemaName, schemaValue] of Object.entries(schemas)) {
+    const schema = object(schemaValue, `components.schemas.${schemaName}`);
+    assertTextLimit(schema.description, parameterDescriptionLimit, `${schemaName} schema description`);
+    if (schema.properties === undefined) continue;
+    const properties = object(schema.properties, `components.schemas.${schemaName}.properties`);
+    for (const [propertyName, propertyValue] of Object.entries(properties)) {
+      const property = object(propertyValue, `components.schemas.${schemaName}.properties.${propertyName}`);
+      assertTextLimit(property.description, parameterDescriptionLimit, `${schemaName}.${propertyName} property description`);
+    }
   }
 }
 

@@ -42,9 +42,15 @@ test("OpenAPI export contains Actions endpoints and OAuth authorization code met
   assert.equal(flow.tokenUrl, "https://example.test/oauth/token");
   assert.deepEqual(Object.keys(flow.scopes as Record<string, string>).sort(), ["email", "openid", "profile"]);
   const schemas = requireRecord(components.schemas, "schemas");
+  const healthResponse = requireRecord(schemas.HealthResponse, "HealthResponse");
+  assert.match(requireString(healthResponse.description, "HealthResponse description"), /reachability/);
+  const healthProperties = requireRecord(healthResponse.properties, "HealthResponse properties");
+  assert.match(requireString(requireRecord(healthProperties.status, "HealthResponse status").description, "HealthResponse status description"), /health status/);
   const errorResponse = requireRecord(schemas.ErrorResponse, "ErrorResponse");
+  assert.match(requireString(errorResponse.description, "ErrorResponse description"), /error response/);
   assert.deepEqual(errorResponse.required, ["code", "message", "details", "internal_message"]);
-  assert.ok(requireRecord(errorResponse.properties, "ErrorResponse properties").internal_message);
+  const errorProperties = requireRecord(errorResponse.properties, "ErrorResponse properties");
+  assert.match(requireString(requireRecord(errorProperties.internal_message, "ErrorResponse internal_message").description, "ErrorResponse internal_message description"), /live error contract/);
 });
 
 test("OpenAPI export can write a generated artifact", async (t) => {
