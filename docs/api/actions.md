@@ -20,6 +20,7 @@ The OAuth flow for Actions uses `/oauth/authorize` and `/oauth/token`. GPT Actio
 | Method | Path | Auth | Purpose |
 | --- | --- | --- | --- |
 | `GET` | `/health` | none | Return service reachability. |
+| `GET` | `/privacy` | none | Return the public privacy policy. |
 | `GET` | `/actions/profile` | `openid profile email` | Return the authenticated profile. |
 | `GET` | `/actions/session` | `openid` | Return token session metadata. |
 
@@ -28,6 +29,7 @@ The OAuth flow for Actions uses `/oauth/authorize` and `/oauth/token`. GPT Actio
 | Endpoint | Headers | Query | Body |
 | --- | --- | --- | --- |
 | `GET /health` | none | none | none |
+| `GET /privacy` | none | none | none |
 | `GET /actions/profile` | `Authorization` | none | none |
 | `GET /actions/session` | `Authorization` | none | none |
 
@@ -40,6 +42,10 @@ Status `200` returns:
 | `status` | string | Fixed value `ok`. |
 | `service` | string | Service identifier. |
 | `time` | string | ISO timestamp for the response. |
+
+## Privacy Response
+
+Status `200` returns a plain text privacy policy for GPT configuration.
 
 ## Profile Response
 

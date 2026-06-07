@@ -13,7 +13,8 @@ Production deployment runs the Encore service with explicit public URLs, registe
 7. Configure `ALLOWED_ORIGINS` for ChatGPT origins.
 8. Configure RSA signing key material.
 9. Configure Cognito upstream login.
-10. Set token lifetimes, rate limits, and SSE connection limits.
+10. Use the public `/privacy` URL in GPT Action configuration.
+11. Set token lifetimes, rate limits, and SSE connection limits.
 
 ## Client Registry
 
