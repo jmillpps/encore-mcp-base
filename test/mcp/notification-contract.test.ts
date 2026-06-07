@@ -14,6 +14,8 @@ test("MCP Streamable HTTP validates notification methods and params", async (t) 
     { jsonrpc: "2.0", method: "notifications/cancelled", params: {} },
     { jsonrpc: "2.0", method: "notifications/cancelled", params: { requestId: null } },
     { jsonrpc: "2.0", method: "notifications/cancelled", params: { requestId: "request-1", reason: 1 } },
+    { jsonrpc: "2.0", method: "notifications/roots/list_changed", params: { _meta: { "openai//locale": "en-US" } } },
+    { jsonrpc: "2.0", method: "notifications/roots/list_changed", params: { _meta: { "com.mcp.tools/trace": true } } },
   ]) {
     await expectInvalidNotification(await postMcp(service, message, { sessionId }));
   }

@@ -20,9 +20,28 @@ test("MCP Streamable HTTP validates request metadata params", async (t) => {
     await postMcp(service, { jsonrpc: "2.0", id: "bad-ping-progress", method: "ping", params: { _meta: { progressToken: [] } } }, { sessionId }),
     -32602,
   );
+  await expectJsonRpcError(
+    await postMcp(service, { jsonrpc: "2.0", id: "bad-ping-meta-key", method: "ping", params: { _meta: { "openai//locale": "en-US" } } }, { sessionId }),
+    -32602,
+  );
+  await expectJsonRpcError(
+    await postMcp(
+      service,
+      { jsonrpc: "2.0", id: "bad-ping-reserved-meta", method: "ping", params: { _meta: { "io.modelcontextprotocol/trace": { id: "abc" } } } },
+      { sessionId },
+    ),
+    -32602,
+  );
   const validList = await postMcp(service, { jsonrpc: "2.0", id: "valid-list", method: "tools/list", params: { _meta: { progressToken: 7 } } }, { sessionId });
   assert.equal(validList.status, 200);
   assert.equal(Array.isArray(requireRecord((await readJson(validList)).result, "tools/list result").tools), true);
+  const validToolCall = await postMcp(
+    service,
+    { jsonrpc: "2.0", id: "valid-tool-meta", method: "tools/call", params: { name: "health.check", _meta: { "openai/locale": "en-US", "openai/userAgent": "ChatGPT" } } },
+    { sessionId },
+  );
+  assert.equal(validToolCall.status, 200);
+  assert.equal(requireRecord(requireRecord((await readJson(validToolCall)).result, "tools/call result").structuredContent, "structured content").status, "ok");
   await expectJsonRpcError(
     await postMcp(service, { jsonrpc: "2.0", id: "bad-list-progress", method: "tools/list", params: { _meta: { progressToken: {} } } }, { sessionId }),
     -32602,
@@ -49,6 +68,9 @@ test("MCP legacy HTTP SSE sends request parameter errors on the receive stream",
   const invalid = await postLegacyMessage(service.origin, endpoint, { jsonrpc: "2.0", id: "unsupported-ping", method: "ping", params: { unsupported: true } });
   assert.equal(invalid.status, 202);
   assert.equal(await invalid.text(), "");
+  assert.equal(requireRecord(JSON.parse((await events.readEvent()).data).error, "json-rpc error").code, -32602);
+  const invalidMeta = await postLegacyMessage(service.origin, endpoint, { jsonrpc: "2.0", id: "bad-meta", method: "ping", params: { _meta: { "dev.mcp/trace": true } } });
+  assert.equal(invalidMeta.status, 202);
   assert.equal(requireRecord(JSON.parse((await events.readEvent()).data).error, "json-rpc error").code, -32602);
   const recovery = await postLegacyMessage(service.origin, endpoint, { jsonrpc: "2.0", id: "recovery", method: "ping", params: { _meta: { progressToken: "recovery" } } });
   assert.equal(recovery.status, 202);

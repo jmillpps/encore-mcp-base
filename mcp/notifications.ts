@@ -1,3 +1,4 @@
+import { notificationMetaError } from "./client-meta.ts";
 import { jsonRpcError, type JsonRpcRequest } from "./json-rpc.ts";
 
 interface NotificationResult {
@@ -48,9 +49,8 @@ function assertKeys(record: Record<string, unknown>, allowed: readonly string[],
 }
 
 function assertMeta(record: Record<string, unknown>): void {
-  if (record._meta !== undefined && (typeof record._meta !== "object" || record._meta === null || Array.isArray(record._meta))) {
-    throw new InvalidNotification("notification _meta must be an object");
-  }
+  const metaError = notificationMetaError(record._meta, "notification");
+  if (metaError) throw new InvalidNotification(metaError);
 }
 
 function isRequestId(value: unknown): value is string | number {
