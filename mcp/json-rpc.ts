@@ -28,6 +28,7 @@ export function isJsonRpcResponse(value: unknown): boolean {
 export function parseJsonRpc(value: unknown): JsonRpcRequest {
   const record = asRecord(value, "json-rpc");
   if (record.jsonrpc !== "2.0") throw new ServiceError("bad_request", "invalid json-rpc version", 400);
+  if (Object.hasOwn(record, "result") || Object.hasOwn(record, "error")) throw new ServiceError("bad_request", "invalid json-rpc message", 400);
   const method = requiredString(record, "method");
   const id = record.id;
   if (id !== undefined) validateJsonRpcId(id);

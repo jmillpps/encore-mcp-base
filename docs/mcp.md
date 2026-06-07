@@ -72,6 +72,8 @@ MCP routes validate every presented bearer token for the MCP resource audience b
 
 Client JSON objects must pass JSON-RPC message validation to reach transport response handling.
 
+JSON-RPC request and notification objects cannot include response fields.
+
 The initialize response includes `MCP-Session-Id`. Clients send that session ID with `MCP-Protocol-Version` on later `/mcp` requests.
 
 Initialize requests start a new MCP session and do not include `MCP-Session-Id`.
