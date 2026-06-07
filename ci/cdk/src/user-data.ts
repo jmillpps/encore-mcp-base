@@ -11,23 +11,41 @@ export function userDataCommands(input: UserDataInput): string[] {
     "set -euo pipefail",
     "exec > >(tee -a /var/log/gpt-mcp-service-bootstrap.log) 2>&1",
     "dnf update -y",
-    "dnf install -y docker jq awscli dnf-plugins-core",
+    "dnf install -y docker jq awscli curl tar gzip",
     "systemctl enable --now docker",
-    "dnf copr enable -y @caddy/caddy",
-    "dnf install -y caddy",
-    "mkdir -p /opt/gpt-mcp-service /var/lib/gpt-mcp-service /run/gpt-mcp-service",
+    installCaddy(),
+    "mkdir -p /etc/caddy /opt/gpt-mcp-service /var/lib/gpt-mcp-service /var/lib/caddy /run/gpt-mcp-service",
     caddyfile(input.config.domainName),
-    "systemctl enable --now caddy",
+    caddyServiceUnit(),
     runScript(input),
     "chmod 0500 /opt/gpt-mcp-service/run.sh",
     serviceUnit(),
     "systemctl daemon-reload",
-    "systemctl enable gpt-mcp-service.service",
+    "systemctl enable --now caddy.service",
+    "systemctl enable --now gpt-mcp-service.service",
   ];
+}
+
+function installCaddy(): string {
+  return [
+    'CADDY_VERSION="2.10.2"',
+    'CADDY_ARCHIVE="caddy_${CADDY_VERSION}_linux_arm64.tar.gz"',
+    'curl -fsSLo "/tmp/${CADDY_ARCHIVE}" "https://github.com/caddyserver/caddy/releases/download/v${CADDY_VERSION}/${CADDY_ARCHIVE}"',
+    'curl -fsSLo /tmp/caddy_checksums.txt "https://github.com/caddyserver/caddy/releases/download/v${CADDY_VERSION}/caddy_${CADDY_VERSION}_checksums.txt"',
+    "cd /tmp",
+    'grep " ${CADDY_ARCHIVE}$" caddy_checksums.txt > caddy.sha512',
+    "sha512sum -c caddy.sha512",
+    'tar -xzf "${CADDY_ARCHIVE}" caddy',
+    "install -m 0755 caddy /usr/local/bin/caddy",
+  ].join("\n");
 }
 
 function caddyfile(domainName: string): string {
   return `cat > /etc/caddy/Caddyfile <<'CADDY'\n${domainName} {\n  reverse_proxy 127.0.0.1:8080\n  header {\n    Strict-Transport-Security "max-age=31536000; includeSubDomains"\n    X-Content-Type-Options "nosniff"\n    Referrer-Policy "no-referrer"\n  }\n}\nCADDY`;
+}
+
+function caddyServiceUnit(): string {
+  return "cat > /etc/systemd/system/caddy.service <<'UNIT'\n[Unit]\nDescription=Caddy web server\nAfter=network-online.target\nWants=network-online.target\n\n[Service]\nType=simple\nEnvironment=XDG_DATA_HOME=/var/lib/caddy\nEnvironment=XDG_CONFIG_HOME=/var/lib/caddy\nExecStart=/usr/local/bin/caddy run --environ --config /etc/caddy/Caddyfile\nExecReload=/usr/local/bin/caddy reload --config /etc/caddy/Caddyfile --force\nRestart=on-failure\nRestartSec=5s\nLimitNOFILE=1048576\n\n[Install]\nWantedBy=multi-user.target\nUNIT";
 }
 
 function runScript(input: UserDataInput): string {
@@ -69,5 +87,5 @@ function runScript(input: UserDataInput): string {
 }
 
 function serviceUnit(): string {
-  return "cat > /etc/systemd/system/gpt-mcp-service.service <<'UNIT'\n[Unit]\nDescription=GPT MCP Service container\nAfter=docker.service network-online.target caddy.service\nWants=network-online.target\n\n[Service]\nType=oneshot\nRemainAfterExit=yes\nExecStart=/opt/gpt-mcp-service/run.sh\n\n[Install]\nWantedBy=multi-user.target\nUNIT";
+  return "cat > /etc/systemd/system/gpt-mcp-service.service <<'UNIT'\n[Unit]\nDescription=GPT MCP Service container\nAfter=docker.service network-online.target\nWants=network-online.target\n\n[Service]\nType=oneshot\nRemainAfterExit=yes\nExecStart=/opt/gpt-mcp-service/run.sh\n\n[Install]\nWantedBy=multi-user.target\nUNIT";
 }
