@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readJson } from "../support/http.ts";
+import { readJson, requireRecord, requireString } from "../support/http.ts";
 import { postMcp } from "../support/mcp.ts";
 import { startService } from "../support/service-process.ts";
 
@@ -56,4 +56,32 @@ test("MCP initialize accepts valid optional client implementation metadata", asy
     },
   });
   assert.equal(response.status, 200);
+});
+
+test("MCP initialize exposes server implementation metadata", async (t) => {
+  const service = await startService(t);
+  const response = await postMcp(service, {
+    jsonrpc: "2.0",
+    id: "server-info",
+    method: "initialize",
+    params: {
+      protocolVersion: "2025-11-25",
+      capabilities: {},
+      clientInfo: { name: "test", version: "0.1.0" },
+    },
+  });
+  assert.equal(response.status, 200);
+  const result = requireRecord((await readJson(response)).result, "initialize result");
+  const serverInfo = requireRecord(result.serverInfo, "serverInfo");
+  assert.equal(requireString(serverInfo.name, "serverInfo.name"), "gpt-mcp-service");
+  assert.equal(requireString(serverInfo.title, "serverInfo.title"), "GPT MCP Service");
+  assert.equal(requireString(serverInfo.description, "serverInfo.description").length > 0, true);
+  assert.equal(requireString(serverInfo.websiteUrl, "serverInfo.websiteUrl"), service.origin);
+  assert.equal(Array.isArray(serverInfo.icons), true);
+  const icons = serverInfo.icons as unknown[];
+  assert.equal(icons.length, 1);
+  const icon = requireRecord(icons[0], "serverInfo.icons[0]");
+  assert.match(requireString(icon.src, "serverInfo.icons[0].src"), /^data:image\/svg\+xml;base64,/);
+  assert.equal(requireString(icon.mimeType, "serverInfo.icons[0].mimeType"), "image/svg+xml");
+  assert.deepEqual(icon.sizes, ["any"]);
 });

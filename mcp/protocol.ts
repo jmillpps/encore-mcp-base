@@ -56,7 +56,7 @@ export async function handleMcpJson(context: McpContext, input: unknown): Promis
 }
 
 async function dispatch(context: McpContext, request: JsonRpcRequest): Promise<unknown> {
-  if (request.method === "initialize") return initializeResult(request.params);
+  if (request.method === "initialize") return initializeResult(context.config, request.params);
   if (request.method === "ping") {
     optionalMethodParams(request.params, "ping", ["_meta"]);
     return {};
