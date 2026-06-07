@@ -1,0 +1,100 @@
+import { Buffer } from "node:buffer";
+import { request as httpRequest, type IncomingHttpHeaders, type IncomingMessage, type RequestOptions } from "node:http";
+import { request as httpsRequest } from "node:https";
+import { mediaType } from "../shared/media-type.ts";
+import { invalidMetadataClient } from "./client-metadata-error.ts";
+import { networkHostname, type NetworkAddress } from "./client-metadata-network.ts";
+
+const maximumMetadataBytes = 32768;
+const metadataFetchTimeoutMs = 3000;
+const defaultCacheSeconds = 300;
+const maximumCacheSeconds = 3600;
+
+export async function fetchMetadataDocument(url: URL, networkAddress: NetworkAddress | undefined): Promise<{ body: unknown; cacheSeconds: number }> {
+  let response: IncomingMessage;
+  try {
+    response = await openMetadataRequest(url, networkAddress);
+  } catch {
+    throw invalidMetadataClient();
+  }
+  if (!validStatus(response.statusCode)) return rejectResponse(response);
+  const contentType = singleHeader(response.headers, "content-type");
+  if (contentType && mediaType(contentType) !== "application/json") return rejectResponse(response);
+  const contentLength = singleHeader(response.headers, "content-length");
+  if (contentLength && Number(contentLength) > maximumMetadataBytes) return rejectResponse(response);
+  const bodyText = await readMetadataBody(response);
+  if (Buffer.byteLength(bodyText, "utf8") > maximumMetadataBytes) throw invalidMetadataClient();
+  try {
+    return { body: JSON.parse(bodyText), cacheSeconds: cacheSeconds(singleHeader(response.headers, "cache-control")) };
+  } catch {
+    throw invalidMetadataClient();
+  }
+}
+
+async function openMetadataRequest(url: URL, networkAddress: NetworkAddress | undefined): Promise<IncomingMessage> {
+  return new Promise((resolveResponse, reject) => {
+    const requestFn = url.protocol === "https:" ? httpsRequest : httpRequest;
+    const options: RequestOptions = {
+      protocol: url.protocol,
+      hostname: url.hostname,
+      port: url.port,
+      path: url.pathname,
+      method: "GET",
+      headers: { accept: "application/json" },
+      timeout: metadataFetchTimeoutMs,
+      ...(networkAddress ? { lookup: pinnedLookup(networkAddress) } : {}),
+      ...(url.protocol === "https:" ? { servername: networkHostname(url.hostname) } : {}),
+    };
+    const req = requestFn(options, (response) => resolveResponse(response));
+    req.setTimeout(metadataFetchTimeoutMs, () => req.destroy(invalidMetadataClient()));
+    req.on("error", reject);
+    req.end();
+  });
+}
+
+function pinnedLookup(networkAddress: NetworkAddress): RequestOptions["lookup"] {
+  return (_hostname, _options, callback) => {
+    callback(null, networkAddress.address, networkAddress.family);
+  };
+}
+
+async function readMetadataBody(response: IncomingMessage): Promise<string> {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const chunk of response) {
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    size += buffer.length;
+    if (size > maximumMetadataBytes) {
+      response.destroy(invalidMetadataClient());
+      throw invalidMetadataClient();
+    }
+    chunks.push(buffer);
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+function validStatus(statusCode: number | undefined): boolean {
+  return statusCode !== undefined && statusCode >= 200 && statusCode < 300;
+}
+
+function rejectResponse(response: IncomingMessage): never {
+  response.resume();
+  throw invalidMetadataClient();
+}
+
+function singleHeader(headers: IncomingHttpHeaders, key: string): string | null {
+  const value = headers[key];
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
+}
+
+function cacheSeconds(value: string | null): number {
+  if (!value) return defaultCacheSeconds;
+  const directives = value.split(",").map((directive) => directive.trim().toLowerCase());
+  if (directives.includes("no-store")) return 0;
+  const maxAge = directives.find((directive) => directive.startsWith("max-age="));
+  if (!maxAge) return defaultCacheSeconds;
+  const parsed = Number(maxAge.slice("max-age=".length));
+  if (!Number.isSafeInteger(parsed) || parsed < 0) return defaultCacheSeconds;
+  return Math.min(parsed, maximumCacheSeconds);
+}

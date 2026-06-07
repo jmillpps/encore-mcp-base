@@ -1,4 +1,4 @@
-import type { OAuthClient, PkcePolicy, TokenEndpointAuthMethod } from "./client-types.ts";
+import type { OAuthClient } from "./client-types.ts";
 
 const authMethods = ["client_secret_post", "client_secret_basic"] as const;
 const pkcePolicies = ["required", "optional"] as const;
@@ -22,6 +22,8 @@ export function parseClientJson(value: string, production: boolean): OAuthClient
 
 function parseClient(value: unknown, index: number, production: boolean): OAuthClient {
   const record = objectRecord(value, `client ${index}`, clientKeys);
+  const tokenEndpointAuthMethod = oneOf(readString(record, "tokenEndpointAuthMethod"), authMethods, "tokenEndpointAuthMethod");
+  const pkcePolicy = oneOf(readString(record, "pkcePolicy"), pkcePolicies, "pkcePolicy");
   return {
     clientId: identifier(readString(record, "clientId"), "clientId"),
     clientSecretHash: secretHash(readString(record, "clientSecretHash")),
@@ -29,8 +31,8 @@ function parseClient(value: unknown, index: number, production: boolean): OAuthC
     redirectUris: redirectUrls(readStringArray(record, "redirectUris"), production),
     allowedScopes: scopes(readStringArray(record, "allowedScopes")),
     allowedResources: resourceUrls(readStringArray(record, "allowedResources"), production),
-    tokenEndpointAuthMethod: oneOf(readString(record, "tokenEndpointAuthMethod"), authMethods, "tokenEndpointAuthMethod"),
-    pkcePolicy: oneOf(readString(record, "pkcePolicy"), pkcePolicies, "pkcePolicy"),
+    tokenEndpointAuthMethod,
+    pkcePolicy,
     clientClass: identifier(readString(record, "clientClass"), "clientClass"),
   };
 }

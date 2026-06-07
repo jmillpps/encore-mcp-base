@@ -50,6 +50,13 @@ test("client_secret_basic rejects malformed credential encoding", () => {
   assertInvalidClient(() => readClientCredentials(new URLSearchParams(), `Basic ${Buffer.from("%E0%A4%A:secret").toString("base64")}`));
 });
 
+test("token credentials identify public clients when no secret is submitted", () => {
+  assert.deepEqual(readClientCredentials(new URLSearchParams({ client_id: "public-client" }), undefined), {
+    clientId: "public-client",
+    method: "none",
+  });
+});
+
 async function setup(t: TestContextLike, method: TokenEndpointAuthMethod): Promise<{ config: ServiceConfig; store: DiskOAuthStore; client: OAuthClient }> {
   const dir = await mkdtemp(join(tmpdir(), "mcp-token-auth-method-"));
   t.after(async () => {

@@ -20,7 +20,7 @@ export function findClient(clients: readonly OAuthClient[], clientId: string): O
 }
 
 export function assertClientSecret(client: OAuthClient, secret: string | undefined): void {
-  if (!secret) throw new ServiceError("invalid_client", "invalid client", 401);
+  if (!secret || !client.clientSecretHash) throw new ServiceError("invalid_client", "invalid client", 401);
   const hash = sha256Base64Url(secret);
   if (!constantTimeEqualString(hash, client.clientSecretHash)) {
     throw new ServiceError("invalid_client", "invalid client", 401);

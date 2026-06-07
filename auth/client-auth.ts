@@ -16,8 +16,9 @@ export function readClientCredentials(form: URLSearchParams, authorization: stri
   }
   const clientId = form.get("client_id");
   if (!clientId) throw new ServiceError("invalid_client", "invalid client", 401);
-  const clientSecret = form.get("client_secret") ?? undefined;
-  return { clientId, method: "client_secret_post", ...(clientSecret ? { clientSecret } : {}) };
+  if (!form.has("client_secret")) return { clientId, method: "none" };
+  const clientSecret = form.get("client_secret") ?? "";
+  return { clientId, method: "client_secret_post", clientSecret };
 }
 
 function readBasicCredentials(form: URLSearchParams, credentials: string): ClientCredentials {

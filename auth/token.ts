@@ -1,7 +1,8 @@
 import type { ServiceConfig } from "../shared/config.ts";
 import { ServiceError } from "../shared/errors.ts";
-import { assertClientAuthMethod, assertClientSecret, findClient, type OAuthClient } from "./clients.ts";
+import { assertClientAuthMethod, assertClientSecret, type OAuthClient } from "./clients.ts";
 import { readClientCredentials } from "./client-auth.ts";
+import { resolveClient } from "./client-resolver.ts";
 import { assertAllowedParameters, optionalParameter } from "./oauth-parameters.ts";
 import type { DiskOAuthStore } from "./storage/disk-store.ts";
 import { authorizationCodeGrant } from "./tokens/authorization-code.ts";
@@ -21,9 +22,9 @@ export async function handleTokenGrant(
   const grant = optionalParameter(form, "grant_type");
   assertAllowedParameters(form, tokenGrantParameters(grant));
   const credentials = readClientCredentials(form, authorization);
-  const client = findClient(clients, credentials.clientId);
+  const client = await resolveClient(config, clients, credentials.clientId);
   assertClientAuthMethod(client, credentials.method);
-  assertClientSecret(client, credentials.clientSecret);
+  if (credentials.method !== "none") assertClientSecret(client, credentials.clientSecret);
   if (grant === "authorization_code") return authorizationCodeGrant(config, store, client, form);
   if (grant === "refresh_token") return refreshTokenGrant(config, store, client, form);
   throw new ServiceError("unsupported_grant_type", "unsupported grant_type", 400);
