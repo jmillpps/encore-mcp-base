@@ -8,6 +8,12 @@ Authentication failures return generic client errors and redacted diagnostics.
 
 Origin validation protects MCP HTTP transports from browser-origin attacks.
 
+Raw MCP handlers return HTTP 403 for invalid present `Origin` headers.
+
+Encore gateway CORS configuration pins preflight origins and MCP transport headers in `encore.app`.
+
+Production deployment validation must verify browser preflight requests with invalid present `Origin` headers return HTTP 403 at the public `/mcp` ingress.
+
 Client ID Metadata Document retrieval treats the client ID URL as attacker-controlled input.
 
 Production metadata retrieval requires HTTPS, rejects loopback and private network targets, pins DNS resolution for the outbound request, disables redirects, limits response size, and uses a short request timeout.

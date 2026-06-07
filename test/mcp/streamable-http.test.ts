@@ -38,6 +38,9 @@ test("MCP Streamable HTTP validates transport headers and session lifecycle", as
   assert.equal(charsetInitialize.status, 200);
   assert.match(charsetInitialize.headers.get("access-control-allow-headers") ?? "", /MCP-Session-Id/);
   assert.match(charsetInitialize.headers.get("access-control-allow-headers") ?? "", /MCP-Protocol-Version/);
+  const validPreflight = await optionsMcp(service.origin, "https://chatgpt.com");
+  assert.ok(validPreflight.status === 200 || validPreflight.status === 204);
+  assert.equal(validPreflight.headers.get("access-control-allow-origin"), "https://chatgpt.com");
   const missingProtocolVersion = await postMcp(service, { jsonrpc: "2.0", id: "missing-version", method: "initialize", params: initializeParams({ protocolVersion: undefined }) });
   assert.equal(missingProtocolVersion.status, 400);
   assert.equal(((await readJson(missingProtocolVersion)).error as Record<string, unknown>).message, "protocolVersion is required");
@@ -93,6 +96,7 @@ test("MCP Streamable HTTP validates transport headers and session lifecycle", as
   assert.equal(((await readJson(oversized)).error as Record<string, unknown>).code, -32600);
   await expectOAuthError(await postMcp(service, { jsonrpc: "2.0", id: "bad-session", method: "ping" }, { sessionId: "bad-session" }), 400, "bad_request");
   await expectOAuthError(await postMcp(service, { jsonrpc: "2.0", id: "bad-version", method: "ping" }, { sessionId, protocolVersion: "2024-01-01" }), 400, "bad_request");
+  await expectOAuthError(await getMcp(service, sessionId, "2025-11-25", "text/event-stream", undefined, "https://evil.test"), 403, "forbidden");
   await expectOAuthError(await getMcp(service), 400, "bad_request");
   await expectOAuthError(await getMcp(service, "bad-session"), 400, "bad_request");
   await expectOAuthError(await getMcp(service, sessionId, "2024-01-01"), 400, "bad_request");
@@ -115,17 +119,32 @@ test("MCP Streamable HTTP validates transport headers and session lifecycle", as
   const missingMethodWithInvalidParams = await postMcp(service, { jsonrpc: "2.0", id: "missing-invalid-params", method: "missing/method", params: [] }, { sessionId });
   assert.equal(missingMethodWithInvalidParams.status, 200);
   assert.equal(((await readJson(missingMethodWithInvalidParams)).error as Record<string, unknown>).code, -32601);
+  await expectOAuthError(await deleteMcp(service, sessionId, "https://evil.test"), 403, "forbidden");
   const deleted = await deleteSession(service, sessionId);
   assert.equal(deleted.status, 204);
   assert.match(await readFile(service.storePath, "utf8"), /"terminated_at"/);
   await expectOAuthError(await postMcp(service, { jsonrpc: "2.0", id: "after-delete", method: "ping" }, { sessionId }), 404, "not_found");
 });
 
-function getMcp(service: { origin: string }, sessionId?: string, protocolVersion = "2025-11-25", accept = "text/event-stream", signal?: AbortSignal): Promise<Response> {
-  const headers = new Headers({ accept, origin: "https://chatgpt.com" });
+function getMcp(
+  service: { origin: string },
+  sessionId?: string,
+  protocolVersion = "2025-11-25",
+  accept = "text/event-stream",
+  signal?: AbortSignal,
+  origin = "https://chatgpt.com",
+): Promise<Response> {
+  const headers = new Headers({ accept, origin });
   if (sessionId) headers.set("mcp-session-id", sessionId);
   if (sessionId) headers.set("mcp-protocol-version", protocolVersion);
   return fetch(`${service.origin}/mcp`, { method: "GET", headers, signal });
+}
+
+function deleteMcp(service: { origin: string }, sessionId: string, origin = "https://chatgpt.com"): Promise<Response> {
+  return fetch(`${service.origin}/mcp`, {
+    method: "DELETE",
+    headers: { origin, "mcp-session-id": sessionId, "mcp-protocol-version": "2025-11-25" },
+  });
 }
 
 function postRawMcp(service: { origin: string }, body: string | Buffer): Promise<Response> {
@@ -133,6 +152,17 @@ function postRawMcp(service: { origin: string }, body: string | Buffer): Promise
     method: "POST",
     headers: { accept: "application/json, text/event-stream", "content-type": "application/json", origin: "https://chatgpt.com" },
     body,
+  });
+}
+
+function optionsMcp(origin: string, requestOrigin: string): Promise<Response> {
+  return fetch(`${origin}/mcp`, {
+    method: "OPTIONS",
+    headers: {
+      origin: requestOrigin,
+      "access-control-request-method": "POST",
+      "access-control-request-headers": "authorization,content-type,mcp-session-id,mcp-protocol-version",
+    },
   });
 }
 

@@ -13,6 +13,7 @@ import { readMcpProtocolVersion, readMcpSessionId, validateOrigin, validatePostA
 export const mcpOptions = api.raw({ expose: true, method: "OPTIONS", path: "/mcp" }, async (req, res) => {
   try {
     const config = readConfig();
+    validateOrigin(config, req);
     writeCors(config, req, res);
     writeNoContent(res);
   } catch (error) {
