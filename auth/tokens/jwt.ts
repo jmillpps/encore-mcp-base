@@ -2,6 +2,9 @@ import { createSign, createVerify, type KeyObject } from "node:crypto";
 import { decodeJsonBase64Url, encodeJsonBase64Url } from "../../shared/base64url.ts";
 import { ServiceError } from "../../shared/errors.ts";
 
+const maxJwtLength = 8192;
+const keyIdPattern = /^[A-Za-z0-9._-]{1,128}$/;
+
 export function signJwt(payload: Record<string, unknown>, kid: string, privateKey: KeyObject): string {
   const header = { alg: "RS256", kid, typ: "JWT" };
   const signingInput = `${encodeJsonBase64Url(header)}.${encodeJsonBase64Url(payload)}`;
@@ -10,9 +13,7 @@ export function signJwt(payload: Record<string, unknown>, kid: string, privateKe
 }
 
 export function verifyJwt(token: string, publicKey: KeyObject): Record<string, unknown> {
-  const parts = token.split(".");
-  if (parts.length !== 3) throw invalidToken();
-  const [encodedHeader, encodedPayload, signature] = parts as [string, string, string];
+  const [encodedHeader, encodedPayload, signature] = jwtParts(token);
   const header = decodeJwtJson(encodedHeader);
   if (!isHeader(header)) throw invalidToken();
   if (!verifySignature(publicKey, `${encodedHeader}.${encodedPayload}`, signature)) throw invalidToken();
@@ -24,16 +25,23 @@ export function verifyJwt(token: string, publicKey: KeyObject): Record<string, u
 }
 
 export function jwtKid(token: string): string {
-  const parts = token.split(".");
-  if (parts.length !== 3) throw invalidToken();
-  const [encodedHeader] = parts as [string, string, string];
+  const [encodedHeader] = jwtParts(token);
   const header = decodeJwtJson(encodedHeader);
   if (!isHeader(header)) throw invalidToken();
   return header.kid;
 }
 
 function isHeader(value: unknown): value is { alg: "RS256"; kid: string } {
-  return typeof value === "object" && value !== null && !Array.isArray(value) && (value as { alg?: unknown }).alg === "RS256" && typeof (value as { kid?: unknown }).kid === "string";
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const record = value as Record<string, unknown>;
+  return record.alg === "RS256" && typeof record.kid === "string" && keyIdPattern.test(record.kid) && (record.typ === undefined || record.typ === "JWT") && record.crit === undefined;
+}
+
+function jwtParts(token: string): [string, string, string] {
+  if (token.length > maxJwtLength) throw invalidToken();
+  const parts = token.split(".");
+  if (parts.length !== 3 || parts.some((part) => part === "")) throw invalidToken();
+  return parts as [string, string, string];
 }
 
 function decodeJwtJson(input: string): unknown {

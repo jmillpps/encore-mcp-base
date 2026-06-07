@@ -4,6 +4,8 @@ All query parameters, headers, request bodies, token claims, resource identifier
 
 The service validates inputs before use, stores only token hashes for durable OAuth state, uses constant-time comparison for secret checks, and binds access tokens to the intended audience.
 
+JWT validation limits compact tokens to 8192 characters, requires `alg` to be `RS256`, accepts safe key IDs, requires `typ` to be absent or `JWT`, and rejects unsupported critical headers.
+
 Authentication failures return generic client errors and redacted diagnostics.
 
 Origin validation protects MCP HTTP transports from browser-origin attacks.
