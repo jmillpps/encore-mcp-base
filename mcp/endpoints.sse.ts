@@ -12,7 +12,7 @@ export const sse = api.raw({ expose: true, method: "GET", path: "/sse" }, async 
     validateOrigin(config, req);
     validateSseAccept(req);
     writeCors(config, req, res);
-    await runLegacySseSession(res);
+    await runLegacySseSession(res, config.mcpSseMaxConnections);
   } catch (error) {
     if (res.headersSent) res.destroy();
     else writeError(res, error, { endpoint: "mcp.sse", method: "GET", subject: requestSubject(req) });

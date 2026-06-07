@@ -62,6 +62,8 @@ Requests return JSON responses. Notifications and client responses return `202 A
 
 `GET /mcp` opens an SSE receive stream for a valid session. The stream sends heartbeat comments and stays available for later server-originated messages.
 
+SSE receive streams are bounded by `MCP_SSE_MAX_CONNECTIONS`.
+
 `DELETE /mcp` terminates the session. Later requests for the terminated session return `404 not_found`.
 
 ## Legacy HTTP/SSE

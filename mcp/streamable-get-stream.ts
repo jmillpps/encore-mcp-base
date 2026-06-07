@@ -1,17 +1,21 @@
 import type { ServerResponse } from "node:http";
+import { acquireSseConnection } from "./sse-connection-limit.ts";
 import { writeSseComment, writeSseHeaders } from "./sse-event.ts";
 
 const heartbeatMs = 25000;
 
-export async function runStreamableGetStream(res: ServerResponse): Promise<void> {
-  writeSseHeaders(res);
-  const heartbeat = setInterval(() => void writeSseComment(res, "heartbeat").catch(() => res.destroy()), heartbeatMs);
-  heartbeat.unref();
+export async function runStreamableGetStream(res: ServerResponse, maxConnections: number): Promise<void> {
+  const releaseConnection = acquireSseConnection(maxConnections);
+  let heartbeat: NodeJS.Timeout | undefined;
   try {
+    writeSseHeaders(res);
+    heartbeat = setInterval(() => void writeSseComment(res, "heartbeat").catch(() => res.destroy()), heartbeatMs);
+    heartbeat.unref();
     await writeSseComment(res, "ready");
     await waitForClose(res);
   } finally {
-    clearInterval(heartbeat);
+    if (heartbeat) clearInterval(heartbeat);
+    releaseConnection();
   }
 }
 

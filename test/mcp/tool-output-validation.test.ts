@@ -45,6 +45,7 @@ function testConfig(oauthStorePath: string): ServiceConfig {
     refreshTokenTtlSeconds: 2592000,
     rateLimitWindowSeconds: 60,
     rateLimitMaxRequests: 120,
+    mcpSseMaxConnections: 1024,
     production: false,
   };
 }

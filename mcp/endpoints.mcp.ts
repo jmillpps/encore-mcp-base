@@ -56,7 +56,7 @@ export const mcpGet = api.raw({ expose: true, method: "GET", path: "/mcp" }, asy
     const protocolVersion = negotiateProtocolVersion(readMcpProtocolVersion(req, true));
     await touchMcpSession(config, readMcpSessionId(req), protocolVersion);
     writeCors(config, req, res);
-    await runStreamableGetStream(res);
+    await runStreamableGetStream(res, config.mcpSseMaxConnections);
   } catch (error) {
     if (res.headersSent) res.destroy();
     else writeError(res, error, { endpoint: "mcp.get", method: "GET", subject: requestSubject(req) });

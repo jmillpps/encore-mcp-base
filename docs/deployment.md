@@ -18,6 +18,7 @@ Production deployments set these required environment variables:
 - `REFRESH_TOKEN_TTL_SECONDS`
 - `RATE_LIMIT_WINDOW_SECONDS`
 - `RATE_LIMIT_MAX_REQUESTS`
+- `MCP_SSE_MAX_CONNECTIONS`
 
 Production deployments set `OAUTH_PREVIOUS_PUBLIC_KEYS_JSON` during signing key rotation.
 

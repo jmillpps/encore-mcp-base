@@ -13,6 +13,7 @@ export interface ServiceConfig {
   refreshTokenTtlSeconds: number;
   rateLimitWindowSeconds: number;
   rateLimitMaxRequests: number;
+  mcpSseMaxConnections: number;
   production: boolean;
 }
 
@@ -36,6 +37,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
     refreshTokenTtlSeconds: readNumber(env, "REFRESH_TOKEN_TTL_SECONDS", 2592000, production),
     rateLimitWindowSeconds: readNumber(env, "RATE_LIMIT_WINDOW_SECONDS", 60, production),
     rateLimitMaxRequests: readNumber(env, "RATE_LIMIT_MAX_REQUESTS", 120, production),
+    mcpSseMaxConnections: readNumber(env, "MCP_SSE_MAX_CONNECTIONS", 1024, production),
     production,
   };
 }

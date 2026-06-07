@@ -1,6 +1,7 @@
 import type { ServerResponse } from "node:http";
 import { randomToken } from "../shared/crypto.ts";
 import { ServiceError } from "../shared/errors.ts";
+import { acquireSseConnection } from "./sse-connection-limit.ts";
 import { writeSseComment, writeSseEvent, writeSseHeaders } from "./sse-event.ts";
 
 const heartbeatMs = 25000;
@@ -14,14 +15,17 @@ interface LegacySseSession {
   sequence: number;
 }
 
-export async function runLegacySseSession(res: ServerResponse): Promise<void> {
-  const session = createLegacySseSession(res);
-  writeSseHeaders(res);
+export async function runLegacySseSession(res: ServerResponse, maxConnections: number): Promise<void> {
+  const releaseConnection = acquireSseConnection(maxConnections);
+  let session: LegacySseSession | undefined;
   try {
+    session = createLegacySseSession(res);
+    writeSseHeaders(res);
     await writeSseEvent(res, "endpoint", `/messages?sessionId=${encodeURIComponent(session.id)}`);
     await waitForClose(res);
   } finally {
-    closeLegacySseSession(session.id);
+    if (session) closeLegacySseSession(session.id);
+    releaseConnection();
   }
 }
 
