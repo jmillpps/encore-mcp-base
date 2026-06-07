@@ -37,6 +37,10 @@ test("callTool rejects malformed tool result envelopes", async () => {
   for (const [index, result] of [
     { content: "bad", structuredContent: { status: "ok" } },
     { content: [{ type: "text", text: 1 }], structuredContent: { status: "ok" } },
+    { content: [{ type: "text", text: "ok", secret: "leak" }], structuredContent: { status: "ok" } },
+    { content: [{ type: "text", text: "ok", annotations: { audience: ["system"] } }], structuredContent: { status: "ok" } },
+    { content: [{ type: "resource_link", name: "resource", uri: "https://example.test/resource", secret: "leak" }], structuredContent: { status: "ok" } },
+    { content: [{ type: "resource", resource: { uri: "https://example.test/resource", text: "ok", blob: "b2s=" } }], structuredContent: { status: "ok" } },
     { content: [{ type: "text", text: "ok" }], structuredContent: [], isError: false },
     { content: [{ type: "text", text: "ok" }], structuredContent: { status: "ok" }, isError: "false" },
     { content: [{ type: "text", text: "ok" }], structuredContent: { status: "ok" }, _meta: [] },
@@ -62,6 +66,38 @@ test("callTool rejects malformed tool result envelopes", async () => {
     }
   }
   await rm(dir, { recursive: true, force: true });
+});
+
+test("callTool accepts valid text content metadata", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "mcp-content-validation-"));
+  const tool: McpTool = {
+    name: "test.valid-content-metadata",
+    title: "Valid Content Metadata",
+    description: "Return content metadata for validator testing.",
+    inputSchema: emptyInputSchema(),
+    outputSchema: objectSchema({ status: stringSchema() }),
+    annotations: { readOnlyHint: true },
+    requiredScopes: [],
+    run: async () => ({
+      content: [
+        {
+          type: "text",
+          text: "ok",
+          annotations: { audience: ["user", "assistant"], priority: 0.5, lastModified: "2026-06-07T00:00:00Z" },
+          _meta: { trace: "valid" },
+        },
+      ],
+      structuredContent: { status: "ok" },
+    }),
+  };
+  tools.push(tool);
+  try {
+    const result = await callTool({ config: testConfig(join(dir, "store.json")), rateLimitSubject: "content-validation" }, tool.name, {});
+    assert.equal((result.structuredContent as Record<string, unknown>).status, "ok");
+  } finally {
+    tools.splice(tools.indexOf(tool), 1);
+    await rm(dir, { recursive: true, force: true });
+  }
 });
 
 function testConfig(oauthStorePath: string): ServiceConfig {

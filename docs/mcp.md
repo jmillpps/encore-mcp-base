@@ -32,6 +32,8 @@ Tool argument validation failures return tool execution errors with `isError: tr
 
 Tool results must use MCP `CallToolResult` content, structured content, error flag, and metadata shapes before leaving the tool boundary.
 
+Tool result content blocks are validated against supported MCP content shapes.
+
 Task-augmented tool calls are rejected because the service does not advertise task support.
 
 Tool descriptors declare task-augmented execution as forbidden.
