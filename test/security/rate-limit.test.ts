@@ -5,7 +5,7 @@ import { expectOAuthError, readJson, requireRecord } from "../support/http.ts";
 import { initializeMcp, postMcp } from "../support/mcp.ts";
 import { startService } from "../support/service-process.ts";
 
-test("live public endpoints enforce configured rate limits", async (t) => {
+test("live OAuth endpoints enforce configured rate limits", async (t) => {
   const service = await startService(t, { RATE_LIMIT_MAX_REQUESTS: "1", RATE_LIMIT_WINDOW_SECONDS: "60" });
   const firstAuthorize = await fetch(authorizeUrl(service.origin), { redirect: "manual" });
   assert.equal(firstAuthorize.status, 302);
@@ -16,6 +16,10 @@ test("live public endpoints enforce configured rate limits", async (t) => {
   await expectOAuthError(await basicTokenRequest(service.origin, "Basic", "gpt-actions", "gpt-actions-secret"), 429, "rate_limited");
   await expectOAuthError(await fetch(`${service.origin}/oauth/userinfo`), 401, "unauthorized");
   await expectOAuthError(await fetch(`${service.origin}/oauth/userinfo`), 429, "rate_limited");
+});
+
+test("live MCP tools enforce configured rate limits", async (t) => {
+  const service = await startService(t, { RATE_LIMIT_MAX_REQUESTS: "1", RATE_LIMIT_WINDOW_SECONDS: "60" });
   const sessionId = await initializeMcp(service);
   const firstTool = await postMcp(service, { jsonrpc: "2.0", id: "one", method: "tools/call", params: { name: "health.check", arguments: {} } }, { sessionId });
   assert.equal(firstTool.status, 200);
