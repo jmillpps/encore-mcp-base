@@ -48,6 +48,7 @@ function assertToolDefinitions(): void {
 }
 
 function toolDescriptor(tool: McpTool): Record<string, unknown> {
+  const securitySchemes = toolSecuritySchemes(tool.requiredScopes);
   return {
     name: tool.name,
     title: tool.title,
@@ -56,7 +57,8 @@ function toolDescriptor(tool: McpTool): Record<string, unknown> {
     execution: toolExecution(),
     outputSchema: tool.outputSchema,
     annotations: tool.annotations,
-    securitySchemes: toolSecuritySchemes(tool.requiredScopes),
+    securitySchemes,
+    _meta: { securitySchemes },
   };
 }
 
