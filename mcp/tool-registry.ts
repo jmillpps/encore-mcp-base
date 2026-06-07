@@ -114,10 +114,11 @@ function isSchemaProperties(value: unknown): boolean {
 function isToolAnnotations(value: unknown): boolean {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
   const record = value as Record<string, unknown>;
-  if (Object.keys(record).some((key) => !["title", "readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"].includes(key))) return false;
+  const hintKeys = ["readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"];
+  if (Object.keys(record).some((key) => !["title", ...hintKeys].includes(key))) return false;
   if (record.title !== undefined && typeof record.title !== "string") return false;
-  for (const key of ["readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"]) {
-    if (record[key] !== undefined && typeof record[key] !== "boolean") return false;
+  for (const key of hintKeys) {
+    if (typeof record[key] !== "boolean") return false;
   }
   return true;
 }

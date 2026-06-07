@@ -1,12 +1,17 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { ServiceError } from "../../shared/errors.ts";
+import { readOnlyToolAnnotations } from "../../mcp/tool-annotations.ts";
 import { listTools, tools, type McpTool } from "../../mcp/tool-registry.ts";
 import { emptyInputSchema, objectSchema, stringSchema } from "../../mcp/tool-schemas.ts";
 
 test("listTools rejects malformed tool descriptors before exposure", () => {
   for (const [index, patch] of [
     { annotations: { readOnlyHint: "yes" } },
+    { annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true } },
+    { annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } },
+    { annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false } },
+    { annotations: { destructiveHint: false, idempotentHint: true, openWorldHint: false } },
     { requiredScopes: ["bad scope"] },
     { inputSchema: { type: "string" } },
     { outputSchema: { type: "array" } },
@@ -32,7 +37,7 @@ function baseTool(index: number): McpTool {
     description: "Validate descriptor shape.",
     inputSchema: emptyInputSchema(),
     outputSchema: objectSchema({ status: stringSchema() }),
-    annotations: { readOnlyHint: true },
+    annotations: readOnlyToolAnnotations(),
     requiredScopes: [],
     run: async () => ({ content: [{ type: "text", text: "ok" }], structuredContent: { status: "ok" } }),
   };

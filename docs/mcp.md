@@ -20,7 +20,7 @@ Tokens with insufficient scopes receive a Bearer challenge with `error="insuffic
 
 Tool names use ASCII letters, digits, underscores, hyphens, and dots. Names stay within 128 characters.
 
-Tool descriptors use standard read-only annotations.
+Tool descriptors use explicit risk annotations for read-only, destructive, idempotent, and open-world behavior.
 
 Tool descriptors include per-tool ChatGPT Apps auth schemes.
 
