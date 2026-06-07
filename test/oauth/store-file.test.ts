@@ -95,6 +95,8 @@ test("OAuth store rejects malformed JSON and unexpected record shapes", async (t
 });
 
 test("OAuth store rejects traversal and non-json paths", () => {
+  assert.throws(() => new DiskOAuthStore(" oauth-store.json"), /store path cannot include surrounding whitespace/);
+  assert.throws(() => new DiskOAuthStore("oauth-store.json "), /store path cannot include surrounding whitespace/);
   assert.throws(() => new DiskOAuthStore("../oauth-store.json"), /store path cannot traverse upward/);
   assert.throws(() => new DiskOAuthStore(`${tmpdir()}/../oauth-store.json`), /store path cannot traverse upward/);
   assert.throws(() => new DiskOAuthStore("oauth-store.txt"), /store path must end with .json/);

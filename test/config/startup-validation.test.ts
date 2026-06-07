@@ -13,6 +13,7 @@ test("startup validation rejects incomplete production OAuth configuration", () 
   assert.throws(() => validateStartup(productionEnv({ OAUTH_CLIENTS_JSON: "" })), /OAUTH_CLIENTS_JSON is required/);
   assert.throws(() => validateStartup(productionEnv({ OAUTH_PRIVATE_KEY_PEM: "" })), /OAUTH_PRIVATE_KEY_PEM is required/);
   assert.throws(() => validateStartup(productionEnv({ OAUTH_PRIVATE_KEY_PEM: privateKeyPem(), OAUTH_KEY_ID: "" })), /OAUTH_KEY_ID is required/);
+  assert.throws(() => validateStartup(productionEnv({ OAUTH_STORE_PATH: " oauth-store.json" })), /store path cannot include surrounding whitespace/);
   assert.throws(() => validateStartup(productionEnv({ OAUTH_STORE_PATH: "oauth-store.txt" })), /store path must end with .json/);
   assert.throws(() => validateStartup(productionEnv({ OAUTH_STORE_PATH: "../oauth-store.json" })), /store path cannot traverse upward/);
 });
