@@ -6,7 +6,7 @@ export interface McpTool {
   description: string;
   inputSchema: Record<string, unknown>;
   outputSchema: Record<string, unknown>;
-  securitySchemes: Record<string, unknown>[];
+  annotations: Record<string, unknown>;
   requiredScopes: string[];
   run: (context: ToolContext, args: Record<string, unknown>) => Promise<Record<string, unknown>>;
 }

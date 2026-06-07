@@ -16,7 +16,7 @@ test("callTool rejects successful results that violate the tool output schema", 
     description: "Return invalid output for validator testing.",
     inputSchema: emptyInputSchema(),
     outputSchema: objectSchema({ status: stringSchema() }),
-    securitySchemes: [{ type: "noauth" }],
+    annotations: { readOnlyHint: true },
     requiredScopes: [],
     run: async () => ({ content: [{ type: "text", text: "bad" }], structuredContent: { status: 1 } }),
   };

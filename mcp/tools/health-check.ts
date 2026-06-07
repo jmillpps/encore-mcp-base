@@ -1,5 +1,6 @@
 import { serviceName, serviceVersion } from "../../shared/service-info.ts";
 import { isoNow } from "../../shared/time.ts";
+import { readOnlyToolAnnotations } from "../tool-annotations.ts";
 import { emptyInputSchema, objectSchema, stringSchema } from "../tool-schemas.ts";
 import type { McpTool } from "../tool-types.ts";
 
@@ -13,7 +14,7 @@ export const healthCheckTool: McpTool = {
     timestamp: stringSchema(),
     service: objectSchema({ name: stringSchema(), version: stringSchema() }),
   }),
-  securitySchemes: [{ type: "noauth" }],
+  annotations: readOnlyToolAnnotations(),
   requiredScopes: [],
   run: async () => {
     const structuredContent = {

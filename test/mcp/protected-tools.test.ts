@@ -17,8 +17,12 @@ test("MCP tools expose metadata and protected tools return auth challenges", asy
   assert.equal(listed.status, 200);
   const listBody = await readJson(listed);
   const tools = ((listBody.result as Record<string, unknown>).tools as Record<string, unknown>[]);
-  assert.ok(tools.some((tool) => tool.name === "identity.profile" && Array.isArray(tool.securitySchemes)));
-  for (const tool of tools) assert.match(requireString(tool.name, "tool name"), /^[A-Za-z0-9_.-]{1,128}$/);
+  assert.ok(tools.some((tool) => tool.name === "identity.profile"));
+  for (const tool of tools) {
+    assert.match(requireString(tool.name, "tool name"), /^[A-Za-z0-9_.-]{1,128}$/);
+    assert.equal(tool.securitySchemes, undefined);
+    assert.equal(requireRecord(tool.annotations, "tool annotations").readOnlyHint, true);
+  }
   const challengeResponse = await postMcp(service, { jsonrpc: "2.0", id: "identity.profile", method: "tools/call", params: { name: "identity.profile", arguments: {} } }, { sessionId });
   assert.equal(challengeResponse.status, 200);
   assert.match(challengeResponse.headers.get("www-authenticate") ?? "", /resource_metadata=/);

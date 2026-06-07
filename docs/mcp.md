@@ -12,6 +12,8 @@ When a protected tool needs authentication, it returns a ChatGPT-compatible `mcp
 
 Tool names use ASCII letters, digits, underscores, hyphens, and dots. Names stay within 128 characters.
 
+Tool descriptors use standard read-only annotations.
+
 Tool argument validation failures return tool execution errors with `isError: true`. Malformed `tools/call` request shapes and unknown tools return JSON-RPC protocol errors.
 
 Tool results with structured content include the same payload as serialized JSON text.

@@ -1,4 +1,5 @@
 import { verifyBearer } from "../../auth/bearer.ts";
+import { readOnlyToolAnnotations } from "../tool-annotations.ts";
 import { emptyInputSchema, objectSchema, stringArraySchema, stringSchema } from "../tool-schemas.ts";
 import type { McpTool } from "../tool-types.ts";
 
@@ -15,7 +16,7 @@ export const authSessionTool: McpTool = {
     audience: stringSchema(),
     scopes: stringArraySchema(),
   }),
-  securitySchemes: [{ type: "oauth2", scopes: [...authSessionScopes] }],
+  annotations: readOnlyToolAnnotations(),
   requiredScopes: [...authSessionScopes],
   run: async (context) => {
     const claims = verifyBearer(context.config, context.authorization, context.config.mcpResource, authSessionScopes);
