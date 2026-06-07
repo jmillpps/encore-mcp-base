@@ -27,6 +27,12 @@ test("Actions endpoints reject missing tokens and accept scoped Actions tokens",
   const session = await fetch(`${service.origin}/actions/session`, { headers: { authorization: bearer(flow.tokens.access_token) } });
   assert.equal(session.status, 200);
   assert.equal((await readJson(session)).audience, service.actionsAudience);
+  const queryProfile = await fetch(`${service.origin}/actions/profile?access_token=query-token`, { headers: { authorization: bearer(flow.tokens.access_token) } });
+  assert.equal(queryProfile.status, 400);
+  assert.equal((await readJson(queryProfile)).code, "invalid_argument");
+  const querySession = await fetch(`${service.origin}/actions/session?access_token=query-token`, { headers: { authorization: bearer(flow.tokens.access_token) } });
+  assert.equal(querySession.status, 400);
+  assert.equal((await readJson(querySession)).code, "invalid_argument");
 });
 
 test("GPT Actions OAuth can link and refresh without resource parameters", async (t) => {

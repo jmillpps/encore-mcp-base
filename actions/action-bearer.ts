@@ -13,3 +13,7 @@ export function verifyActionBearer(authorization: string, scopes: readonly strin
     throw APIError.unauthenticated("invalid bearer token");
   }
 }
+
+export function rejectActionAccessTokenQuery(accessToken: string | undefined): void {
+  if (accessToken !== undefined) throw APIError.invalidArgument("access tokens must use the authorization header");
+}
