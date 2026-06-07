@@ -7,7 +7,8 @@ type UserDataModule = {
     config: {
       appName: string;
       environmentName: string;
-      resourceName: string;
+      awsResourceName: string;
+      serviceName: string;
       stackName: string;
       domainName: string;
       hostedZoneId: string;
@@ -24,12 +25,13 @@ type UserDataModule = {
 
 const userData = await import(new URL("../../ci/cdk/src/user-data.ts", import.meta.url).href) as UserDataModule;
 
-test("user data derives instance runtime placement from operator resource name", () => {
+test("user data derives instance runtime placement from operator service name", () => {
   const commands = userData.userDataCommands({
     config: {
       appName: "operator-mcp",
       environmentName: "sandbox",
-      resourceName: "operator-mcp-sandbox",
+      awsResourceName: "operator-mcp-sandbox",
+      serviceName: "operator-runtime",
       stackName: "OperatorMcpSandbox",
       domainName: "service.example.com",
       hostedZoneId: "EXAMPLEZONE",
@@ -43,17 +45,17 @@ test("user data derives instance runtime placement from operator resource name",
     repositoryUri: "123456789012.dkr.ecr.us-east-1.amazonaws.com/operator-mcp-sandbox",
   }).join("\n");
 
-  assert.match(commands, /\/var\/log\/operator-mcp-sandbox-bootstrap\.log/);
-  assert.match(commands, /\/opt\/operator-mcp-sandbox\/run\.sh/);
-  assert.match(commands, /\/var\/lib\/operator-mcp-sandbox/);
-  assert.match(commands, /\/run\/operator-mcp-sandbox/);
-  assert.match(commands, /\/etc\/systemd\/system\/operator-mcp-sandbox\.service/);
-  assert.match(commands, /docker rm -f operator-mcp-sandbox/);
-  assert.match(commands, /docker run -d --name operator-mcp-sandbox/);
+  assert.match(commands, /\/var\/log\/operator-runtime-bootstrap\.log/);
+  assert.match(commands, /\/opt\/operator-runtime\/run\.sh/);
+  assert.match(commands, /\/var\/lib\/operator-runtime/);
+  assert.match(commands, /\/run\/operator-runtime/);
+  assert.match(commands, /\/etc\/systemd\/system\/operator-runtime\.service/);
+  assert.match(commands, /docker rm -f operator-runtime/);
+  assert.match(commands, /docker run -d --name operator-runtime/);
   assert.equal(commands.includes("gpt-mcp-service.service"), false);
   assert.equal(commands.includes("/var/lib/gpt-mcp-service"), false);
 });
 
-test("OAuth store path derives from operator resource name", () => {
+test("OAuth store path derives from operator service name", () => {
   assert.equal(userData.oauthStorePath("operator-mcp-sandbox"), "/var/lib/operator-mcp-sandbox/oauth-store.json");
 });

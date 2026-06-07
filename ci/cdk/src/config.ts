@@ -1,7 +1,8 @@
 export interface DeploymentConfig {
   appName: string;
   environmentName: string;
-  resourceName: string;
+  awsResourceName: string;
+  serviceName: string;
   stackName: string;
   domainName: string;
   hostedZoneId: string;
@@ -28,7 +29,8 @@ export function deploymentConfig(env: NodeJS.ProcessEnv = process.env): Deployme
   return {
     appName,
     environmentName,
-    resourceName: `${appName}-${environmentName}`,
+    awsResourceName: `${appName}-${environmentName}`,
+    serviceName: resourceName(env, "CDK_SERVICE_NAME"),
     stackName: deploymentStackName(env),
     domainName,
     hostedZoneId: hostedZoneId(env),

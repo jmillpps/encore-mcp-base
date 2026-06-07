@@ -10,6 +10,7 @@ Set these values before running CDK commands:
 | --- | --- |
 | `CDK_APP_NAME` | Lowercase deployment resource prefix. |
 | `CDK_ENVIRONMENT_NAME` | Lowercase deployment environment name. |
+| `CDK_SERVICE_NAME` | Lowercase EC2 service, container, and runtime directory name. |
 | `CDK_STACK_NAME` | CloudFormation stack name. |
 | `CDK_DEFAULT_ACCOUNT` | AWS account selected by the authenticated CDK environment. |
 | `CDK_DEFAULT_REGION` | AWS region selected by the authenticated CDK environment. |
@@ -26,7 +27,7 @@ Optional deployment inputs:
 | --- | --- |
 | `CDK_ALLOWED_ORIGINS` | Browser origins allowed by the service. Default allows ChatGPT origins. |
 
-`CDK_APP_NAME` and `CDK_ENVIRONMENT_NAME` form the EC2 service resource name. The instance uses that resource name for systemd unit name, Docker container name, runtime directories, and bootstrap logs.
+`CDK_APP_NAME` and `CDK_ENVIRONMENT_NAME` form AWS resource names. `CDK_SERVICE_NAME` controls the systemd unit name, Docker container name, runtime directories, OAuth store path, and bootstrap logs on the EC2 instance.
 
 Store operator-specific values in an ignored local shell file, CI secret store, or secure operator runbook. Keep account IDs, hosted zone IDs, real domains, Cognito prefixes, stack names, and parameter paths out of tracked source files.
 
@@ -64,7 +65,7 @@ Restart the instance service after the image build completes:
 aws ssm send-command \
   --instance-ids INSTANCE_ID \
   --document-name AWS-RunShellScript \
-  --parameters commands='["systemctl restart SERVICE_RESOURCE_NAME.service"]'
+  --parameters commands='["systemctl restart CDK_SERVICE_NAME.service"]'
 ```
 
 ## Teardown

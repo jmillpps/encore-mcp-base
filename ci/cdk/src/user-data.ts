@@ -19,7 +19,7 @@ interface RuntimePaths {
 }
 
 export function userDataCommands(input: UserDataInput): string[] {
-  const paths = runtimePaths(input.config.resourceName);
+  const paths = runtimePaths(input.config.serviceName);
   return [
     "set -euo pipefail",
     `exec > >(tee -a ${paths.bootstrapLog}) 2>&1`,
@@ -32,10 +32,10 @@ export function userDataCommands(input: UserDataInput): string[] {
     caddyServiceUnit(),
     runScript(input, paths),
     `chmod 0500 ${paths.runScript}`,
-    serviceUnit(input.config.resourceName, paths),
+    serviceUnit(paths),
     "systemctl daemon-reload",
     "systemctl enable --now caddy.service",
-    `systemctl enable --now ${input.config.resourceName}.service`,
+    `systemctl enable --now ${input.config.serviceName}.service`,
   ];
 }
 
@@ -95,14 +95,14 @@ function runScript(input: UserDataInput, paths: RuntimePaths): string {
     "fi",
     'aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$IMAGE_REPOSITORY_URI"',
     'docker pull "$IMAGE_REPOSITORY_URI:$IMAGE_TAG"',
-    `docker rm -f ${input.config.resourceName} 2>/dev/null || true`,
-    `docker run -d --name ${input.config.resourceName} --restart unless-stopped --env-file "$ENV_FILE" -v ${paths.dataDir}:${paths.dataDir} -v ${paths.runDir}:${paths.runDir}:ro -p 127.0.0.1:8080:8080 "$IMAGE_REPOSITORY_URI:$IMAGE_TAG"`,
+    `docker rm -f ${input.config.serviceName} 2>/dev/null || true`,
+    `docker run -d --name ${input.config.serviceName} --restart unless-stopped --env-file "$ENV_FILE" -v ${paths.dataDir}:${paths.dataDir} -v ${paths.runDir}:${paths.runDir}:ro -p 127.0.0.1:8080:8080 "$IMAGE_REPOSITORY_URI:$IMAGE_TAG"`,
     "SERVICE",
   ].join("\n");
 }
 
-function serviceUnit(resourceName: string, paths: RuntimePaths): string {
-  return `cat > ${paths.serviceUnit} <<'UNIT'\n[Unit]\nDescription=MCP Service container\nAfter=docker.service network-online.target\nWants=network-online.target\n\n[Service]\nType=oneshot\nRemainAfterExit=yes\nExecStart=${paths.runScript}\n\n[Install]\nWantedBy=multi-user.target\nUNIT`;
+function serviceUnit(paths: RuntimePaths): string {
+  return `cat > ${paths.serviceUnit} <<'UNIT'\n[Unit]\nDescription=GPT MCP Service container\nAfter=docker.service network-online.target\nWants=network-online.target\n\n[Service]\nType=oneshot\nRemainAfterExit=yes\nExecStart=${paths.runScript}\n\n[Install]\nWantedBy=multi-user.target\nUNIT`;
 }
 
 function runtimePaths(resourceName: string): RuntimePaths {
