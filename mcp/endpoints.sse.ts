@@ -1,4 +1,5 @@
 import { api } from "encore.dev/api";
+import { validateSingleAuthorizationHeader } from "../auth/authorization-header.ts";
 import { verifyPresentedBearer } from "../auth/bearer.ts";
 import { readConfig } from "../shared/config.ts";
 import { requestSubject, writeJson } from "../shared/http.ts";
@@ -14,6 +15,7 @@ export const sse = api.raw({ expose: true, method: "GET", path: "/sse" }, async 
     config = readConfig();
     validateOrigin(config, req);
     validateNoAccessTokenQuery(req);
+    validateSingleAuthorizationHeader(req);
     verifyPresentedBearer(config, req.headers.authorization, config.mcpResource);
     validateSseAccept(req);
     writeCors(config, req, res);
@@ -30,6 +32,7 @@ export const messages = api.raw({ expose: true, method: "POST", path: "/messages
     config = readConfig();
     validateOrigin(config, req);
     validateNoAccessTokenQuery(req);
+    validateSingleAuthorizationHeader(req);
     verifyPresentedBearer(config, req.headers.authorization, config.mcpResource);
     validatePostContentType(req);
     writeCors(config, req, res);

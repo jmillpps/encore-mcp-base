@@ -3,6 +3,7 @@ import { rejectAccessTokenQuery } from "../shared/access-token-query.ts";
 import { readConfig } from "../shared/config.ts";
 import { ServiceError } from "../shared/errors.ts";
 import { readForm, requestSubject, writeJson } from "../shared/http.ts";
+import { validateSingleAuthorizationHeader } from "./authorization-header.ts";
 import { loadClients } from "./clients.ts";
 import { writeOAuthError } from "./oauth-errors.ts";
 import { enforceRateLimit, tokenRateSubject } from "./rate-limit.ts";
@@ -13,6 +14,7 @@ export const token = api.raw({ expose: true, method: "POST", path: "/oauth/token
   try {
     const config = readConfig();
     rejectAccessTokenQuery(req.url);
+    validateSingleAuthorizationHeader(req);
     const form = await readForm(req);
     const authorization = String(req.headers.authorization ?? "");
     await enforceRateLimit(config, "oauth-token", tokenRateSubject(form, authorization, requestSubject(req)));

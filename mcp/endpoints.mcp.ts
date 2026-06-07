@@ -1,4 +1,5 @@
 import { api } from "encore.dev/api";
+import { validateSingleAuthorizationHeader } from "../auth/authorization-header.ts";
 import { verifyPresentedBearer } from "../auth/bearer.ts";
 import { readConfig } from "../shared/config.ts";
 import { ServiceError } from "../shared/errors.ts";
@@ -17,6 +18,7 @@ export const mcpOptions = api.raw({ expose: true, method: "OPTIONS", path: "/mcp
     const config = readConfig();
     validateOrigin(config, req);
     validateNoAccessTokenQuery(req);
+    validateSingleAuthorizationHeader(req);
     writeCors(config, req, res);
     writeNoContent(res);
   } catch (error) {
@@ -31,6 +33,7 @@ export const mcpPost = api.raw({ expose: true, method: "POST", path: "/mcp" }, a
     const activeConfig = config;
     validateOrigin(activeConfig, req);
     validateNoAccessTokenQuery(req);
+    validateSingleAuthorizationHeader(req);
     verifyPresentedBearer(activeConfig, req.headers.authorization, activeConfig.mcpResource);
     validatePostAccept(req);
     validatePostContentType(req);
@@ -68,6 +71,7 @@ export const mcpGet = api.raw({ expose: true, method: "GET", path: "/mcp" }, asy
     config = readConfig();
     validateOrigin(config, req);
     validateNoAccessTokenQuery(req);
+    validateSingleAuthorizationHeader(req);
     verifyPresentedBearer(config, req.headers.authorization, config.mcpResource);
     const accept = String(req.headers.accept ?? "");
     if (!acceptsMediaType(accept, "text/event-stream")) throw new ServiceError("bad_request", "invalid accept header", 400);
@@ -87,6 +91,7 @@ export const mcpDelete = api.raw({ expose: true, method: "DELETE", path: "/mcp" 
     config = readConfig();
     validateOrigin(config, req);
     validateNoAccessTokenQuery(req);
+    validateSingleAuthorizationHeader(req);
     verifyPresentedBearer(config, req.headers.authorization, config.mcpResource);
     const protocolVersion = readMcpProtocolVersion(req, false);
     await touchMcpSession(config, readMcpSessionId(req), protocolVersion);
