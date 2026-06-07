@@ -58,6 +58,8 @@ Metadata-document clients receive the default `openid`, `profile`, and `email` s
 
 Metadata-document client assertions are verified before authorization codes are consumed.
 
+Metadata-document client assertions must include `jti` for replay protection.
+
 OIDC discovery metadata advertises the ID token and profile claims supported by the service.
 
 Protected resource metadata advertises the scopes configured for clients that can use the MCP resource.

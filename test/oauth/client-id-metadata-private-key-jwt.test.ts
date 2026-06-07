@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { createSign, generateKeyPairSync, randomUUID, type KeyObject } from "node:crypto";
+import { createSign, generateKeyPairSync, randomUUID, webcrypto, type KeyObject } from "node:crypto";
 import test from "node:test";
 import * as oauth from "oauth4webapi";
-import { encodeJsonBase64Url } from "../../shared/base64url.ts";
+import { encodeBase64Url, encodeJsonBase64Url } from "../../shared/base64url.ts";
 import { callTool, initializeMcp, bearer } from "../support/mcp.ts";
 import { readJson, requireString } from "../support/http.ts";
 import { startService } from "../support/service-process.ts";
@@ -128,6 +128,45 @@ test("metadata document private_key_jwt rejects replayed client assertions witho
   assert.equal(refreshed.token_type, "bearer");
 });
 
+test("metadata document private_key_jwt requires jti replay protection without consuming the code", async (t) => {
+  const service = await startService(t);
+  const metadata = await startPrivateKeyMetadataServer(t, service.mcpResource);
+  const authorization = await authorizeMetadataDocumentClient(service, metadata.clientId, metadata.redirectUri);
+  const rejected = await fetch(String(authorization.as.token_endpoint), {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "authorization_code",
+      client_id: metadata.clientId,
+      client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+      client_assertion: await signClientAssertionCryptoKey(metadata.clientId, String(authorization.as.issuer), metadata.kid, metadata.privateKey, { jti: false }),
+      code: requireString(authorization.callbackParameters.get("code"), "code"),
+      redirect_uri: metadata.redirectUri,
+      code_verifier: authorization.codeVerifier,
+      resource: service.mcpResource,
+    }),
+  });
+  assert.equal(rejected.status, 401);
+  assert.equal((await readJson(rejected)).error, "invalid_client");
+  const accepted = await oauth.authorizationCodeGrantRequest(
+    authorization.as,
+    { client_id: metadata.clientId },
+    oauth.PrivateKeyJwt({ key: metadata.privateKey, kid: metadata.kid }),
+    authorization.callbackParameters,
+    metadata.redirectUri,
+    authorization.codeVerifier,
+    {
+      additionalParameters: new URLSearchParams([["resource", service.mcpResource]]),
+      [oauth.allowInsecureRequests]: true,
+    },
+  );
+  const tokens = await oauth.processAuthorizationCodeResponse(authorization.as, { client_id: metadata.clientId }, accepted, {
+    requireIdToken: true,
+    expectedNonce: oauth.expectNoNonce,
+  });
+  assert.ok(tokens.access_token);
+});
+
 test("metadata document private_key_jwt requires a JWKS URI", async (t) => {
   const service = await startService(t);
   const metadata = await startMetadataServer(t, service.mcpResource, { tokenEndpointAuthMethod: "private_key_jwt" });
@@ -180,6 +219,18 @@ function generateWeakPrivateKeyJwtKey(kid: string): { privateKey: KeyObject; pub
 }
 
 function signClientAssertion(clientId: string, issuer: string, kid: string, privateKey: KeyObject): string {
+  const signingInput = clientAssertionSigningInput(clientId, issuer, kid);
+  const signature = createSign("RSA-SHA256").update(signingInput).end().sign(privateKey, "base64url");
+  return `${signingInput}.${signature}`;
+}
+
+async function signClientAssertionCryptoKey(clientId: string, issuer: string, kid: string, privateKey: oauth.CryptoKey, options: { jti?: boolean } = {}): Promise<string> {
+  const signingInput = clientAssertionSigningInput(clientId, issuer, kid, options);
+  const signature = await webcrypto.subtle.sign("RSASSA-PKCS1-v1_5", privateKey, Buffer.from(signingInput, "utf8"));
+  return `${signingInput}.${encodeBase64Url(Buffer.from(signature))}`;
+}
+
+function clientAssertionSigningInput(clientId: string, issuer: string, kid: string, options: { jti?: boolean } = {}): string {
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: "RS256", kid, typ: "JWT" };
   const payload = {
@@ -188,11 +239,9 @@ function signClientAssertion(clientId: string, issuer: string, kid: string, priv
     aud: issuer,
     exp: now + 300,
     iat: now,
-    jti: randomUUID(),
+    ...(options.jti === false ? {} : { jti: randomUUID() }),
   };
-  const signingInput = `${encodeJsonBase64Url(header)}.${encodeJsonBase64Url(payload)}`;
-  const signature = createSign("RSA-SHA256").update(signingInput).end().sign(privateKey, "base64url");
-  return `${signingInput}.${signature}`;
+  return `${encodeJsonBase64Url(header)}.${encodeJsonBase64Url(payload)}`;
 }
 
 function capturingPrivateKeyJwt(metadata: { privateKey: oauth.CryptoKey; kid: string }, captured: { assertion?: string }): oauth.ClientAuth {

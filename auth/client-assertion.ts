@@ -84,7 +84,7 @@ function validateAssertionClaims(config: ServiceConfig, client: OAuthClient, cla
   if (exp <= now - assertionClockSkewSeconds || exp > now + maximumAssertionLifetimeSeconds + assertionClockSkewSeconds) throw invalidClient();
   if (claims.nbf !== undefined && numericDate(claims.nbf) > now + assertionClockSkewSeconds) throw invalidClient();
   if (claims.iat !== undefined) validateIssuedAt(numericDate(claims.iat), now);
-  if (claims.jti !== undefined) rejectReplay(client.clientId, safeString(claims.jti), exp, now);
+  rejectReplay(client.clientId, safeString(claims.jti), exp, now);
 }
 
 function validateIssuedAt(iat: number, now: number): void {
