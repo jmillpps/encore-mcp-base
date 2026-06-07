@@ -64,6 +64,8 @@ Initialize requests must include `protocolVersion`, `capabilities`, and `clientI
 
 Initialize client capabilities must use object-shaped known capability branches and boolean `roots.listChanged` when present.
 
+Initialize client metadata must use MCP implementation field shapes for optional title, description, website URL, and icons.
+
 Initialize responses include server instructions for ChatGPT tool selection and OAuth scope expectations.
 
 Clients send `notifications/initialized` before normal operation.

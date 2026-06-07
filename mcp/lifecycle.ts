@@ -1,12 +1,9 @@
 import { asRecord, requiredString } from "../shared/json.ts";
-import { badRequest } from "../shared/errors.ts";
 import { serviceName, serviceTitle, serviceVersion } from "../shared/service-info.ts";
 import { supportedProtocolVersion } from "./protocol-version.ts";
 import { serverInstructions } from "./server-instructions.ts";
 import { validateClientCapabilities } from "./client-capabilities.ts";
-
-const implementationNamePattern = /^[A-Za-z0-9._:/ -]{1,128}$/;
-const implementationVersionPattern = /^[\x20-\x7E]{1,128}$/;
+import { implementationName, validateImplementation } from "./implementation.ts";
 
 export function initializeResult(params: unknown): Record<string, unknown> {
   const record = initializeParams(params);
@@ -24,7 +21,7 @@ export function initializeResult(params: unknown): Record<string, unknown> {
 }
 
 export function initializeClientId(params: unknown): string {
-  const clientInfo = clientImplementation(initializeParams(params));
+  const clientInfo = validateImplementation(initializeParams(params).clientInfo, "clientInfo");
   return implementationName(clientInfo);
 }
 
@@ -32,20 +29,6 @@ function initializeParams(params: unknown): Record<string, unknown> {
   const record = asRecord(params, "params");
   requiredString(record, "protocolVersion");
   validateClientCapabilities(asRecord(record.capabilities, "capabilities"));
-  clientImplementation(record);
+  validateImplementation(record.clientInfo, "clientInfo");
   return record;
-}
-
-function clientImplementation(record: Record<string, unknown>): Record<string, unknown> {
-  const clientInfo = asRecord(record.clientInfo, "clientInfo");
-  implementationName(clientInfo);
-  const version = requiredString(clientInfo, "version");
-  if (!implementationVersionPattern.test(version)) throw badRequest("clientInfo.version is invalid");
-  return clientInfo;
-}
-
-function implementationName(record: Record<string, unknown>): string {
-  const name = requiredString(record, "name");
-  if (!implementationNamePattern.test(name)) throw badRequest("clientInfo.name is invalid");
-  return name;
 }
