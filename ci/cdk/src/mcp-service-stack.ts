@@ -96,7 +96,10 @@ export class McpServiceStack extends cdk.Stack {
     });
     role.addToPolicy(new iam.PolicyStatement({
       actions: ["ssm:GetParameter", "ssm:GetParameters", "ssm:GetParametersByPath"],
-      resources: [this.parameterArn(`${parameterPath(props.config.parameterPrefix)}/*`)],
+      resources: [
+        this.parameterArn(parameterPath(props.config.parameterPrefix)),
+        this.parameterArn(`${parameterPath(props.config.parameterPrefix)}/*`),
+      ],
     }));
     parameterKey.grantDecrypt(role);
     repository.grantPull(role);
