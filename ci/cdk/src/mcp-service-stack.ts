@@ -225,7 +225,7 @@ export class McpServiceStack extends cdk.Stack {
           build: {
             commands: [
               "export PATH=/root/.encore/bin:$PATH",
-              "encore build docker --arch=arm64 \"$IMAGE_REPOSITORY_URI:$IMAGE_TAG\"",
+              "encore build docker --arch=arm64 --base=public.ecr.aws/docker/library/node:slim \"$IMAGE_REPOSITORY_URI:$IMAGE_TAG\"",
               "docker push \"$IMAGE_REPOSITORY_URI:$IMAGE_TAG\"",
             ],
           },
