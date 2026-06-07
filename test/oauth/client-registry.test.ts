@@ -48,6 +48,7 @@ test("client registry allows production loopback HTTP redirect URIs", () => {
 test("client registry rejects unsafe or malformed metadata", () => {
   assert.throws(() => parseClientJson("{}", true), /non-empty array/);
   assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ clientSecretHash: "bad" })]), true), /SHA-256/);
+  assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ displayName: "GPT\nActions" })]), true), /displayName/);
   assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ redirectUris: ["https://*.example.test/callback"] })]), true), /wildcards/);
   assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ redirectUris: ["http://public.example.test/callback"] })]), true), /https or localhost/);
   assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ redirectUris: [" https://chatgpt.com/callback"] })]), true), /whitespace/);

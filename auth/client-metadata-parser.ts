@@ -2,6 +2,7 @@ import type { ServiceConfig } from "../shared/config.ts";
 import { invalidMetadataClient } from "./client-metadata-error.ts";
 import { parseClientIdUrl } from "./client-metadata-network.ts";
 import type { OAuthClient, TokenEndpointAuthMethod } from "./client-types.ts";
+import { isDisplayName } from "./display-name.ts";
 import { parseRedirectUri, productionRedirectUriAllowed } from "./redirect-uri.ts";
 import { defaultScopes } from "./scopes.ts";
 
@@ -9,7 +10,7 @@ export function parseMetadataClient(config: ServiceConfig, clientId: string, bod
   const record = metadataRecord(body);
   const documentClientId = requiredString(record, "client_id");
   if (documentClientId !== clientId) throw invalidMetadataClient();
-  const displayName = requiredString(record, "client_name");
+  const displayName = requiredDisplayName(record, "client_name");
   const redirectUris = requiredStringArray(record, "redirect_uris").map((redirectUri) => validRedirectUri(redirectUri, config.production));
   validateOptionalString(record, "client_uri");
   validateOptionalString(record, "logo_uri");
@@ -37,6 +38,12 @@ function metadataRecord(value: unknown): Record<string, unknown> {
 function requiredString(record: Record<string, unknown>, key: string): string {
   const value = record[key];
   if (typeof value !== "string" || value.trim() === "") throw invalidMetadataClient();
+  return value;
+}
+
+function requiredDisplayName(record: Record<string, unknown>, key: string): string {
+  const value = record[key];
+  if (!isDisplayName(value)) throw invalidMetadataClient();
   return value;
 }
 

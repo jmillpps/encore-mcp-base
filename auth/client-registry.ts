@@ -1,4 +1,5 @@
 import type { OAuthClient } from "./client-types.ts";
+import { isDisplayName } from "./display-name.ts";
 import { parseRedirectUri, productionRedirectUriAllowed } from "./redirect-uri.ts";
 
 const authMethods = ["client_secret_post", "client_secret_basic"] as const;
@@ -29,7 +30,7 @@ function parseClient(value: unknown, index: number, production: boolean): OAuthC
   return {
     clientId: identifier(readString(record, "clientId"), "clientId"),
     clientSecretHash: secretHash(readString(record, "clientSecretHash")),
-    displayName: readString(record, "displayName"),
+    displayName: displayName(readString(record, "displayName")),
     redirectUris: redirectUrls(readStringArray(record, "redirectUris"), production),
     allowedScopes: scopes(readStringArray(record, "allowedScopes")),
     allowedResources: resourceUrls(readStringArray(record, "allowedResources"), production),
@@ -67,6 +68,11 @@ function identifier(value: string, key: string): string {
 
 function secretHash(value: string): string {
   if (!sha256Base64UrlPattern.test(value)) throw new Error("clientSecretHash must be a SHA-256 base64url hash");
+  return value;
+}
+
+function displayName(value: string): string {
+  if (!isDisplayName(value)) throw new Error("displayName contains invalid characters");
   return value;
 }
 

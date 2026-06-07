@@ -79,6 +79,22 @@ test("metadata document unsupported token auth method is rejected before issuing
   assert.equal((await readJson(response)).error, "invalid_client");
 });
 
+test("metadata document client names reject control characters", () => {
+  const config = readConfig({});
+  const clientId = "http://127.0.0.1:4000/client.json";
+  assert.throws(
+    () => parseMetadataClient(config, clientId, {
+      client_id: clientId,
+      client_name: "Metadata\nClient",
+      redirect_uris: ["http://127.0.0.1:4000/callback"],
+      grant_types: ["authorization_code"],
+      response_types: ["code"],
+      token_endpoint_auth_method: "none",
+    }),
+    (error) => error instanceof ServiceError && error.code === "invalid_client",
+  );
+});
+
 test("metadata document clients reject invalid UTF-8 documents before issuing a code", async (t) => {
   const service = await startService(t);
   const metadata = await startInvalidUtf8MetadataServer(t);
