@@ -25,6 +25,7 @@ function parseClient(value: unknown, index: number, production: boolean): OAuthC
   const record = objectRecord(value, `client ${index}`, clientKeys);
   const tokenEndpointAuthMethod = oneOf(readString(record, "tokenEndpointAuthMethod"), authMethods, "tokenEndpointAuthMethod");
   const pkcePolicy = oneOf(readString(record, "pkcePolicy"), pkcePolicies, "pkcePolicy");
+  if (production && pkcePolicy !== "required") throw new Error("PKCE is required for production clients");
   return {
     clientId: identifier(readString(record, "clientId"), "clientId"),
     clientSecretHash: secretHash(readString(record, "clientSecretHash")),

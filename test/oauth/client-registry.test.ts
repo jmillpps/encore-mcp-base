@@ -53,6 +53,7 @@ test("client registry rejects unsafe or malformed metadata", () => {
   assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ redirectUris: [" https://chatgpt.com/callback"] })]), true), /whitespace/);
   assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ redirectUris: ["https://user:pass@chatgpt.com/callback"] })]), true), /credentials/);
   assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ tokenEndpointAuthMethod: "none" })]), true), /not supported/);
+  assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ pkcePolicy: "optional" })]), true), /PKCE/);
   assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ allowedResources: ["http://api.example.test"] })]), true), /https/);
   assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ allowedResources: ["https://user:pass@api.example.test"] })]), true), /credentials/);
   assert.throws(() => parseClientJson(JSON.stringify([clientRecord({ shadowPolicy: "ignored" })]), true), /unsupported fields/);

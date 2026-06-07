@@ -61,7 +61,7 @@ Each `OAUTH_CLIENTS_JSON` record contains these fields:
   "allowedScopes": ["openid", "profile", "email"],
   "allowedResources": ["https://service.example.com/actions"],
   "tokenEndpointAuthMethod": "client_secret_post",
-  "pkcePolicy": "optional",
+  "pkcePolicy": "required",
   "clientClass": "gpt-actions"
 }
 ```
