@@ -20,12 +20,16 @@ test("MCP tools expose metadata and protected tools return auth challenges", asy
   assert.ok(tools.some((tool) => tool.name === "identity.profile"));
   for (const tool of tools) {
     assert.match(requireString(tool.name, "tool name"), /^[A-Za-z0-9_.-]{1,128}$/);
-    assert.equal(tool.securitySchemes, undefined);
     assert.equal(requireRecord(tool.annotations, "tool annotations").readOnlyHint, true);
   }
+  assert.deepEqual(toolByName(tools, "health.check").securitySchemes, [{ type: "noauth" }]);
+  assert.deepEqual(toolByName(tools, "identity.profile").securitySchemes, [{ type: "oauth2", scopes: ["openid", "profile", "email"] }]);
+  assert.deepEqual(toolByName(tools, "auth.session").securitySchemes, [{ type: "oauth2", scopes: ["openid"] }]);
   const challengeResponse = await postMcp(service, { jsonrpc: "2.0", id: "identity.profile", method: "tools/call", params: { name: "identity.profile", arguments: {} } }, { sessionId });
   assert.equal(challengeResponse.status, 200);
   const challengeHeader = challengeResponse.headers.get("www-authenticate") ?? "";
+  assert.match(challengeHeader, /error="invalid_token"/);
+  assert.match(challengeHeader, /error_description="Authentication required\."/);
   assert.match(challengeHeader, resourceMetadataPattern(service));
   assert.match(challengeHeader, /scope="openid profile email"/);
   assert.doesNotMatch(challengeHeader, /insufficient_scope/);
@@ -73,6 +77,7 @@ test("MCP protected tools enforce audience and scopes", async (t) => {
   assert.equal(missingScopeResponse.status, 200);
   const scopeChallenge = missingScopeResponse.headers.get("www-authenticate") ?? "";
   assert.match(scopeChallenge, /error="insufficient_scope"/);
+  assert.match(scopeChallenge, /error_description="Additional authorization scopes required\."/);
   assert.match(scopeChallenge, resourceMetadataPattern(service));
   assert.match(scopeChallenge, /scope="openid profile email"/);
   const missingScopes = ((await readJson(missingScopeResponse)).result as Record<string, unknown>);
@@ -187,4 +192,10 @@ function readToolTextJson(result: Record<string, unknown>): unknown {
 
 function resourceMetadataPattern(service: TestService): RegExp {
   return new RegExp(`resource_metadata="${service.origin.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\/\\.well-known\\/oauth-protected-resource\\/mcp"`);
+}
+
+function toolByName(tools: Record<string, unknown>[], name: string): Record<string, unknown> {
+  const tool = tools.find((candidate) => candidate.name === name);
+  assert.ok(tool);
+  return tool;
 }

@@ -6,6 +6,7 @@ import { assertMatchesSchema, matchesSchema } from "./schema-validation.ts";
 import { authSessionTool } from "./tools/auth-session.ts";
 import { healthCheckTool } from "./tools/health-check.ts";
 import { identityProfileTool } from "./tools/identity-profile.ts";
+import { toolSecuritySchemes } from "./tool-security.ts";
 import type { McpTool, ToolContext } from "./tool-types.ts";
 
 export type { McpTool, ToolContext } from "./tool-types.ts";
@@ -14,7 +15,7 @@ export const tools: McpTool[] = [healthCheckTool, identityProfileTool, authSessi
 
 export function listTools(): Record<string, unknown> {
   assertToolDefinitions();
-  return { tools: tools.map(({ run: _run, requiredScopes: _requiredScopes, ...tool }) => tool) };
+  return { tools: tools.map(toolDescriptor) };
 }
 
 export async function callTool(context: ToolContext, name: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {
@@ -43,6 +44,18 @@ function assertToolDefinitions(): void {
     if (names.has(tool.name)) throw new ServiceError("server_error", "duplicate tool name", 500);
     names.add(tool.name);
   }
+}
+
+function toolDescriptor(tool: McpTool): Record<string, unknown> {
+  return {
+    name: tool.name,
+    title: tool.title,
+    description: tool.description,
+    inputSchema: tool.inputSchema,
+    outputSchema: tool.outputSchema,
+    annotations: tool.annotations,
+    securitySchemes: toolSecuritySchemes(tool.requiredScopes),
+  };
 }
 
 function toolArgumentError(tool: McpTool, args: Record<string, unknown>): string | undefined {

@@ -11,6 +11,8 @@ test("MCP protected tools return ChatGPT-compatible auth challenges in metadata 
   assert.equal(response.status, 200);
   const header = response.headers.get("www-authenticate") ?? "";
   assert.match(header, /Bearer/);
+  assert.match(header, /error="invalid_token"/);
+  assert.match(header, /error_description="Authentication required\."/);
   assert.match(header, new RegExp(`resource_metadata="${service.origin.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\/\\.well-known\\/oauth-protected-resource\\/mcp"`));
   assert.match(header, /scope="openid profile email"/);
   const result = requireRecord((await readJson(response)).result, "tool result");

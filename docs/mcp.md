@@ -10,15 +10,17 @@ Protected tools validate issuer, audience, expiry, client ID, and scopes on ever
 
 When a protected tool needs authentication, it returns a ChatGPT-compatible `mcp/www_authenticate` challenge.
 
-Missing or invalid bearer tokens receive a Bearer challenge with `resource_metadata` and the required scope list.
+Missing or invalid bearer tokens receive a Bearer challenge with `error="invalid_token"`, `error_description`, `resource_metadata`, and the required scope list.
 
 Bearer challenges use the path-specific protected resource metadata URL for `/mcp`.
 
-Tokens with insufficient scopes receive a Bearer challenge with `error="insufficient_scope"`, `resource_metadata`, and the required scope list.
+Tokens with insufficient scopes receive a Bearer challenge with `error="insufficient_scope"`, `error_description`, `resource_metadata`, and the required scope list.
 
 Tool names use ASCII letters, digits, underscores, hyphens, and dots. Names stay within 128 characters.
 
 Tool descriptors use standard read-only annotations.
+
+Tool descriptors include per-tool ChatGPT Apps auth schemes.
 
 The current tool list is returned as a single page. `tools/list` accepts request metadata and rejects unsupported cursors with `-32602`.
 
