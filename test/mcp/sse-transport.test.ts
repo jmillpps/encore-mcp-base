@@ -85,6 +85,11 @@ test("SSE transport rejects invalid origins and malformed message requests", asy
     415,
     "bad_request",
   );
+  await expectOAuthError(
+    await postMessage(service.origin, endpoint, { jsonrpc: "2.0", id: "bad-charset", method: "ping" }, "application/json; charset=iso-8859-1"),
+    415,
+    "bad_request",
+  );
   const charsetMessage = await postMessage(
     service.origin,
     endpoint,

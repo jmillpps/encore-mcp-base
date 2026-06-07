@@ -38,6 +38,15 @@ test("MCP Streamable HTTP validates transport headers and session lifecycle", as
   assert.equal(charsetInitialize.status, 200);
   assert.match(charsetInitialize.headers.get("access-control-allow-headers") ?? "", /MCP-Session-Id/);
   assert.match(charsetInitialize.headers.get("access-control-allow-headers") ?? "", /MCP-Protocol-Version/);
+  await expectOAuthError(
+    await postMcp(
+      service,
+      { jsonrpc: "2.0", id: "bad-charset", method: "initialize", params: initializeParams({ clientInfo: { name: "bad-charset", version: "0.1.0" } }) },
+      { contentType: "application/json; charset=iso-8859-1" },
+    ),
+    415,
+    "bad_request",
+  );
   const validPreflight = await optionsMcp(service.origin, "https://chatgpt.com");
   assert.ok(validPreflight.status === 200 || validPreflight.status === 204);
   assert.equal(validPreflight.headers.get("access-control-allow-origin"), "https://chatgpt.com");

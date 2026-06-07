@@ -34,6 +34,8 @@ JSON-RPC request and response identifiers are strings or numbers. Protocol error
 
 Clients send `Accept: application/json, text/event-stream` and `Content-Type: application/json`.
 
+JSON request bodies use UTF-8.
+
 The initialize response includes `MCP-Session-Id`. Clients send that session ID with `MCP-Protocol-Version` on later `/mcp` requests.
 
 Initialize requests must include `protocolVersion`, `capabilities`, and `clientInfo`.

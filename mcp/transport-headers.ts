@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { ServiceConfig } from "../shared/config.ts";
 import { ServiceError } from "../shared/errors.ts";
-import { acceptsMediaType, mediaType } from "../shared/media-type.ts";
+import { acceptsMediaType, contentTypeUsesUtf8, mediaType } from "../shared/media-type.ts";
 
 export function validateOrigin(config: ServiceConfig, req: IncomingMessage): void {
   const origin = req.headers.origin;
@@ -19,7 +19,7 @@ export function validatePostAccept(req: IncomingMessage): void {
 
 export function validatePostContentType(req: IncomingMessage): void {
   const contentType = String(req.headers["content-type"] ?? "");
-  if (mediaType(contentType) !== "application/json") {
+  if (mediaType(contentType) !== "application/json" || !contentTypeUsesUtf8(contentType)) {
     throw new ServiceError("bad_request", "unsupported content type", 415);
   }
 }
