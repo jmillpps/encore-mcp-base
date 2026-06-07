@@ -19,7 +19,7 @@ export function isJsonRpcResponse(value: unknown): boolean {
   if (!hasResult && !hasError) return false;
   assertOnlyKeys(record, hasResult ? ["jsonrpc", "id", "result"] : ["jsonrpc", "id", "error"], "invalid json-rpc response");
   if (hasResult === hasError) throw new ServiceError("bad_request", "invalid json-rpc response", 400);
-  if (hasResult && !Object.hasOwn(record, "id")) throw new ServiceError("bad_request", "invalid json-rpc response", 400);
+  if (!Object.hasOwn(record, "id")) throw new ServiceError("bad_request", "invalid json-rpc response", 400);
   if (Object.hasOwn(record, "id")) validateJsonRpcId(record.id);
   if (hasResult) validateJsonRpcResult(record.result);
   if (hasError) validateJsonRpcError(record.error);

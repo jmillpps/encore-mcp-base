@@ -134,9 +134,14 @@ test("MCP Streamable HTTP validates transport headers and session lifecycle", as
   const invalidNullIdBody = await readJson(invalidNullId);
   assert.equal((invalidNullIdBody.error as Record<string, unknown>).code, -32600);
   assert.equal(Object.hasOwn(invalidNullIdBody, "id"), false);
-  const clientErrorResponse = await postMcp(service, { jsonrpc: "2.0", error: { code: -32603, message: "client error" } }, { sessionId });
+  const clientErrorResponse = await postMcp(service, { jsonrpc: "2.0", id: "server-error-response", error: { code: -32603, message: "client error" } }, { sessionId });
   assert.equal(clientErrorResponse.status, 202);
   assert.equal(await clientErrorResponse.text(), "");
+  const missingClientErrorResponseId = await postMcp(service, { jsonrpc: "2.0", error: { code: -32603, message: "client error" } }, { sessionId });
+  assert.equal(missingClientErrorResponseId.status, 400);
+  const missingClientErrorResponseIdBody = await readJson(missingClientErrorResponseId);
+  assert.equal((missingClientErrorResponseIdBody.error as Record<string, unknown>).code, -32600);
+  assert.equal(Object.hasOwn(missingClientErrorResponseIdBody, "id"), false);
   const invalidClientResponseId = await postMcp(service, { jsonrpc: "2.0", id: null, result: { accepted: true } }, { sessionId });
   assert.equal(invalidClientResponseId.status, 400);
   const invalidClientResponseIdBody = await readJson(invalidClientResponseId);
