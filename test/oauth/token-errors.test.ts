@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { Buffer } from "node:buffer";
 import test from "node:test";
 import { authorizeCode, discover, exchangeCode, localClientSecret } from "../support/oauth-client.ts";
 import { expectOAuthError, requireString } from "../support/http.ts";
@@ -71,6 +72,14 @@ test("token endpoint rejects invalid secrets without consuming the authorization
   await expectOAuthError(wrongSecret, 401, "invalid_client");
   const exchanged = await exchangeCode(authorization, service.actionsAudience);
   assert.equal(exchanged.tokens.token_type, "bearer");
+});
+
+test("token endpoint returns a Basic challenge for failed client_secret_basic attempts", async (t) => {
+  const service = await startService(t);
+  const as = await discover(service);
+  const response = await postTokenBasic(as.token_endpoint, "local-test", "bad-secret");
+  await expectOAuthError(response, 401, "invalid_client");
+  assert.equal(response.headers.get("www-authenticate"), 'Basic realm="oauth"');
 });
 
 test("token endpoint rejects bad redirect and bad PKCE without consuming the authorization code", async (t) => {
@@ -208,6 +217,18 @@ function postTokenWithContentType(tokenEndpoint: string | undefined, body: URLSe
     method: "POST",
     headers: { "content-type": contentType },
     body,
+  });
+}
+
+function postTokenBasic(tokenEndpoint: string | undefined, clientId: string, secret: string): Promise<Response> {
+  const endpoint = requireString(tokenEndpoint, "token_endpoint");
+  return fetch(endpoint, {
+    method: "POST",
+    headers: {
+      authorization: `Basic ${Buffer.from(`${encodeURIComponent(clientId)}:${encodeURIComponent(secret)}`).toString("base64")}`,
+      "content-type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ grant_type: "authorization_code", code: "bad-code", redirect_uri: "http://localhost:4000/test/callback" }),
   });
 }
 

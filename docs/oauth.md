@@ -32,6 +32,8 @@ Resource error descriptions stay generic and do not expose configured audience v
 
 Token grants validate requested resources against the current client policy before stored grants are consumed or rotated.
 
+Failed `client_secret_basic` token requests return `WWW-Authenticate: Basic realm="oauth"` with `invalid_client`.
+
 Discovery metadata advertises the union of configured client scopes.
 
 Authorization server metadata advertises Client ID Metadata Document support through `client_id_metadata_document_supported`.
