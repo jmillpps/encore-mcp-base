@@ -1,31 +1,59 @@
 # Storage Model
 
-The service stores OAuth, rate-limit, and MCP session state in one JSON file. This keeps the initial deployment simple while preserving explicit durability and file ownership rules.
+The service stores OAuth, rate-limit, and MCP session state in one JSON file. The file is durable runtime state, owned by the service user, and protected by strict file-mode and lock rules.
 
 ## Record Groups
 
-| Record group | Purpose |
-| --- | --- |
-| Authorization codes | Code exchange state and PKCE metadata. |
-| Upstream authorization states | Upstream IdP login state and original GPT redirect state. |
-| Refresh tokens | Refresh rotation state and token family metadata. |
-| MCP sessions | Streamable HTTP session state and request ID history. |
-| Rate-limit buckets | Durable counters by bucket and subject. |
+| Record group | Stored fields | Purpose |
+| --- | --- | --- |
+| Authorization codes | Code hash, client ID, redirect URI, resource, scopes, nonce, PKCE challenge, user profile, expiration, consumed time, auth time, creation time. | Complete the service authorization-code exchange after upstream OIDC login. |
+| Upstream authorization states | State hash, client ID, redirect URI, resource, scopes, original client state, upstream PKCE verifier, nonce, expiration, creation time. | Preserve the validated ChatGPT authorization request while the browser signs in with the upstream IdP. |
+| Refresh tokens | Token hash, family ID, client ID, user profile, resource, scopes, expiration, auth time, rotation parent, revoked time, creation time, last-used time. | Rotate refresh tokens and revoke a token family after replay. |
+| MCP sessions | Session ID hash, client ID, protocol version, creation time, last-seen time, expiration, request ID hashes, initialized time, terminated time. | Maintain Streamable HTTP session state and request replay protection. |
+| Rate-limit buckets | Bucket count and reset time keyed by bucket plus hashed subject. | Enforce durable request limits across OAuth endpoints and MCP tools. |
+
+The top-level store accepts only these record groups. Missing groups are treated as empty maps. Stored map keys use fixed-length base64url hashes.
 
 ## Stored Secrets
 
-The store keeps SHA-256 hashes for authorization codes, upstream authorization states, refresh tokens, and MCP session IDs.
+The store keeps SHA-256 base64url hashes for authorization codes, upstream authorization states, refresh tokens, MCP session IDs, MCP request IDs, and rate-limit subjects.
 
 Raw OAuth client secrets, upstream IdP client secrets, and signing key material live in Parameter Store. The runtime store keeps OAuth state and session state.
+
+## File Rules
+
+| Rule | Runtime behavior |
+| --- | --- |
+| Store path | The configured path must be present, trimmed, free of upward traversal segments, and end with `.json`. |
+| Directory creation | The parent directory is created with `0700`. |
+| Read handling | Missing store file returns an empty state. |
+| Symlink handling | Store reads use `O_NOFOLLOW` and reject symlinks. |
+| File type | Reads require a regular file. |
+| File permissions | Existing store files must be owner-only. |
+| Write permissions | Temporary store files are written with `0600`. |
+| Parse errors | Malformed JSON stops the operation. |
 
 ## Update Model
 
 Each write uses a read-modify-write transaction. The service serializes same-process writes through an in-process queue and serializes multi-process writes through a filesystem lock.
 
-Writes use temporary files and atomic rename. Malformed store files stop updates.
+The lock file uses exclusive create mode and owner-only permissions. Lock acquisition polls every 10 milliseconds and fails after 5 seconds. Writes use temporary files and atomic rename after the in-memory state mutation succeeds.
+
+## Expiration And Replay Rules
+
+| State | Expiration or replay behavior |
+| --- | --- |
+| Authorization code | Consumed once. Expired or consumed codes return `invalid_grant`. |
+| Upstream authorization state | Consumed once and pruned when expired. |
+| Refresh token | Rotates on use. Reuse of an older token revokes every token with the same family ID. |
+| MCP session | Expires one hour after creation or terminates through `DELETE /mcp`. |
+| MCP request ID | Stored as a hash per session. Duplicate IDs are rejected. A session accepts up to 4096 request IDs. |
+| Rate-limit bucket | Resets after the configured rate-limit window. |
 
 ## Production Path
 
 The CDK deployment sets `OAUTH_STORE_PATH` to `/var/lib/<service-name>/oauth-store.json`. The container mounts `/var/lib/<service-name>` for durable store access.
 
 The runner writes runtime secrets under `/run/<service-name>` and mounts that directory read-only into the container.
+
+Operator backup and restore rules are covered in [Storage Maintenance](../maintenance/storage.md). Parameter and secret placement are covered in [Runtime Parameters](../deployment/runtime-parameters.md).

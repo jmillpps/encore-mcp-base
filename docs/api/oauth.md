@@ -114,7 +114,7 @@ Status `200` returns:
 
 ## Token Claims
 
-Access tokens include issuer, subject, audience, expiration, issued-at time, not-before time, JWT ID, client ID, scopes, and profile claims. The `aud` claim is the resolved OAuth resource.
+Access tokens include issuer, subject, audience, expiration, issued-at time, `nbf`, JWT ID, client ID, scopes, and profile claims. The `aud` claim is the resolved OAuth resource.
 
 ID tokens include the grant-bound user profile, client audience, authentication time, and nonce when the authorization request supplied one.
 

@@ -8,10 +8,15 @@ Actions endpoints use Encore typed APIs. Each protected endpoint reads the `Auth
 
 Current endpoints:
 
-- `GET /health`
-- `GET /actions/openapi.json`
-- `GET /actions/profile`
-- `GET /actions/session`
+| Endpoint | Auth | OpenAPI inclusion | Purpose |
+| --- | --- | --- | --- |
+| `GET /health` | Public. | Included. | Return service reachability and version metadata. |
+| `GET /privacy` | Public. | Excluded from Actions schema. | Return public privacy policy text for ChatGPT setup. |
+| `GET /actions/openapi.json` | Public. | Schema source. | Return the OpenAPI document using the configured issuer as the server URL. |
+| `GET /actions/profile` | Actions bearer with `openid profile email`. | Included. | Return the authenticated OIDC profile. |
+| `GET /actions/session` | Actions bearer with `openid`. | Included. | Return token session metadata. |
+
+The public OpenAPI endpoint is read-only. It accepts GET requests and returns the same document shape used by the export tool.
 
 ## OpenAPI Model
 
@@ -27,16 +32,44 @@ The document includes:
 - OAuth error responses for protected endpoints.
 - Scope declarations that match endpoint requirements.
 
+The OAuth authorization URL and token URL are derived from the same origin as the first server URL. The public endpoint uses `PUBLIC_ISSUER_URL`. The export command accepts an explicit `--base-url` and validates the generated document before writing the file.
+
 ## Compatibility Rules
 
 The Actions compatibility verifier checks operation IDs, OAuth security, declared scopes, custom header usage, JSON content types, operation text lengths, schema descriptions, and origin consistency for OAuth URLs.
 
 The service validates the live Encore error body shape used by Actions auth failures. The OpenAPI `ErrorResponse` schema includes `code`, `message`, `details`, and `internal_message`.
 
+| Rule | Enforcement |
+| --- | --- |
+| OpenAPI version | Must be `3.1.0`. |
+| Operation IDs | Must be unique and match the repository operation ID pattern. |
+| OAuth URLs | Authorization and token URLs must share the first server origin. |
+| OAuth scopes | Protected `/actions/*` operations must declare OAuth2 scopes that exist in the OAuth flow. |
+| Error responses | Protected `/actions/*` operations must declare `401` and `403`. |
+| Custom headers | Operations must omit custom header parameters. |
+| Content types | Request and response bodies must use `application/json`. |
+| Text bounds | Info and operation text must stay within ChatGPT Actions-friendly limits. |
+| Schema descriptions | Component schemas and schema properties must have descriptions. |
+| Consequential flag | Every operation must set `x-openai-isConsequential`. |
+
 ## Export Boundaries
 
 The export command accepts localhost HTTP for development. Public exports use HTTPS and a public host. Output paths must stay inside the project and end with `.json`.
 
+The export path guard protects the repository from accidental writes outside the working tree. The public endpoint avoids file output entirely.
+
 ## URL Import
 
 `GET /actions/openapi.json` returns the schema using the configured public issuer. Use the deployed URL for GPT Actions URL import.
+
+For ChatGPT Actions setup, use:
+
+| ChatGPT field | Value shape |
+| --- | --- |
+| Import from URL | `https://service.example.com/actions/openapi.json` |
+| Authorization URL | `https://service.example.com/oauth/authorize` |
+| Token URL | `https://service.example.com/oauth/token` |
+| Scope | `openid profile email` |
+
+The Actions runtime calls protected endpoints with bearer tokens issued for the Actions audience. MCP bearer tokens are rejected by Actions endpoints.

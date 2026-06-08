@@ -27,6 +27,19 @@ Start with the full documentation map at [docs/index.md](docs/index.md).
 | Operations | Production startup validation, durable JSON state, AWS CDK deployment, Systems Manager Parameter Store, KMS-backed secrets. |
 | Maintainability | Small domain modules, shared capability code, protocol adapters, focused tests under `test/`, docs under `docs/`. |
 
+## Standards Baseline
+
+| Standard or platform | Project use | Detail |
+| --- | --- | --- |
+| MCP `2025-11-25` | GPT Apps transport and tool protocol. | Streamable HTTP at `/mcp`, legacy HTTP/SSE compatibility, session IDs, protocol negotiation, tool descriptors, auth challenges. |
+| OpenAI ChatGPT Apps | Remote MCP server integration. | OAuth account linking, protected resource metadata, Client ID Metadata Document support, read-only tool declarations, server instructions. |
+| GPT Actions | REST action import and OAuth linking. | OpenAPI URL import, OAuth authorization URL, token URL, scopes, bearer-protected operations, read-only action metadata. |
+| OAuth 2.0 and OIDC | Account linking and identity. | Authorization code flow, PKCE, refresh tokens, resource indicators, authorization server metadata, protected resource metadata, userinfo, ID tokens, JWKS. |
+| OpenAPI 3.1 | Actions schema. | OAuth2 authorization code flow, JSON response schemas, operation IDs, schema descriptions, and compatibility checks. |
+| AWS CDK and Parameter Store | Deployment path. | EC2 runtime, Caddy HTTPS, ECR, CodeBuild, Route53, Systems Manager parameters, SecureString secrets, KMS. |
+
+The source map for external specifications and platform documents lives in [External References](docs/reference/external-references.md).
+
 ## Runtime Shape
 
 ```mermaid
@@ -122,7 +135,7 @@ Core OAuth behavior:
 - `GET /oauth/jwks` publishes public signing keys.
 - Well-known metadata publishes OAuth, OIDC, and protected-resource discovery.
 
-Supported client authentication methods are `client_secret_post`, `client_secret_basic`, `private_key_jwt`, and `none` for public local clients. Production clients should use explicit client records with approved redirect URIs, scopes, resources, and authentication methods.
+Supported client authentication methods are `client_secret_post`, `client_secret_basic`, `private_key_jwt`, and `none` for metadata-document public clients. Production clients should use explicit client records with approved redirect URIs, scopes, resources, and authentication methods.
 
 External OIDC providers are first-class. AWS CDK Cognito mode is an optional quick-start upstream provider for deployments that need one.
 
@@ -142,6 +155,19 @@ The service is built as production infrastructure from the first commit.
 - CORS origins are explicit and wildcard origins are rejected.
 
 Security details live in [Security Model](docs/architecture/security-model.md), [OAuth Provider](docs/architecture/oauth-provider.md), and [Security Review](docs/development/security-review.md).
+
+## Production Readiness Evidence
+
+| Area | Required evidence |
+| --- | --- |
+| Public URLs | `PUBLIC_ISSUER_URL`, `MCP_RESOURCE_URL`, and `ACTIONS_AUDIENCE` use public HTTPS values. |
+| OAuth clients | Production client records contain exact redirect URIs, allowed scopes, allowed resources, auth method, PKCE policy, and secret hashes where required. |
+| Upstream identity | The upstream OIDC provider accepts `/oauth/callback` and returns `sub`, `email`, and `email_verified` through userinfo. |
+| Secrets | Raw client secrets, upstream IdP secret, and signing key material are loaded from secure runtime configuration. |
+| Storage | `OAUTH_STORE_PATH` points to durable storage owned by the service user. |
+| Origins | `ALLOWED_ORIGINS` contains explicit browser origins used by ChatGPT and local development. |
+| OpenAPI | `/actions/openapi.json` returns OpenAPI 3.1 with OAuth URLs on the deployed origin. |
+| Verification | Targeted tests pass for the changed surface and `npm run check` passes before release. |
 
 ## Project Layout
 
