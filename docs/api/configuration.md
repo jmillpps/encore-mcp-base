@@ -12,8 +12,7 @@ Production mode is active when `NODE_ENV=production`.
 | `OAUTH_STORE_PATH` | file path | Durable OAuth store JSON path. |
 | `ALLOWED_ORIGINS` | string list | Space-separated browser origins allowed for ChatGPT. |
 | `OAUTH_CLIENTS_JSON` | JSON array | Configured OAuth clients. |
-| `OAUTH_PRIVATE_KEY_PEM` | PEM | Active RSA private key for token signing. |
-| `OAUTH_PRIVATE_KEY_PEM_FILE` | file path | Active RSA private key file used when the key is loaded from Parameter Store onto the instance filesystem. |
+| `OAUTH_PRIVATE_KEY_PEM` or `OAUTH_PRIVATE_KEY_PEM_FILE` | PEM or file path | Active RSA private key source for token signing. |
 | `OAUTH_KEY_ID` | string | Active signing key ID. |
 | `UPSTREAM_OIDC_ISSUER_URL` | URL | Upstream identity provider issuer URL. |
 | `UPSTREAM_OIDC_AUTHORIZATION_URL` | URL | Upstream authorization endpoint. |
@@ -37,6 +36,8 @@ Production mode is active when `NODE_ENV=production`.
 | Variable | Purpose |
 | --- | --- |
 | `OAUTH_PREVIOUS_PUBLIC_KEYS_JSON` | Previous public signing keys kept available for token verification and JWKS publication. |
+
+Production signing requires `OAUTH_KEY_ID` and one private key source: `OAUTH_PRIVATE_KEY_PEM` or `OAUTH_PRIVATE_KEY_PEM_FILE`.
 
 ## Local Defaults
 
@@ -84,7 +85,7 @@ Integer environment variables use positive safe integers. Production startup fai
 
 Production identity comes from upstream OIDC userinfo. Userinfo must return `sub`, `email`, and `email_verified`. Optional display claims include `given_name`, `family_name`, `name`, and `preferred_username`.
 
-Profile string values must be present when required, must be at most 256 characters, and must omit line breaks. `email` must be an email address. `email_verified` must be a boolean value.
+Profile string values must be present when required, must be at most 256 characters, and must omit line breaks. `email` must be an email address. `email_verified` must be a boolean value or a string boolean accepted by normalization.
 
 ## Upstream OIDC Rules
 
@@ -95,6 +96,8 @@ The upstream identity provider must register `UPSTREAM_OIDC_REDIRECT_URI` as an 
 ## Startup Validation
 
 Startup validation reads configuration, resolves the store path, loads clients, validates upstream OIDC settings, and loads signing keys. Production startup fails when required security material is missing or unsafe.
+
+Signing keys must be RSA keys with at least 2048 bits. Key IDs use 1 to 128 safe characters. Previous public keys must have unique key IDs.
 
 ## CDK Runtime Parameters
 

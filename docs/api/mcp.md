@@ -4,7 +4,7 @@ The service implements MCP protocol baseline `2025-11-25`.
 
 ## Authentication
 
-All MCP transport endpoints require an MCP-audience bearer token:
+MCP request endpoints require an MCP-audience bearer token:
 
 | Requirement | Value |
 | --- | --- |
@@ -13,7 +13,9 @@ All MCP transport endpoints require an MCP-audience bearer token:
 | Token algorithm | RS256 |
 | Query token policy | `access_token` query parameters are rejected. |
 
-Protected tools also enforce tool scopes. Scope failures return a ChatGPT-compatible challenge in the transport header and in the tool result metadata.
+`POST /mcp`, `GET /mcp`, `DELETE /mcp`, `GET /sse`, and `POST /messages` require the bearer token. `OPTIONS /mcp` validates origin, query token policy, and duplicate authorization header shape before returning CORS metadata.
+
+Protected tools also enforce tool scopes. Scope failures return a ChatGPT-compatible challenge in the `WWW-Authenticate` transport header and in the tool result metadata.
 
 ## Streamable HTTP
 
@@ -34,12 +36,14 @@ Protected tools also enforce tool scopes. Scope failures return a ChatGPT-compat
 | `202` | `POST /mcp` | Notification or client response accepted. |
 | `204` | `OPTIONS /mcp`, `DELETE /mcp` | Request completed with no body. |
 | `400` | all `/mcp` methods | Invalid headers, session ID, protocol version, JSON body, or query token use. |
-| `401` | all `/mcp` methods | Missing or invalid MCP bearer token. |
-| `403` | all `/mcp` methods | Valid token missing required scope. |
+| `401` | `POST /mcp`, `GET /mcp`, `DELETE /mcp` | Missing or invalid MCP bearer token. |
+| `403` | transport validation | Disallowed browser origin. |
 | `404` | session-bound requests | Unknown, expired, or terminated MCP session. |
 | `429` | SSE and request ID paths | Connection limit or request ID limit reached. |
 
 Initialize responses include `MCP-Session-Id`. Session-bound `POST`, `GET`, and `DELETE` requests send that value in the `MCP-Session-Id` header.
+
+Tool scope failures use a successful JSON-RPC response containing an auth challenge result. The HTTP response also includes `WWW-Authenticate`.
 
 ## Legacy HTTP/SSE
 
@@ -90,3 +94,11 @@ Tool result resource URIs use `https`, `http`, or `ui` schemes.
 Requests return JSON-RPC responses. Notifications and client responses return `202 Accepted` with an empty body.
 
 Malformed JSON, invalid UTF-8, oversized bodies, invalid IDs, invalid params, and unsupported fields return protocol errors. Duplicate request IDs within a session are rejected.
+
+## Session Headers
+
+| Header | Direction | Rule |
+| --- | --- | --- |
+| `MCP-Session-Id` | Response from `initialize`; request header for session-bound calls. | Session IDs use URL-safe token characters and are stored as hashes. |
+| `MCP-Protocol-Version` | Request header. | Optional during initialization and later requests. When present after initialization, it must match the stored session protocol version. |
+| `Last-Event-ID` | Request header allowed by CORS. | Reserved for MCP client compatibility. |

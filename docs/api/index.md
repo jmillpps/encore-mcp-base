@@ -23,6 +23,25 @@ This section documents public service contracts. It focuses on protocol behavior
 | Identity claim normalization | [Identity Profile](identity-profile.md) | `auth/user-profile.ts` |
 | Runtime configuration and production startup validation | [Configuration Reference](configuration.md) | `shared/config.ts`, `auth/startup.ts` |
 
+## Endpoint Families
+
+| Family | Public paths | Auth model | Response model |
+| --- | --- | --- | --- |
+| OAuth and OIDC | `/oauth/*`, `/.well-known/*` | Client authentication, browser redirect state, or bearer token depending on endpoint. | OAuth JSON error bodies, redirects, JWKS, userinfo, and discovery JSON. |
+| MCP Streamable HTTP | `/mcp` | MCP-audience bearer token for POST, GET, and DELETE; CORS preflight validates header shape. | JSON-RPC response bodies, accepted responses, empty responses, and SSE streams. |
+| Legacy MCP HTTP/SSE | `/sse`, `/messages` | MCP-audience bearer token. | SSE receive stream and accepted message posts. |
+| GPT Actions REST | `/health`, `/privacy`, `/actions/*` | Public endpoints or Actions-audience bearer token. | JSON response bodies, plain text privacy text, and Encore error bodies. |
+
+## API Review Rules
+
+| Change type | Required API review |
+| --- | --- |
+| New OAuth field, endpoint, grant, or client auth method | Update OAuth API docs, client registry docs, discovery expectations, and OAuth tests. |
+| New MCP tool or transport behavior | Update MCP API docs, capability docs, GPT Apps guide, and MCP live tests. |
+| New Actions endpoint | Update Actions API docs, OpenAPI contract docs, Actions guide, and OpenAPI compatibility tests. |
+| New identity claim | Update identity profile docs, token claim behavior, OpenAPI schemas, MCP output schemas, and upstream IdP tests. |
+| New configuration variable | Update configuration docs, runtime parameter docs, CDK docs, production startup tests, and deployment guides. |
+
 ## External Specifications
 
 Use [External References](../reference/external-references.md) when an API page mentions MCP, ChatGPT Apps, GPT Actions, OAuth, OIDC, OpenAPI, JSON Schema, Encore, or AWS runtime services. Keep protocol claims aligned with the linked source and the current implementation.

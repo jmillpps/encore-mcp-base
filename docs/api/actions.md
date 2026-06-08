@@ -35,6 +35,8 @@ The OAuth flow for Actions uses `/oauth/authorize` and `/oauth/token`. GPT Actio
 | `GET /actions/profile` | `Authorization` | none | none |
 | `GET /actions/session` | `Authorization` | none | none |
 
+Protected endpoints reject the `access_token` query parameter. Bearer tokens always travel in the `Authorization` header.
+
 ## Health Response
 
 Status `200` returns:
@@ -47,13 +49,13 @@ Status `200` returns:
 
 ## Privacy Response
 
-Status `200` returns a plain text privacy policy for GPT configuration.
+Status `200` returns a plain text privacy policy for GPT configuration. The response content type is `text/plain; charset=utf-8` and the cache header is `public, max-age=300`.
 
 ## OpenAPI Response
 
 Status `200` returns the GPT Actions OpenAPI 3.1 document as JSON. The document declares the public server URL, OAuth authorization code URLs, read-only Actions operations, required scopes, response schemas, and `x-openai-isConsequential: false`.
 
-The endpoint is public and read-only. The response is cacheable for five minutes.
+The endpoint is public and read-only. The response content type is `application/json; charset=utf-8` and the cache header is `public, max-age=300`.
 
 ## Profile Response
 
@@ -104,3 +106,7 @@ Error bodies contain:
 The OpenAPI document declares OAuth authorization code flow, operation IDs, JSON response schemas, required OAuth scopes, and `x-openai-isConsequential: false` for current read-only operations.
 
 Use `GET /actions/openapi.json` for GPT Actions URL import. Use the export command when a file upload workflow is required.
+
+## Actions Audience Rule
+
+Actions protected endpoints accept only access tokens whose audience equals `ACTIONS_AUDIENCE`. MCP-audience tokens are rejected by Actions endpoints. The OAuth provider binds omitted GPT Actions resources to `ACTIONS_AUDIENCE` when the client record has one allowed resource and uses the `gpt-actions` client class.

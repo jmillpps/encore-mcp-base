@@ -27,6 +27,8 @@ The service implements private OAuth and OIDC endpoints for GPT account linking 
 | `GET` | `/.well-known/oauth-protected-resource` | none | Protected resource metadata. |
 | `GET` | `/.well-known/oauth-protected-resource/mcp` | none | MCP protected resource metadata. |
 
+All OAuth endpoints reject `access_token` query parameters. Token and userinfo responses use `Cache-Control: no-store` and `Pragma: no-cache`.
+
 ## Authorization Request
 
 Required parameters:
@@ -52,6 +54,8 @@ Optional parameters:
 The endpoint rejects duplicate parameters, unsupported parameters, query access tokens, unregistered redirect URIs, unknown clients, unsupported scopes, and unapproved resources.
 
 Successful authorization validates the ChatGPT client request, stores upstream authorization state, and redirects the browser to the configured upstream identity provider. The upstream provider redirects to `/oauth/callback`. The service consumes the upstream state once, exchanges the upstream code, reads userinfo, and redirects to the registered ChatGPT `redirect_uri` with the service authorization code and optional `state`.
+
+Authorization requests are rate-limited through the durable `oauth-authorize` bucket.
 
 ## Token Grants
 
@@ -99,6 +103,8 @@ Supported client authentication methods:
 
 Failed `client_secret_basic` requests return `WWW-Authenticate: Basic realm="oauth"` with `invalid_client`.
 
+Token requests are rate-limited through the durable `oauth-token` bucket. The rate-limit subject uses the submitted client ID, Basic client ID, or remote address fallback.
+
 ## Token Response
 
 Status `200` returns:
@@ -122,9 +128,13 @@ ID tokens include the grant-bound user profile, client audience, authentication 
 
 `GET /oauth/userinfo` accepts Actions and MCP audience tokens with `openid`. Status `200` returns the profile bound to the access token.
 
+Userinfo requests are rate-limited through the durable `oauth-userinfo` bucket.
+
 ## Discovery Metadata
 
 Discovery documents publish endpoint URLs, supported response types, grant types, token endpoint auth methods, PKCE methods, scopes, and claims.
+
+OpenID configuration includes `userinfo_endpoint`, `claims_supported`, and `client_id_metadata_document_supported`.
 
 Protected resource metadata publishes:
 
@@ -146,3 +156,5 @@ OAuth errors return JSON:
 | `error_description` | string | Safe caller-facing description. |
 
 Common codes include `invalid_request`, `invalid_client`, `invalid_grant`, `invalid_scope`, `invalid_target`, `unsupported_grant_type`, and `server_error`.
+
+Client-facing OAuth error descriptions are generic. Operational diagnostics carry redacted context for maintainers.
