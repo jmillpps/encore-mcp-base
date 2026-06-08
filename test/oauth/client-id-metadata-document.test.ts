@@ -13,6 +13,7 @@ import { callTool, initializeMcp, bearer } from "../support/mcp.ts";
 import { readJson } from "../support/http.ts";
 import { startService, type TestService } from "../support/service-process.ts";
 import { testUserProfile } from "../support/user-profile.ts";
+import { productionUpstreamOidcEnv } from "../support/upstream-env.ts";
 import { authorizeMetadataDocumentClient, fetchAuthorizationUrl, startInvalidUtf8MetadataServer, startMetadataServer } from "../support/client-metadata.ts";
 
 test("Client ID Metadata Document clients complete OAuth and call protected MCP tools", async (t) => {
@@ -227,22 +228,8 @@ function productionConfig() {
     RATE_LIMIT_WINDOW_SECONDS: "60",
     RATE_LIMIT_MAX_REQUESTS: "120",
     MCP_SSE_MAX_CONNECTIONS: "1024",
-    ...upstreamOidcEnv(),
+    ...productionUpstreamOidcEnv(),
   });
-}
-
-function upstreamOidcEnv(): NodeJS.ProcessEnv {
-  return {
-    UPSTREAM_OIDC_ISSUER_URL: "https://idp.example.test",
-    UPSTREAM_OIDC_AUTHORIZATION_URL: "https://login.example.test/oauth2/authorize",
-    UPSTREAM_OIDC_TOKEN_URL: "https://login.example.test/oauth2/token",
-    UPSTREAM_OIDC_USERINFO_URL: "https://login.example.test/oauth2/userInfo",
-    UPSTREAM_OIDC_CLIENT_ID: "upstream-client",
-    UPSTREAM_OIDC_CLIENT_SECRET: "upstream-secret",
-    UPSTREAM_OIDC_REDIRECT_URI: "https://issuer.example.test/oauth/callback",
-    UPSTREAM_OIDC_SCOPES: "openid profile email",
-    UPSTREAM_OIDC_TOKEN_AUTH_METHOD: "client_secret_post",
-  };
 }
 
 async function startCountingMetadataDocumentServer(
