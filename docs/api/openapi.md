@@ -1,6 +1,6 @@
 # OpenAPI Contract
 
-The OpenAPI document is the stable GPT Actions contract exported from the service.
+The OpenAPI document is the stable GPT Actions contract served by the service and exported by the local tooling.
 
 ## Document Shape
 
@@ -20,6 +20,8 @@ The OpenAPI document is the stable GPT Actions contract exported from the servic
 | `GET /health` | `getServiceHealth` | none |
 | `GET /actions/profile` | `getAuthenticatedProfile` | `openid profile email` |
 | `GET /actions/session` | `getAuthenticatedSession` | `openid` |
+
+`GET /actions/openapi.json` serves the document. The schema endpoint is public and read-only.
 
 ## Actions Requirements
 
@@ -46,3 +48,13 @@ The command validates the route graph and compatibility rules before writing out
 | `--no-build` | optional | Reuse an existing Encore route graph. |
 
 Output paths must stay inside the project and end with `.json`.
+
+## URL Import
+
+Use this URL shape for GPT Actions import:
+
+```text
+https://service.example.com/actions/openapi.json
+```
+
+The endpoint uses the configured issuer for `servers`, authorization URL, and token URL.

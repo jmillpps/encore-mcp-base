@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
+import { openApiDocument } from "../../actions/openapi-document.ts";
+import { assertChatGptActionsOpenApi } from "../../tools/openapi-actions-compatibility.ts";
 import { readJson, requireRecord, requireString } from "../support/http.ts";
+import { startService } from "../support/service-process.ts";
 
 test("OpenAPI export contains Actions endpoints and OAuth authorization code metadata", () => {
   const result = spawnSync(process.execPath, ["--experimental-strip-types", "tools/export-openapi.ts", "--base-url", "https://example.test"], {
@@ -51,6 +54,17 @@ test("OpenAPI export contains Actions endpoints and OAuth authorization code met
   assert.deepEqual(errorResponse.required, ["code", "message", "details", "internal_message"]);
   const errorProperties = requireRecord(errorResponse.properties, "ErrorResponse properties");
   assert.match(requireString(requireRecord(errorProperties.internal_message, "ErrorResponse internal_message").description, "ErrorResponse internal_message description"), /live error contract/);
+});
+
+test("OpenAPI endpoint returns the Actions schema for URL import", async (t) => {
+  const service = await startService(t);
+  const response = await fetch(`${service.origin}/actions/openapi.json`);
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type") ?? "", /^application\/json\b/);
+  assert.equal(response.headers.get("cache-control"), "public, max-age=300");
+  const document = await readJson(response);
+  assert.deepEqual(document, openApiDocument(service.origin));
+  assert.doesNotThrow(() => assertChatGptActionsOpenApi(document));
 });
 
 test("OpenAPI export can write a generated artifact", async (t) => {

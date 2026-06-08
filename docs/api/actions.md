@@ -21,6 +21,7 @@ The OAuth flow for Actions uses `/oauth/authorize` and `/oauth/token`. GPT Actio
 | --- | --- | --- | --- |
 | `GET` | `/health` | none | Return service reachability. |
 | `GET` | `/privacy` | none | Return the public privacy policy. |
+| `GET` | `/actions/openapi.json` | none | Return the GPT Actions OpenAPI document. |
 | `GET` | `/actions/profile` | `openid profile email` | Return the authenticated profile. |
 | `GET` | `/actions/session` | `openid` | Return token session metadata. |
 
@@ -30,6 +31,7 @@ The OAuth flow for Actions uses `/oauth/authorize` and `/oauth/token`. GPT Actio
 | --- | --- | --- | --- |
 | `GET /health` | none | none | none |
 | `GET /privacy` | none | none | none |
+| `GET /actions/openapi.json` | none | none | none |
 | `GET /actions/profile` | `Authorization` | none | none |
 | `GET /actions/session` | `Authorization` | none | none |
 
@@ -46,6 +48,12 @@ Status `200` returns:
 ## Privacy Response
 
 Status `200` returns a plain text privacy policy for GPT configuration.
+
+## OpenAPI Response
+
+Status `200` returns the GPT Actions OpenAPI 3.1 document as JSON. The document declares the public server URL, OAuth authorization code URLs, read-only Actions operations, required scopes, response schemas, and `x-openai-isConsequential: false`.
+
+The endpoint is public and read-only. The response is cacheable for five minutes.
 
 ## Profile Response
 
@@ -94,3 +102,5 @@ Error bodies contain:
 ## OpenAPI
 
 The OpenAPI document declares OAuth authorization code flow, operation IDs, JSON response schemas, required OAuth scopes, and `x-openai-isConsequential: false` for current read-only operations.
+
+Use `GET /actions/openapi.json` for GPT Actions URL import. Use the export command when a file upload workflow is required.

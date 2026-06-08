@@ -77,6 +77,8 @@ Production URLs use HTTPS and public hostnames. URLs must omit credentials, quer
 
 `PUBLIC_ISSUER_URL` uses the origin root. `MCP_RESOURCE_URL` points to `/mcp`. `ALLOWED_ORIGINS` entries are origins.
 
+`PUBLIC_ISSUER_URL` also feeds `GET /actions/openapi.json`, OAuth discovery metadata, token issuer claims, and OpenAPI OAuth URLs.
+
 ## Integer Rules
 
 Integer environment variables use positive safe integers. Production startup fails when a required integer is missing, empty, non-integer, zero, or negative.
@@ -92,3 +94,9 @@ Cognito endpoint URLs use HTTPS and public hostnames in production. `COGNITO_SCO
 ## Startup Validation
 
 Startup validation reads configuration, resolves the store path, loads clients, validates identity mode, and loads signing keys. Production startup fails when required security material is missing or unsafe.
+
+## CDK Runtime Parameters
+
+The CDK deployment writes runtime variables to AWS Systems Manager Parameter Store. The EC2 runner reads the configured parameter path, writes the container environment file, writes the private signing key file, and mounts durable state under `/var/lib/<service-name>`.
+
+Use [Runtime Parameters](../deployment/runtime-parameters.md) for the Parameter Store values and [AWS CDK Deployment](../deployment/aws-cdk.md) for deployment inputs.

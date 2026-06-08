@@ -14,7 +14,8 @@ Production deployment runs the Encore service with explicit public URLs, registe
 8. Configure RSA signing key material.
 9. Configure Cognito upstream login.
 10. Use the public `/privacy` URL in GPT Action configuration.
-11. Set token lifetimes, rate limits, and SSE connection limits.
+11. Use the public `/actions/openapi.json` URL for GPT Actions schema import.
+12. Set token lifetimes, rate limits, and SSE connection limits.
 
 ## Client Registry
 
@@ -75,4 +76,4 @@ Keep `OAUTH_CLIENTS_JSON` in environment configuration or a secret-backed config
 
 ## AWS CDK Path
 
-The AWS CDK deployment path is covered in [AWS CDK Deployment](aws-cdk.md).
+The AWS CDK deployment path is covered in [AWS CDK Deployment](aws-cdk.md). Runtime Parameter Store values are covered in [Runtime Parameters](runtime-parameters.md). Source packaging and image builds are covered in [Source Build](source-build.md).

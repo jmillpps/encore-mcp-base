@@ -30,6 +30,23 @@ Required metadata fields:
 
 Supported token auth methods are `none` and `private_key_jwt`.
 
+## ChatGPT Client Metadata
+
+During GPT Apps setup, ChatGPT can provide:
+
+| ChatGPT field | Service use |
+| --- | --- |
+| Client Identifier Metadata Document URL | OAuth `client_id` value for metadata-document clients. |
+| Callback URL | Redirect URI that must appear in the resolved metadata or static client record. |
+
+The service supports metadata-document client resolution. Dynamic Client Registration requires a registration endpoint.
+
+Keep the Registration URL field empty when ChatGPT has no registration URL value. Use the Client Identifier Metadata Document URL as the client identifier when configuring a metadata-document client flow.
+
+## Locale Hints
+
+ChatGPT can send locale hints such as `ui_locales` during authorization. The service accepts these hints and keeps authorization policy tied to client ID, redirect URI, resource, scope, state, nonce, and PKCE values.
+
 ## Private Key JWT
 
 Metadata-document clients using `private_key_jwt` must publish a same-origin `jwks_uri`. JWKS keys must be RSA `RS256` keys with at least 2048-bit modulus length.

@@ -16,8 +16,16 @@ The service stores OAuth, rate-limit, and MCP session state in one JSON file. Th
 
 The store keeps SHA-256 hashes for authorization codes, upstream authorization states, refresh tokens, and MCP session IDs.
 
+Raw OAuth client secrets, Cognito client secrets, and signing key material live in Parameter Store. The runtime store keeps OAuth state and session state.
+
 ## Update Model
 
 Each write uses a read-modify-write transaction. The service serializes same-process writes through an in-process queue and serializes multi-process writes through a filesystem lock.
 
 Writes use temporary files and atomic rename. Malformed store files stop updates.
+
+## Production Path
+
+The CDK deployment sets `OAUTH_STORE_PATH` to `/var/lib/<service-name>/oauth-store.json`. The container mounts `/var/lib/<service-name>` for durable store access.
+
+The runner writes runtime secrets under `/run/<service-name>` and mounts that directory read-only into the container.

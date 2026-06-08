@@ -7,4 +7,4 @@ This section documents stable public service contracts. It avoids code function 
 - [Actions API Reference](actions.md) covers REST endpoints used by GPT Actions.
 - [Identity Profile](identity-profile.md) covers profile claim behavior.
 - [Configuration Reference](configuration.md) covers runtime environment variables and URL rules.
-- [OpenAPI Contract](openapi.md) covers the generated Actions schema and export behavior.
+- [OpenAPI Contract](openapi.md) covers the served Actions schema, URL import, and export behavior.

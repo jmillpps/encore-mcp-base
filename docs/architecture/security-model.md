@@ -14,6 +14,7 @@ Security is part of every service boundary. Public HTTP input, OAuth metadata, t
 | Rate limits | Durable buckets apply to OAuth endpoints and MCP tools. |
 | Browser origins | MCP transport origins are validated and CORS headers are pinned. |
 | Query tokens | Public endpoints reject `access_token` URI query parameters. |
+| OpenAPI schema | `/actions/openapi.json` is public, read-only, and generated from the configured issuer. |
 
 ## OAuth Security
 
@@ -28,3 +29,19 @@ Every MCP transport request requires an MCP-audience bearer token. Initialize re
 ## Production Security
 
 Production configuration requires public HTTPS URLs, explicit clients, explicit token lifetimes, explicit rate limits, explicit store path, and signing key material. Startup fails when required security configuration is missing.
+
+## AWS Deployment Security
+
+The CDK deployment applies these controls:
+
+| Area | Control |
+| --- | --- |
+| Instance metadata | EC2 requires IMDSv2. |
+| Network ingress | Security group allows inbound `80` and `443`. |
+| Runtime secrets | SecureString parameters use the stack KMS key. |
+| IAM scope | EC2 role reads only the configured Parameter Store path. |
+| Key handling | The private signing key is written to an instance-local `0400` file. |
+| Storage | Root EBS volume is encrypted. |
+| HTTPS proxy | Caddy terminates HTTPS and sets response security headers. |
+| Binary install | Caddy archive checksum is verified before installation. |
+| Source packaging | Source archive requires a clean worktree and uses tracked files from `HEAD`. |

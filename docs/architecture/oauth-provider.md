@@ -14,6 +14,8 @@ The local development profile includes:
 
 Production uses `OAUTH_CLIENTS_JSON`. URL-shaped client IDs are resolved as Client ID Metadata Documents.
 
+Static registry clients provide exact redirect URIs, allowed scopes, allowed resources, client authentication method, PKCE policy, and client class. Metadata-document clients provide client identity material through a fetched metadata document.
+
 ## Resource Binding
 
 Access tokens use the resolved OAuth resource value as the `aud` claim.
@@ -32,6 +34,8 @@ Default scopes are:
 
 The client registry controls allowed scopes per client. Token grants reject scopes outside the current client policy.
 
+Authorization accepts ChatGPT locale hints and keeps policy decisions tied to validated OAuth fields.
+
 ## Token Handling
 
 Access tokens and ID tokens are signed with RS256. ID tokens and profile endpoints return the user profile bound to the authorization grant. Refresh tokens rotate on use. Reuse of an older refresh token revokes the token family.
@@ -41,6 +45,14 @@ Authorization codes, upstream login states, and refresh tokens are stored as SHA
 ## Cognito Login
 
 When Cognito is enabled, `/oauth/authorize` validates the GPT client request and stores an upstream login state. The service redirects the browser to Cognito hosted login with PKCE. `/oauth/cognito/callback` consumes the upstream state once, exchanges the Cognito code, reads Cognito userinfo, then issues the service authorization code to the original GPT redirect URI.
+
+The Cognito callback is owned by the service origin. Cognito users authenticate against the deployed user pool. The service uses Cognito userinfo claims for the issued ID token, userinfo response, MCP profile tool, and Actions profile endpoint.
+
+## Client Authentication
+
+Static clients support `client_secret_post` and `client_secret_basic`. Metadata-document clients support `none` and `private_key_jwt`.
+
+`private_key_jwt` clients publish a same-origin JWKS. The service verifies assertion signature, issuer, subject, audience, expiration, time bounds, and `jti` replay status.
 
 ## Discovery
 

@@ -2,9 +2,9 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { openApiDocument } from "../actions/openapi-document.ts";
 import { isLoopbackHostname, isNonPublicHostname } from "../shared/network-address.ts";
 import { assertChatGptActionsOpenApi } from "./openapi-actions-compatibility.ts";
-import { openApiDocument } from "./openapi-document.ts";
 import { loadValidatedEncoreGraph } from "./openapi-graph.ts";
 
 interface ExportOptions {

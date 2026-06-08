@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { openApiDocument } from "../../actions/openapi-document.ts";
 import { assertChatGptActionsOpenApi } from "../../tools/openapi-actions-compatibility.ts";
-import { openApiDocument } from "../../tools/openapi-document.ts";
 
 test("OpenAPI Actions compatibility accepts the generated document", () => {
   assert.doesNotThrow(() => assertChatGptActionsOpenApi(openApiDocument("https://example.test")));

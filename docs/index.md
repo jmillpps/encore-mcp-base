@@ -36,6 +36,9 @@ The documentation is organized by reader task.
 
 - [Deployment](deployment/index.md) lists deployment guides.
 - [Production Deployment](deployment/production.md) covers production environment setup.
+- [AWS CDK Deployment](deployment/aws-cdk.md) covers the EC2, Route53, Cognito, ECR, CodeBuild, and Parameter Store deployment path.
+- [Runtime Parameters](deployment/runtime-parameters.md) covers Parameter Store values, secrets, runtime files, and restarts.
+- [Source Build](deployment/source-build.md) covers source archives, CodeBuild image builds, ECR, and runtime pulls.
 - [Client Registry](deployment/client-registry.md) covers production OAuth client records.
 - [OpenAPI Export](deployment/openapi-export.md) covers Actions schema generation.
 

@@ -8,7 +8,19 @@ Start the local service before exporting the schema:
 npm run dev
 ```
 
+## Import The Schema
+
+For production, import the schema by URL:
+
+```text
+https://service.example.com/actions/openapi.json
+```
+
+The deployed endpoint returns the same OpenAPI document produced by the export command. The document uses the configured public issuer URL for server and OAuth URLs.
+
 ## Export The Schema
+
+Use the export command when the GPT Actions UI needs a file upload or when validating a local schema artifact.
 
 For local development:
 
@@ -63,7 +75,7 @@ The local Actions client allows these callback URLs:
 
 Use these values in the GPT Actions setup:
 
-1. Import `var/actions.openapi.json`.
+1. Import `var/actions.openapi.json` or the deployed `/actions/openapi.json` URL.
 2. Configure OAuth authorization code authentication.
 3. Set authorization URL to `http://localhost:4000/oauth/authorize`.
 4. Set token URL to `http://localhost:4000/oauth/token`.
@@ -79,6 +91,7 @@ After account linking, ChatGPT can call `/actions/profile` and `/actions/session
 | Endpoint | OAuth scopes | Purpose |
 | --- | --- | --- |
 | `GET /health` | none | Check service reachability. |
+| `GET /actions/openapi.json` | none | Serve the Actions OpenAPI schema for URL import. |
 | `GET /actions/profile` | `openid profile email` | Return the authenticated OIDC user profile. |
 | `GET /actions/session` | `openid` | Return token metadata. |
 
@@ -100,11 +113,17 @@ curl http://localhost:4000/.well-known/openid-configuration
 
 Protected Actions endpoints require an access token from the account-linking flow. The service rejects bearer tokens with the MCP audience on Actions endpoints.
 
+Verify schema URL import locally:
+
+```sh
+curl http://localhost:4000/actions/openapi.json
+```
+
 ## Troubleshooting
 
 | Symptom | Check |
 | --- | --- |
-| OpenAPI import fails | Re-export with the public service origin used by ChatGPT. |
+| OpenAPI import fails | Use the public `/actions/openapi.json` URL or re-export with the public service origin used by ChatGPT. |
 | Account linking fails | Confirm redirect URI, client secret, and scopes. |
 | `401` from Actions endpoint | Confirm the token is present, current, and issued for `ACTIONS_AUDIENCE`. |
 | `403` from Actions endpoint | Confirm the token includes the required endpoint scopes. |
@@ -119,5 +138,17 @@ node --experimental-strip-types tools/generate-client-secret.ts
 ```
 
 Place `clientSecret` in the GPT OAuth configuration. Place `clientSecretHash` in the matching `OAUTH_CLIENTS_JSON` record. Keep the raw secret out of repository files and logs.
+
+Use the deployed `/privacy` URL in the GPT Actions privacy policy field:
+
+```text
+https://service.example.com/privacy
+```
+
+Use the deployed schema URL in the GPT Actions import field:
+
+```text
+https://service.example.com/actions/openapi.json
+```
 
 Use [Actions API Reference](../api/actions.md) for endpoint details, [Client Registry](../deployment/client-registry.md) for production client records, and [OpenAPI Export](../deployment/openapi-export.md) for export behavior.

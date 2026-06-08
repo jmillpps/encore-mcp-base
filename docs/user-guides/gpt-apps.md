@@ -115,3 +115,11 @@ Create the custom app from ChatGPT Settings:
 After refresh, ChatGPT should list `health.check`, `identity.profile`, and `auth.session` in the app actions section.
 
 Connected custom apps are available from normal ChatGPT chats through app invocation. Current ChatGPT custom GPT chats omit connected app tools in the GPT preview and live GPT chat. Use a normal ChatGPT chat for Apps tool execution until ChatGPT exposes custom apps to custom GPT chats.
+
+## Cognito Sign-In
+
+Production GPT Apps authentication redirects through the service OAuth endpoint to Cognito hosted login. Sign in with a Cognito user from the deployed user pool. After Cognito returns to `/oauth/cognito/callback`, the service issues the GPT Apps authorization code and ChatGPT exchanges it for an MCP-audience access token.
+
+## Client Metadata
+
+ChatGPT can present a Client Identifier Metadata Document URL and callback URL during app setup. Keep the registration URL empty when ChatGPT has no registration URL value. Add the ChatGPT callback URL to the configured client record when using a static registry client. Use [Client Metadata Maintenance](../maintenance/client-metadata.md) for metadata-document client behavior.

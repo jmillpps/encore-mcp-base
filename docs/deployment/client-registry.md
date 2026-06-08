@@ -28,6 +28,29 @@ Actions clients may omit `resource` during authorization, token exchange, and re
 
 GPT Apps MCP clients use the MCP resource in `allowedResources`. MCP token flows include `resource`. The local GPT Apps client requires PKCE.
 
+## Seeded CDK Clients
+
+The CDK seed command writes one GPT Actions client and one GPT Apps MCP client into `OAUTH_CLIENTS_JSON`.
+
+| Seed option | Client field |
+| --- | --- |
+| `--actions-client-id` | Actions `clientId`. |
+| `--actions-display-name` | Actions `displayName`. |
+| `--actions-redirect-uri` | Actions `redirectUris` entry. |
+| `--mcp-client-id` | MCP `clientId`. |
+| `--mcp-display-name` | MCP `displayName`. |
+| `--mcp-redirect-uri` | MCP `redirectUris` entry. |
+
+Repeat `--actions-redirect-uri` or `--mcp-redirect-uri` for multiple ChatGPT callback URLs.
+
+The seed command stores raw ChatGPT client secrets in SecureString parameters and stores only hashes in `OAUTH_CLIENTS_JSON`.
+
+## Client Metadata Documents
+
+URL-shaped client IDs are resolved as Client Identifier Metadata Documents. Metadata-document clients can use `none` or `private_key_jwt` token endpoint authentication.
+
+Use [Client Metadata Maintenance](../maintenance/client-metadata.md) for metadata retrieval, pinning, JWKS, and private key JWT rules.
+
 ## Secret Generation
 
 Generate a secret and hash:

@@ -9,7 +9,7 @@ New capabilities should use one implementation with protocol-specific adapters.
 3. Add an MCP tool adapter under `mcp/tools/`.
 4. Register the MCP tool in `mcp/tool-registry.ts`.
 5. Add an Actions endpoint under `actions/` when GPT Actions needs the behavior.
-6. Add the OpenAPI operation in `tools/openapi-document.ts`.
+6. Add the OpenAPI operation in `actions/openapi-document.ts`.
 7. Add live tests for each exposed surface.
 8. Run targeted tests for the changed surface.
 9. Run `npm run check` before final release.
