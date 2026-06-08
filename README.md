@@ -57,6 +57,16 @@ flowchart LR
 
 The service issues separate audience-bound tokens for MCP and Actions. MCP tools and Actions endpoints use the same capability implementation where behavior overlaps.
 
+## Prerequisites
+
+| Requirement | Use |
+| --- | --- |
+| Node.js and npm | Install packages, run TypeScript checks, run Node test suites, and run local tools. |
+| Encore CLI | Run the TypeScript service locally and deploy through Encore-supported service wiring. |
+| Public HTTPS origin | Connect ChatGPT Apps, import GPT Actions, complete OAuth account linking, and publish discovery metadata. |
+| Upstream OIDC provider | Supply the signed-in user identity through authorization, token, and userinfo endpoints. |
+| AWS CLI and CDK tools | Use the included AWS deployment path, Parameter Store seeding, stack operations, and release checks. |
+
 ## Quick Start
 
 Install Node.js, npm, and the Encore CLI. Then run the service:
@@ -82,6 +92,17 @@ npm run openapi -- --base-url http://localhost:4000 --out var/actions.openapi.js
 ```
 
 Local development supplies local URLs, generated signing keys, development OAuth clients, and a durable store at `var/oauth-store.json`. Automated tests start a local upstream OIDC provider for real authorization-code flows.
+
+## Local Defaults
+
+| Area | Local value |
+| --- | --- |
+| Service origin | `http://localhost:4000` |
+| OAuth callback | `http://localhost:4000/oauth/callback` |
+| Default scopes | `openid profile email` |
+| Development clients | `local-test`, `gpt-actions`, `gpt-apps-mcp` |
+| Durable store | `var/oauth-store.json` |
+| Actions schema export | `var/actions.openapi.json` |
 
 ## ChatGPT Setup Values
 
