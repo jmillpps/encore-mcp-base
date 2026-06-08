@@ -35,3 +35,18 @@ This section supports developers and maintainers who change the service. It defi
 | Shared capability | [Adding Capabilities](adding-capabilities.md) | [Capabilities](../architecture/capabilities.md), affected API docs |
 | OAuth behavior | [Request Lifecycle](request-lifecycle.md), [Security Review](security-review.md) | [OAuth API Reference](../api/oauth.md), [OAuth Provider](../architecture/oauth-provider.md) |
 | Deployment behavior | [Change Readiness](change-readiness.md) | [Deployment](../deployment/index.md), [Release Verification](../deployment/release-verification.md) |
+
+## Development Slice Flow
+
+| Step | Outcome |
+| --- | --- |
+| Define the surface | Identify the owning directory, protocol surface, security boundary, and tests before editing. |
+| Implement the shared behavior | Keep reusable behavior in the narrowest shared module. |
+| Add protocol adapters | Add MCP or Actions adapters only for the surfaces that need exposure. |
+| Update documentation | Update the API, architecture, guide, maintenance, or deployment page owned by the changed behavior. |
+| Run targeted checks | Run tests and static checks that prove the changed behavior. |
+| Commit the slice | Commit one coherent feature, fix, refactor, test, or documentation slice. |
+
+## File Ownership Rule
+
+Use file and folder names that identify the owned behavior. Keep implementation files small enough to review as one unit. Move durable explanation into docs and keep code readable through names, types, validation functions, and focused modules.

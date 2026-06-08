@@ -37,3 +37,24 @@ Each documentation file should answer the questions owned by its title. A strong
 ## Review
 
 Review documentation by reading it directly. Keep tests and scripts out of documentation wording, tone, and clarity review.
+
+Use this manual review path:
+
+1. Read the page title and confirm the page owns that subject.
+2. Read each heading and confirm the order matches the reader workflow.
+3. Read every sentence for directness, precision, and necessity.
+4. Confirm examples use generic placeholders.
+5. Confirm links point to the owning docs or authoritative external references.
+6. Confirm code files and documentation files stay separate.
+7. Confirm runtime tests remain tied to service behavior and never to documentation wording.
+
+## Modular Coverage
+
+| Documentation type | Required coverage |
+| --- | --- |
+| API docs | Endpoints, auth, request shape, response shape, errors, status codes, scopes, and generated schemas. |
+| Architecture docs | Boundaries, trust model, storage model, protocol flow, dependency direction, and extension pattern. |
+| Deployment docs | Inputs, parameters, commands, resource ownership, secret placement, verification, and rollback. |
+| Development docs | File ownership, workflow, tests, security review, docs rules, and commit readiness. |
+| Maintenance docs | Operational task, safe handling, evidence, recovery steps, and failure interpretation. |
+| User guides | Setup values, step order, verification, troubleshooting, and production handoff. |

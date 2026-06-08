@@ -8,13 +8,22 @@ Production metadata retrieval requires:
 
 - HTTPS client ID URLs.
 - Public hostnames.
-- No credentials, query strings, or fragments.
+- URLs free of credentials, query strings, and fragments.
 - A path component.
 - DNS resolution that avoids private, loopback, and special-use targets.
 - Pinned lookup for the outbound request.
-- No redirects.
+- Direct responses without redirects.
 - Short request timeout.
 - Bounded response size.
+
+Runtime fetch limits:
+
+| Limit | Value |
+| --- | --- |
+| Timeout | 3000 milliseconds. |
+| Maximum response size | 32768 bytes. |
+| Default cache lifetime | 300 seconds. |
+| Maximum cache lifetime | 3600 seconds. |
 
 ## Metadata Rules
 
@@ -29,6 +38,8 @@ Required metadata fields:
 | `redirect_uris` | Must be non-empty and valid for the environment. |
 
 Supported token auth methods are `none` and `private_key_jwt`.
+
+Optional metadata fields such as `client_uri` and `logo_uri` must be non-empty strings when present. `grant_types` must include `authorization_code` when present. `response_types` must include `code` when present.
 
 ## ChatGPT Client Metadata
 
@@ -52,6 +63,8 @@ ChatGPT can send locale hints such as `ui_locales` during authorization. The ser
 Metadata-document clients using `private_key_jwt` must publish a same-origin `jwks_uri`. JWKS keys must be RSA `RS256` keys with at least 2048-bit modulus length.
 
 Client assertions require valid signatures, accepted audience, current time bounds, and `jti` replay protection.
+
+The assertion audience may be the service issuer or the service token endpoint. The assertion issuer and subject must match the metadata-document client ID.
 
 ## Failure Review
 

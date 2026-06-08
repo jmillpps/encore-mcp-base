@@ -10,6 +10,8 @@ Operational review should inspect diagnostic status, endpoint, method, subject, 
 
 Actions error responses include `code`, `message`, `details`, and `internal_message`. Authentication and authorization failures return safe messages. Internal details stay absent from caller-visible responses.
 
+Redaction applies to exact secret field names such as authorization codes, OAuth codes, code challenges, code verifiers, nonces, session IDs, and state values. Redaction also applies to field names containing API key, authorization, cookie, password, private key, secret, signing key, or token.
+
 ## Rate Limits
 
 Durable rate-limit buckets apply to:
@@ -20,6 +22,15 @@ Durable rate-limit buckets apply to:
 - MCP tool calls.
 
 Buckets are keyed by logical subject and stored as hashed durable keys. Expired buckets are pruned before current hits are recorded.
+
+| Bucket | Subject source |
+| --- | --- |
+| `oauth-authorize` | OAuth client ID when available, otherwise remote address. |
+| `oauth-token` | Form client ID, Basic auth client ID, or remote address fallback. |
+| `oauth-userinfo` | Remote address. |
+| `mcp-tool` | Request subject for the MCP tool call. |
+
+SSE connection limits use an in-process counter controlled by `MCP_SSE_MAX_CONNECTIONS`. Durable rate limits use the OAuth store.
 
 ## Operator Response
 
@@ -33,6 +44,17 @@ Use this order for authentication and authorization failures:
 4. Confirm the bearer token is current.
 5. Confirm the OAuth client record allows the requested resource.
 6. Review rate-limit buckets for the same subject.
+
+## Failure Interpretation
+
+| Symptom | Likely area | Review |
+| --- | --- | --- |
+| `invalid_token` challenge on MCP | Bearer token validation. | Audience, issuer, expiration, signing key, and protected resource metadata. |
+| `insufficient_scope` challenge on MCP tool | Tool-level authorization. | Granted scopes, tool descriptor scopes, and account-linking scope request. |
+| `unauthenticated` from Actions | Actions bearer validation. | Token audience, issuer, expiration, signing key, and Authorization header. |
+| `permission_denied` from Actions | Actions scope validation. | Granted scopes and endpoint scope list. |
+| `invalid_grant` from OAuth token | Code, verifier, refresh token, redirect URI, resource, or client mismatch. | Token request fields and durable grant state. |
+| `rate_limited` from OAuth or MCP tools | Durable bucket limit. | Bucket subject, reset time, retry behavior, and configured limits. |
 
 ## Safe Review Fields
 
