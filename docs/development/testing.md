@@ -33,8 +33,10 @@ npm run check
 | --- | --- |
 | Actions | OAuth scopes, wrong audience tokens, expired tokens, OpenAPI compatibility. |
 | MCP | Transports, auth challenges, protocol versioning, JSON-RPC shape, SSE lifetime, tool descriptors, tool output validation. |
-| OAuth | Authorization code flow, refresh rotation, client auth, discovery, JWKS, Client ID Metadata Documents, private key JWT. |
+| OAuth | Authorization code flow, upstream OIDC login, refresh rotation, client auth, discovery, JWKS, Client ID Metadata Documents, private key JWT. |
 | Security | Duplicate auth headers, diagnostics redaction, rate limits, storage permissions. |
 | Tools | OpenAPI export and client secret generation. |
+
+Identity provider test harness behavior is covered in [Identity Provider Testing](identity-provider-testing.md).
 
 Documentation tests are intentionally absent. Documentation quality is reviewed by reading the files directly.

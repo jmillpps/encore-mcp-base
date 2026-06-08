@@ -4,7 +4,7 @@ The service acts as a private OAuth and OIDC provider for configured GPT clients
 
 ## Client Types
 
-The local development profile includes:
+Local development clients include:
 
 | Client | Class | Resource access |
 | --- | --- | --- |

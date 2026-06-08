@@ -51,6 +51,7 @@ The documentation is organized by reader task.
 - [Project Structure](development/project-structure.md) maps code ownership.
 - [Adding Capabilities](development/adding-capabilities.md) explains MCP and Actions adapters.
 - [Testing](development/testing.md) explains targeted and full verification.
+- [Identity Provider Testing](development/identity-provider-testing.md) explains the local upstream OIDC test harness.
 - [Documentation Standards](development/documentation.md) explains repository documentation rules.
 
 ## Maintenance

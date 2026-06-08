@@ -40,7 +40,7 @@ Production mode is active when `NODE_ENV=production`.
 
 ## Local Defaults
 
-Local development supplies defaults for URLs, origins, token lifetimes, rate limits, local clients, and a local upstream OIDC provider.
+Local development supplies defaults for URLs, origins, token lifetimes, rate limits, local clients, and upstream OIDC connection settings.
 
 | Variable | Local value |
 | --- | --- |
@@ -56,15 +56,17 @@ Local development supplies defaults for URLs, origins, token lifetimes, rate lim
 | `RATE_LIMIT_WINDOW_SECONDS` | `60` |
 | `RATE_LIMIT_MAX_REQUESTS` | `120` |
 | `MCP_SSE_MAX_CONNECTIONS` | `1024` |
-| `UPSTREAM_OIDC_ISSUER_URL` | `http://localhost:4000` |
-| `UPSTREAM_OIDC_AUTHORIZATION_URL` | `http://localhost:4000/dev/upstream/authorize` |
-| `UPSTREAM_OIDC_TOKEN_URL` | `http://localhost:4000/dev/upstream/token` |
-| `UPSTREAM_OIDC_USERINFO_URL` | `http://localhost:4000/dev/upstream/userinfo` |
+| `UPSTREAM_OIDC_ISSUER_URL` | `http://127.0.0.1:4100` |
+| `UPSTREAM_OIDC_AUTHORIZATION_URL` | `http://127.0.0.1:4100/oauth2/authorize` |
+| `UPSTREAM_OIDC_TOKEN_URL` | `http://127.0.0.1:4100/oauth2/token` |
+| `UPSTREAM_OIDC_USERINFO_URL` | `http://127.0.0.1:4100/oauth2/userInfo` |
 | `UPSTREAM_OIDC_CLIENT_ID` | `local-upstream-client` |
 | `UPSTREAM_OIDC_CLIENT_SECRET` | `local-upstream-secret` |
 | `UPSTREAM_OIDC_REDIRECT_URI` | `http://localhost:4000/oauth/callback` |
 | `UPSTREAM_OIDC_SCOPES` | `openid profile email` |
 | `UPSTREAM_OIDC_TOKEN_AUTH_METHOD` | `client_secret_post` |
+
+Automated service tests replace these upstream values with a per-test OIDC server. Manual local OAuth account linking needs an upstream provider at the configured local URLs or explicit `UPSTREAM_OIDC_*` overrides.
 
 ## URL Rules
 

@@ -21,7 +21,9 @@ npm install
 npm run dev
 ```
 
-The development server listens on `http://localhost:4000` by default. Local development supplies default URLs, local OAuth clients, a local upstream OIDC provider, generated signing keys, and `var/oauth-store.json`.
+The development server listens on `http://localhost:4000` by default. Local development supplies default URLs, local OAuth clients, upstream OIDC connection settings, generated signing keys, and `var/oauth-store.json`.
+
+OAuth account-linking flows need an upstream provider at the configured `UPSTREAM_OIDC_*` URLs. Automated tests start a local upstream OIDC provider for each service process. Manual local account linking can use the default `http://127.0.0.1:4100/oauth2/*` provider shape or explicit upstream provider overrides.
 
 Keep the development server running in one terminal. Use a second terminal for verification commands.
 
