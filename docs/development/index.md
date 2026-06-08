@@ -1,10 +1,10 @@
 # Development
 
-This section supports maintainers who change the service.
+This section supports developers and maintainers who change the service.
 
 - [Project Structure](project-structure.md) maps code ownership and dependency boundaries.
-- [Maintainer Critical Areas](maintainer-critical-areas.md) maps the high-risk project areas and their owning docs.
 - [Developer Critical Areas](developer-critical-areas.md) maps developer learning areas and their owning docs.
+- [Maintainer Critical Areas](maintainer-critical-areas.md) maps the high-risk project areas and their owning docs.
 - [Request Lifecycle](request-lifecycle.md) traces OAuth, MCP, Actions, shared capability, diagnostic, and storage paths.
 - [Adding Capabilities](adding-capabilities.md) explains how to expose shared behavior through MCP and Actions.
 - [MCP Tool Development](mcp-tool-development.md) explains how to add GPT Apps tools.

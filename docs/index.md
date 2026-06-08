@@ -48,10 +48,10 @@ The documentation is organized by reader task.
 
 ## Development
 
-- [Development](development/index.md) lists maintainer guides.
+- [Development](development/index.md) lists developer and maintainer guides.
 - [Project Structure](development/project-structure.md) maps code ownership.
-- [Maintainer Critical Areas](development/maintainer-critical-areas.md) maps high-risk project areas to owning docs.
 - [Developer Critical Areas](development/developer-critical-areas.md) maps developer learning areas to owning docs.
+- [Maintainer Critical Areas](development/maintainer-critical-areas.md) maps high-risk project areas to owning docs.
 - [Request Lifecycle](development/request-lifecycle.md) traces OAuth, MCP, Actions, shared capability, diagnostic, and storage paths.
 - [Adding Capabilities](development/adding-capabilities.md) explains MCP and Actions adapters.
 - [MCP Tool Development](development/mcp-tool-development.md) explains descriptor, scope, registry, and test requirements.
