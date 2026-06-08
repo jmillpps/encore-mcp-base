@@ -88,7 +88,7 @@ Check systemd service status through SSM:
 aws ssm send-command \
   --instance-ids "$INSTANCE_ID" \
   --document-name AWS-RunShellScript \
-  --parameters commands='["systemctl is-active SERVICE_NAME.service"]'
+  --parameters "commands=[\"systemctl is-active ${CDK_SERVICE_NAME}.service\"]"
 ```
 
 Check container status through SSM:
@@ -97,7 +97,7 @@ Check container status through SSM:
 aws ssm send-command \
   --instance-ids "$INSTANCE_ID" \
   --document-name AWS-RunShellScript \
-  --parameters commands='["docker ps --filter name=SERVICE_NAME --format {{.Status}}"]'
+  --parameters "commands=[\"docker ps --filter name=${CDK_SERVICE_NAME} --format '{{.Status}}'\"]"
 ```
 
 Check recent service logs through SSM when public verification fails:
@@ -106,7 +106,7 @@ Check recent service logs through SSM when public verification fails:
 aws ssm send-command \
   --instance-ids "$INSTANCE_ID" \
   --document-name AWS-RunShellScript \
-  --parameters commands='["journalctl -u SERVICE_NAME.service -n 80 --no-pager"]'
+  --parameters "commands=[\"journalctl -u ${CDK_SERVICE_NAME}.service -n 80 --no-pager\"]"
 ```
 
 ## GPT Apps Verification

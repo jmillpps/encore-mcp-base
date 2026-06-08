@@ -27,7 +27,7 @@ Example Actions client:
 ```json
 {
   "clientId": "actions-client",
-  "clientSecretHash": "6-sAVn33y2sGHZl6331AmzWK0yMi6Qy5IXhdetApm38",
+  "clientSecretHash": "<sha256-base64url-client-secret-hash>",
   "displayName": "GPT Actions",
   "redirectUris": ["https://chatgpt.com/aip/g-prod/oauth/callback"],
   "allowedScopes": ["openid", "profile", "email"],

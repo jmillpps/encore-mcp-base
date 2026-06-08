@@ -145,7 +145,7 @@ Restart the instance service after the image build completes:
 aws ssm send-command \
   --instance-ids "$INSTANCE_ID" \
   --document-name AWS-RunShellScript \
-  --parameters commands='["systemctl restart SERVICE_NAME.service"]'
+  --parameters "commands=[\"systemctl restart ${CDK_SERVICE_NAME}.service\"]"
 ```
 
 Source archive and CodeBuild behavior are covered in [Source Build](source-build.md).

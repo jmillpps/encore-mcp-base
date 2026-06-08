@@ -178,7 +178,7 @@ Restart the service after a successful image build or runtime parameter update:
 aws ssm send-command \
   --instance-ids "$INSTANCE_ID" \
   --document-name AWS-RunShellScript \
-  --parameters commands='["systemctl restart SERVICE_NAME.service"]'
+  --parameters "commands=[\"systemctl restart ${CDK_SERVICE_NAME}.service\"]"
 ```
 
 Poll command status:
