@@ -1,17 +1,37 @@
 # Development
 
-This section supports developers and maintainers who change the service.
+This section supports developers and maintainers who change the service. It defines code ownership, extension workflow, security review, tests, documentation rules, and release readiness.
 
-- [Project Structure](project-structure.md) maps code ownership and dependency boundaries.
-- [Developer Critical Areas](developer-critical-areas.md) maps developer learning areas and their owning docs.
-- [Maintainer Critical Areas](maintainer-critical-areas.md) maps the high-risk project areas and their owning docs.
-- [Request Lifecycle](request-lifecycle.md) traces OAuth, MCP, Actions, shared capability, diagnostic, and storage paths.
-- [Adding Capabilities](adding-capabilities.md) explains how to expose shared behavior through MCP and Actions.
-- [MCP Tool Development](mcp-tool-development.md) explains how to add GPT Apps tools.
-- [Actions Endpoint Development](actions-endpoint-development.md) explains how to add GPT Actions endpoints.
-- [Shared Types And Schemas](shared-types-schemas.md) explains shared data shape ownership.
-- [Security Review](security-review.md) gives merge-time security checks for developers.
-- [Change Readiness](change-readiness.md) explains commit, verification, documentation, and release readiness.
-- [Testing](testing.md) explains targeted and full verification.
-- [Identity Provider Testing](identity-provider-testing.md) explains the local upstream OIDC test harness.
-- [Documentation Standards](documentation.md) explains repository documentation rules.
+## Development Reading Order
+
+| Step | Read | Purpose |
+| --- | --- | --- |
+| 1 | [Developer Critical Areas](developer-critical-areas.md) | Choose the right learning path for the task. |
+| 2 | [Project Structure](project-structure.md) | Locate code ownership, dependency boundaries, tests, tools, and docs. |
+| 3 | [Request Lifecycle](request-lifecycle.md) | Trace how OAuth, MCP, Actions, shared capabilities, diagnostics, and storage interact. |
+| 4 | [Adding Capabilities](adding-capabilities.md) | Follow the shared-behavior and protocol-adapter pattern. |
+| 5 | [MCP Tool Development](mcp-tool-development.md) | Add GPT Apps tools with descriptors, schemas, scopes, auth challenges, and live tests. |
+| 6 | [Actions Endpoint Development](actions-endpoint-development.md) | Add GPT Actions endpoints with Encore routes, bearer validation, OpenAPI operations, and live tests. |
+| 7 | [Shared Types And Schemas](shared-types-schemas.md) | Preserve shared request, response, identity, tool, and OpenAPI shapes. |
+| 8 | [Security Review](security-review.md) | Review trust boundaries, secrets, tokens, diagnostics, rate limits, and attacker-controlled input. |
+| 9 | [Testing](testing.md) | Select targeted live tests and the full release gate. |
+| 10 | [Change Readiness](change-readiness.md) | Confirm commit scope, verification evidence, docs, release readiness, and tree state. |
+
+## Maintainer Reading Order
+
+| Step | Read | Purpose |
+| --- | --- | --- |
+| 1 | [Maintainer Critical Areas](maintainer-critical-areas.md) | Understand high-risk project areas and their owning docs. |
+| 2 | [Identity Provider Testing](identity-provider-testing.md) | Understand how local upstream OIDC proves generic provider behavior. |
+| 3 | [Documentation Standards](documentation.md) | Keep documentation modular, direct, generic, and separate from code. |
+| 4 | [External References](../reference/external-references.md) | Check authoritative sources before changing protocol or platform guidance. |
+
+## Change Boundaries
+
+| Change type | Primary guide | Required follow-up docs |
+| --- | --- | --- |
+| New MCP tool | [MCP Tool Development](mcp-tool-development.md) | [MCP API Reference](../api/mcp.md), [GPT Apps Setup](../user-guides/gpt-apps.md) |
+| New Actions endpoint | [Actions Endpoint Development](actions-endpoint-development.md) | [Actions API Reference](../api/actions.md), [OpenAPI Contract](../api/openapi.md) |
+| Shared capability | [Adding Capabilities](adding-capabilities.md) | [Capabilities](../architecture/capabilities.md), affected API docs |
+| OAuth behavior | [Request Lifecycle](request-lifecycle.md), [Security Review](security-review.md) | [OAuth API Reference](../api/oauth.md), [OAuth Provider](../architecture/oauth-provider.md) |
+| Deployment behavior | [Change Readiness](change-readiness.md) | [Deployment](../deployment/index.md), [Release Verification](../deployment/release-verification.md) |

@@ -212,6 +212,7 @@ Deployment guides:
 | Import GPT Actions | [GPT Actions Setup](docs/user-guides/gpt-actions.md) |
 | Understand architecture | [Architecture Overview](docs/architecture/overview.md) |
 | Review APIs | [API Documentation](docs/api/index.md) |
+| Check external specs | [External References](docs/reference/external-references.md) |
 | Add a capability | [Adding Capabilities](docs/development/adding-capabilities.md) |
 | Test changes | [Testing](docs/development/testing.md) |
 | Operate storage | [Storage Maintenance](docs/maintenance/storage.md) |

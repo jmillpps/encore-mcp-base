@@ -1,72 +1,47 @@
 # Documentation
 
-GPT MCP Service is a private ChatGPT integration service. It provides OAuth, MCP for GPT Apps, OpenAPI-backed REST endpoints for GPT Actions, secure token storage, production validation, and focused developer tooling.
+GPT MCP Service is a private ChatGPT integration service. It provides OAuth, MCP for GPT Apps, OpenAPI-backed REST endpoints for GPT Actions, upstream OIDC identity proof, secure token storage, production validation, AWS deployment guidance, and focused developer tooling.
 
-The documentation is organized by reader task.
+This documentation is organized by reader task. Start with the path that matches the work, then follow the links inside each page for protocol details, operational rules, and verification steps.
 
-## User Guides
+## Reading Paths
 
-- [User Guides](user-guides/index.md) lists beginner workflows.
-- [Local Development](user-guides/local-development.md) runs the service locally and verifies the first request.
-- [Local End-To-End Scenarios](user-guides/local-end-to-end.md) verifies OAuth, MCP, Actions, and reset paths.
-- [GPT Apps Setup](user-guides/gpt-apps.md) connects ChatGPT to the MCP endpoint.
-- [GPT Actions Setup](user-guides/gpt-actions.md) exports the OpenAPI schema and links OAuth.
+| Reader | Start here | Continue with |
+| --- | --- | --- |
+| First-time local developer | [Local Development](user-guides/local-development.md) | [Local End-To-End Scenarios](user-guides/local-end-to-end.md), [Testing](development/testing.md) |
+| GPT Apps builder | [GPT Apps Setup](user-guides/gpt-apps.md) | [MCP API Reference](api/mcp.md), [MCP Transports](architecture/mcp-transports.md) |
+| GPT Actions builder | [GPT Actions Setup](user-guides/gpt-actions.md) | [Actions API Reference](api/actions.md), [OpenAPI Contract](api/openapi.md) |
+| Security reviewer | [Security Model](architecture/security-model.md) | [OAuth Provider](architecture/oauth-provider.md), [Security Review](development/security-review.md) |
+| Production operator | [Production Deployment](deployment/production.md) | [AWS CDK Deployment](deployment/aws-cdk.md), [Release Verification](deployment/release-verification.md) |
+| Maintainer | [Maintainer Critical Areas](development/maintainer-critical-areas.md) | [Project Structure](development/project-structure.md), [Change Readiness](development/change-readiness.md) |
 
-## API
+## Documentation Families
 
-- [API Documentation](api/index.md) lists the public protocol surfaces.
-- [OAuth API Reference](api/oauth.md) lists OAuth and OIDC endpoints.
-- [MCP API Reference](api/mcp.md) lists MCP endpoints, protocol behavior, and tools.
-- [Actions API Reference](api/actions.md) lists REST endpoints and OpenAPI behavior.
-- [Identity Profile](api/identity-profile.md) lists profile claim behavior.
-- [Configuration Reference](api/configuration.md) lists runtime environment variables.
-- [OpenAPI Contract](api/openapi.md) describes the generated Actions schema.
+| Family | Purpose | Use when |
+| --- | --- | --- |
+| [User Guides](user-guides/index.md) | Outcome-driven workflows for local development, GPT Apps, GPT Actions, and end-to-end proof. | You need to run, connect, import, or manually verify the service. |
+| [API](api/index.md) | Public protocol contracts, endpoint shapes, authentication rules, schemas, and configuration values. | You need exact request, response, status, scope, audience, and environment behavior. |
+| [Architecture](architecture/index.md) | Runtime layout, trust boundaries, transport design, OAuth provider design, storage, and capability sharing. | You need to understand why code is shaped the way it is before changing it. |
+| [Deployment](deployment/index.md) | Production environment setup, AWS CDK, Parameter Store, identity provider modes, build flow, and release verification. | You need to deploy, update, seed, restart, validate, or tear down the service. |
+| [Development](development/index.md) | Code ownership, change workflow, tool and endpoint development, schema ownership, tests, and documentation rules. | You need to extend, refactor, review, test, or document the service. |
+| [Maintenance](maintenance/index.md) | Operational procedures for signing keys, durable storage, client metadata, diagnostics, and rate limits. | You need to operate or recover a running service. |
+| [Reference](reference/index.md) | Authoritative external specifications and official service documentation used by this repository. | You need to check the upstream source for a protocol or platform requirement. |
 
-## Architecture
+## Protocol And Platform Entry Points
 
-- [Architecture](architecture/index.md) lists system design topics.
-- [Overview](architecture/overview.md) explains the service layout and trust boundaries.
-- [OAuth Provider](architecture/oauth-provider.md) explains authorization, token issuance, resources, and OIDC.
-- [MCP Transports](architecture/mcp-transports.md) explains Streamable HTTP and legacy HTTP/SSE.
-- [Actions And OpenAPI](architecture/actions-openapi.md) explains the REST surface for GPT Actions.
-- [Capabilities](architecture/capabilities.md) explains shared behavior and endpoint adapters.
-- [Security Model](architecture/security-model.md) explains security boundaries.
-- [Storage Model](architecture/storage-model.md) explains durable state design.
+| Topic | Project doc | External source map |
+| --- | --- | --- |
+| MCP transport and tools | [MCP API Reference](api/mcp.md), [MCP Transports](architecture/mcp-transports.md) | [External References](reference/external-references.md#mcp-and-chatgpt-apps) |
+| OAuth and OIDC | [OAuth API Reference](api/oauth.md), [OAuth Provider](architecture/oauth-provider.md) | [External References](reference/external-references.md#oauth-and-oidc) |
+| GPT Actions OpenAPI | [Actions API Reference](api/actions.md), [OpenAPI Contract](api/openapi.md) | [External References](reference/external-references.md#gpt-actions-and-openapi) |
+| AWS deployment | [AWS CDK Deployment](deployment/aws-cdk.md), [Runtime Parameters](deployment/runtime-parameters.md) | [External References](reference/external-references.md#aws-and-deployment) |
+| Encore runtime | [Project Structure](development/project-structure.md), [Actions Endpoint Development](development/actions-endpoint-development.md) | [External References](reference/external-references.md#encore-typescript-runtime) |
 
-## Deployment
+## Documentation Quality Rules
 
-- [Deployment](deployment/index.md) lists deployment guides.
-- [Production Deployment](deployment/production.md) covers production environment setup.
-- [AWS CDK Deployment](deployment/aws-cdk.md) covers the EC2, Route53, identity provider mode, ECR, CodeBuild, and Parameter Store deployment path.
-- [CDK Operations](deployment/cdk-operations.md) covers deployment, update, restart, and teardown commands.
-- [Runtime Parameters](deployment/runtime-parameters.md) covers Parameter Store values, secrets, runtime files, and restarts.
-- [Source Build](deployment/source-build.md) covers source archives, CodeBuild image builds, ECR, and runtime pulls.
-- [Identity Provider](deployment/identity-provider.md) covers upstream OIDC provider setup and optional CDK Cognito mode.
-- [Release Verification](deployment/release-verification.md) covers post-deployment checks for infrastructure, runtime, Apps, and Actions.
-- [Client Registry](deployment/client-registry.md) covers production OAuth client records.
-- [OpenAPI Export](deployment/openapi-export.md) covers Actions schema generation.
-
-## Development
-
-- [Development](development/index.md) lists developer and maintainer guides.
-- [Project Structure](development/project-structure.md) maps code ownership.
-- [Developer Critical Areas](development/developer-critical-areas.md) maps developer learning areas to owning docs.
-- [Maintainer Critical Areas](development/maintainer-critical-areas.md) maps high-risk project areas to owning docs.
-- [Request Lifecycle](development/request-lifecycle.md) traces OAuth, MCP, Actions, shared capability, diagnostic, and storage paths.
-- [Adding Capabilities](development/adding-capabilities.md) explains MCP and Actions adapters.
-- [MCP Tool Development](development/mcp-tool-development.md) explains descriptor, scope, registry, and test requirements.
-- [Actions Endpoint Development](development/actions-endpoint-development.md) explains route, bearer, OpenAPI, and test requirements.
-- [Shared Types And Schemas](development/shared-types-schemas.md) explains shared models and validation changes.
-- [Security Review](development/security-review.md) gives developer security review checks.
-- [Change Readiness](development/change-readiness.md) explains commit, verification, documentation, and release readiness.
-- [Testing](development/testing.md) explains targeted and full verification.
-- [Identity Provider Testing](development/identity-provider-testing.md) explains the local upstream OIDC test harness.
-- [Documentation Standards](development/documentation.md) explains repository documentation rules.
-
-## Maintenance
-
-- [Maintenance](maintenance/index.md) lists operator runbooks.
-- [Signing Key Rotation](maintenance/key-rotation.md) covers active and previous key handling.
-- [Storage Maintenance](maintenance/storage.md) covers store permissions and lock handling.
-- [Client Metadata Maintenance](maintenance/client-metadata.md) covers metadata and JWKS retrieval risks.
-- [Diagnostics And Rate Limits](maintenance/diagnostics-rate-limits.md) covers safe operational signals.
+- Keep repository documentation under `docs/`, with `README.md` as the public project front page.
+- Keep source code focused on implementation and keep durable explanations in documentation.
+- Use generic examples for domains, AWS accounts, hosted zones, resource IDs, client IDs, and secrets.
+- Tie service tests to live service behavior and protocol contracts.
+- Review documentation prose by reading the file directly.
+- Update the relevant API, architecture, deployment, development, maintenance, and reference pages when a behavior change crosses those boundaries.
