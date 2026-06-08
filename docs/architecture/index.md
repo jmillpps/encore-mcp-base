@@ -9,3 +9,5 @@ This section explains stable system design, protocol boundaries, and security de
 - [Capabilities](capabilities.md) explains shared behavior and protocol adapters.
 - [Security Model](security-model.md) explains validation, auth, diagnostics, and production security controls.
 - [Storage Model](storage-model.md) explains durable state ownership.
+
+Use [Request Lifecycle](../development/request-lifecycle.md) for a developer trace through the runtime paths.

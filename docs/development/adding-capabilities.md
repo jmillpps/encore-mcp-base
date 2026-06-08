@@ -14,6 +14,8 @@ New capabilities should use one implementation with protocol-specific adapters.
 8. Run targeted tests for the changed surface.
 9. Run `npm run check` before final release.
 
+Use [Request Lifecycle](request-lifecycle.md) before changing a path that crosses OAuth, MCP, Actions, or shared capability code.
+
 ## MCP Adapter Requirements
 
 Each MCP tool defines:
@@ -30,6 +32,8 @@ Each MCP tool defines:
 
 Tool output must pass the advertised output schema. Protected tools must verify an MCP-audience token and required scopes before returning protected data.
 
+Use [MCP Tool Development](mcp-tool-development.md) for descriptor, registration, and test details.
+
 ## Actions Adapter Requirements
 
 Each Actions endpoint defines:
@@ -42,6 +46,14 @@ Each Actions endpoint defines:
 - OpenAPI operation metadata.
 
 Actions endpoints reject `access_token` query parameters and validate bearer tokens against the Actions audience.
+
+Use [Actions Endpoint Development](actions-endpoint-development.md) for route, bearer, OpenAPI, and test details.
+
+## Shared Shape Requirements
+
+Shared request and response shapes should be updated across the domain type, MCP output schema, Actions OpenAPI schema, API docs, and live tests in the same feature slice.
+
+Use [Shared Types And Schemas](shared-types-schemas.md) before changing a data shape used by multiple surfaces.
 
 ## Tests
 

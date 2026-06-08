@@ -121,7 +121,7 @@ The service recreates the store on the next OAuth or MCP state write.
 
 ## Targeted Checks
 
-For documentation-only changes, run whitespace and structural checks. For runtime changes, run the affected test file first:
+For documentation changes, run whitespace and structural checks. For runtime changes, run the affected test file first:
 
 ```sh
 git diff --check
@@ -148,4 +148,4 @@ Keep documentation updates in `docs/` and keep service tests tied to live servic
 
 ## Next Steps
 
-Use [GPT Apps Setup](gpt-apps.md) for MCP. Use [GPT Actions Setup](gpt-actions.md) for REST Actions. Use [Testing](../development/testing.md) before committing service changes.
+Use [Local End-To-End Scenarios](local-end-to-end.md) for OAuth, MCP, Actions, and reset verification. Use [GPT Apps Setup](gpt-apps.md) for MCP. Use [GPT Actions Setup](gpt-actions.md) for REST Actions. Use [Testing](../development/testing.md) before committing service changes.

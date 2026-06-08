@@ -8,6 +8,7 @@ The documentation is organized by reader task.
 
 - [User Guides](user-guides/index.md) lists beginner workflows.
 - [Local Development](user-guides/local-development.md) runs the service locally and verifies the first request.
+- [Local End-To-End Scenarios](user-guides/local-end-to-end.md) verifies OAuth, MCP, Actions, and reset paths.
 - [GPT Apps Setup](user-guides/gpt-apps.md) connects ChatGPT to the MCP endpoint.
 - [GPT Actions Setup](user-guides/gpt-actions.md) exports the OpenAPI schema and links OAuth.
 
@@ -50,7 +51,13 @@ The documentation is organized by reader task.
 - [Development](development/index.md) lists maintainer guides.
 - [Project Structure](development/project-structure.md) maps code ownership.
 - [Maintainer Critical Areas](development/maintainer-critical-areas.md) maps high-risk project areas to owning docs.
+- [Developer Critical Areas](development/developer-critical-areas.md) maps developer learning areas to owning docs.
+- [Request Lifecycle](development/request-lifecycle.md) traces OAuth, MCP, Actions, shared capability, diagnostic, and storage paths.
 - [Adding Capabilities](development/adding-capabilities.md) explains MCP and Actions adapters.
+- [MCP Tool Development](development/mcp-tool-development.md) explains descriptor, scope, registry, and test requirements.
+- [Actions Endpoint Development](development/actions-endpoint-development.md) explains route, bearer, OpenAPI, and test requirements.
+- [Shared Types And Schemas](development/shared-types-schemas.md) explains shared models and validation changes.
+- [Security Review](development/security-review.md) gives developer security review checks.
 - [Testing](development/testing.md) explains targeted and full verification.
 - [Identity Provider Testing](development/identity-provider-testing.md) explains the local upstream OIDC test harness.
 - [Documentation Standards](development/documentation.md) explains repository documentation rules.

@@ -93,6 +93,10 @@ Use these checks when account linking or MCP initialization fails:
 | SSE closes early | Check proxy streaming timeouts and `MCP_SSE_MAX_CONNECTIONS`. |
 | Tool result rejected | Check the tool output schema in the MCP API reference. |
 
+## Developer Verification
+
+Use [Local End-To-End Scenarios](local-end-to-end.md) for local OAuth and MCP proof. Use [MCP Tool Development](../development/mcp-tool-development.md) when changing tool descriptors, scopes, schemas, or output shape.
+
 ## Production Setup
 
 Production GPT Apps setup needs a public HTTPS service URL and OAuth discovery metadata. Use [Production Deployment](../deployment/production.md), [Client Registry](../deployment/client-registry.md), and [Configuration Reference](../api/configuration.md) for required environment variables.
