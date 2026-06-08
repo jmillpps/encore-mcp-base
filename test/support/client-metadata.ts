@@ -4,7 +4,7 @@ import { once } from "node:events";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import * as oauth from "oauth4webapi";
-import { discover } from "./oauth-client.ts";
+import { discover, manualRedirect } from "./oauth-client.ts";
 import { requireString } from "./http.ts";
 import type { TestService } from "./service-process.ts";
 
@@ -133,7 +133,9 @@ export async function authorizeMetadataDocumentClient(
   const state = oauth.generateRandomState();
   const response = await fetchAuthorizationUrl(service, clientId, redirectUri, state, codeChallenge);
   assert.equal(response.status, 302);
-  const callback = new URL(requireString(response.headers.get("location"), "location"));
+  const upstreamRedirect = new URL(requireString(response.headers.get("location"), "location"));
+  const serviceCallbackRedirect = await manualRedirect(upstreamRedirect);
+  const callback = await manualRedirect(serviceCallbackRedirect);
   return {
     as,
     callbackParameters: oauth.validateAuthResponse(as, { client_id: clientId }, callback, state),
