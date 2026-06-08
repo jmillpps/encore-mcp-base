@@ -118,7 +118,7 @@ Create the custom app from ChatGPT Settings:
 
 After refresh, ChatGPT should list `health.check`, `identity.profile`, and `auth.session` in the app actions section.
 
-Connected custom apps are available from normal ChatGPT chats through app invocation. Current ChatGPT custom GPT chats omit connected app tools in the GPT preview and live GPT chat. Use a normal ChatGPT chat for Apps tool execution until ChatGPT exposes custom apps to custom GPT chats.
+Validate connected app tools in the ChatGPT chat surface that lists the app after account linking and refresh.
 
 ## Identity Provider Sign-In
 

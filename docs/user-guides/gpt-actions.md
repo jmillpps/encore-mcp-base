@@ -91,6 +91,7 @@ After account linking, ChatGPT can call `/actions/profile` and `/actions/session
 | Endpoint | OAuth scopes | Purpose |
 | --- | --- | --- |
 | `GET /health` | none | Check service reachability. |
+| `GET /privacy` | none | Serve the privacy policy URL used by GPT Actions setup. |
 | `GET /actions/openapi.json` | none | Serve the Actions OpenAPI schema for URL import. |
 | `GET /actions/profile` | `openid profile email` | Return the authenticated OIDC user profile. |
 | `GET /actions/session` | `openid` | Return token metadata. |

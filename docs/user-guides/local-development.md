@@ -102,6 +102,8 @@ Use these local URLs during development:
 | Surface | URL |
 | --- | --- |
 | Health | `http://localhost:4000/health` |
+| Privacy policy | `http://localhost:4000/privacy` |
+| Actions OpenAPI | `http://localhost:4000/actions/openapi.json` |
 | Actions profile | `http://localhost:4000/actions/profile` |
 | Actions session | `http://localhost:4000/actions/session` |
 | OAuth authorize | `http://localhost:4000/oauth/authorize` |
