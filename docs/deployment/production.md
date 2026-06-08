@@ -76,4 +76,4 @@ Keep `OAUTH_CLIENTS_JSON` in environment configuration or a secret-backed config
 
 ## AWS CDK Path
 
-The AWS CDK deployment path is covered in [AWS CDK Deployment](aws-cdk.md). Runtime Parameter Store values are covered in [Runtime Parameters](runtime-parameters.md). Source packaging and image builds are covered in [Source Build](source-build.md).
+The AWS CDK deployment path is covered in [AWS CDK Deployment](aws-cdk.md). Command sequencing is covered in [CDK Operations](cdk-operations.md). Runtime Parameter Store values are covered in [Runtime Parameters](runtime-parameters.md). Source packaging and image builds are covered in [Source Build](source-build.md). Cognito hosted login is covered in [Cognito Upstream Login](cognito-upstream.md). Post-deployment checks are covered in [Release Verification](release-verification.md).

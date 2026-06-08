@@ -112,6 +112,8 @@ aws ssm send-command \
 
 Source archive and CodeBuild behavior are covered in [Source Build](source-build.md).
 
+Full command sequencing is covered in [CDK Operations](cdk-operations.md).
+
 ## Public Endpoints
 
 After deployment, verify these public read-only URLs:
@@ -128,6 +130,8 @@ Use the deployed `/actions/openapi.json` URL for GPT Actions URL import. The doc
 ## Stack Outputs
 
 The stack publishes outputs for the public URL, MCP resource, Actions audience, Parameter Store prefix, KMS key, ECR repository, source bucket, CodeBuild project, EC2 instance, Elastic IP, Cognito user pool, Cognito client, and Cognito hosted UI base URL.
+
+Cognito bridge details are covered in [Cognito Upstream Login](cognito-upstream.md). Release checks are covered in [Release Verification](release-verification.md).
 
 ## Teardown
 
