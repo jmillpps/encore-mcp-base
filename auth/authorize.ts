@@ -1,6 +1,6 @@
 import type { ServiceConfig } from "../shared/config.ts";
 import { ServiceError } from "../shared/errors.ts";
-import { createLoginRedirect } from "./cognito-authorization.ts";
+import { createLoginRedirect } from "./upstream-authorization.ts";
 import { DiskOAuthStore } from "./storage/disk-store.ts";
 import { assertAllowedScopes, parseScopes } from "./scopes.ts";
 import { assertRedirectUri, type OAuthClient } from "./clients.ts";

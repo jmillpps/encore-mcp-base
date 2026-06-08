@@ -6,7 +6,7 @@ import { validateSingleAuthorizationHeader } from "./authorization-header.ts";
 import { verifyBearerAnyAudience } from "./bearer.ts";
 import { writeOAuthError } from "./oauth-errors.ts";
 import { enforceRateLimit } from "./rate-limit.ts";
-import { userProfileFromClaims } from "./static-user.ts";
+import { userProfileFromClaims } from "./user-profile.ts";
 
 export const userinfo = api.raw({ expose: true, method: "GET", path: "/oauth/userinfo" }, async (req, res) => {
   try {

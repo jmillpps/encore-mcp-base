@@ -1,29 +1,34 @@
-import type { CognitoConfig } from "../shared/config.ts";
+import type { UpstreamOidcConfig } from "../shared/config.ts";
 import { ServiceError } from "../shared/errors.ts";
-import { userProfileFromUpstream, type StaticUser } from "./static-user.ts";
+import { userProfileFromUpstream, type UserProfile } from "./user-profile.ts";
 
 interface TokenResponse {
   access_token: string;
   token_type: string;
 }
 
-export async function exchangeCognitoCode(config: CognitoConfig, code: string, codeVerifier: string): Promise<StaticUser> {
+export async function exchangeUpstreamCode(config: UpstreamOidcConfig, code: string, codeVerifier: string): Promise<UserProfile> {
   const tokens = await tokenRequest(config, code, codeVerifier);
   return userinfoRequest(config, tokens.access_token);
 }
 
-async function tokenRequest(config: CognitoConfig, code: string, codeVerifier: string): Promise<TokenResponse> {
+async function tokenRequest(config: UpstreamOidcConfig, code: string, codeVerifier: string): Promise<TokenResponse> {
   const body = new URLSearchParams({
     grant_type: "authorization_code",
     code,
     redirect_uri: config.redirectUri,
-    client_id: config.clientId,
-    client_secret: config.clientSecret,
     code_verifier: codeVerifier,
   });
+  const headers: Record<string, string> = { "content-type": "application/x-www-form-urlencoded", accept: "application/json" };
+  if (config.tokenEndpointAuthMethod === "client_secret_post") {
+    body.set("client_id", config.clientId);
+    body.set("client_secret", config.clientSecret);
+  } else {
+    headers.authorization = `Basic ${Buffer.from(`${config.clientId}:${config.clientSecret}`, "utf8").toString("base64")}`;
+  }
   const response = await fetch(config.tokenUrl, {
     method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json" },
+    headers,
     body,
     signal: AbortSignal.timeout(10000),
   });
@@ -36,7 +41,7 @@ async function tokenRequest(config: CognitoConfig, code: string, codeVerifier: s
   return { access_token: accessToken, token_type: tokenType };
 }
 
-async function userinfoRequest(config: CognitoConfig, accessToken: string): Promise<StaticUser> {
+async function userinfoRequest(config: UpstreamOidcConfig, accessToken: string): Promise<UserProfile> {
   const response = await fetch(config.userinfoUrl, {
     method: "GET",
     headers: { authorization: `Bearer ${accessToken}`, accept: "application/json" },

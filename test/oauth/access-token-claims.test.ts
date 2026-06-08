@@ -8,7 +8,7 @@ import { getSigningKey } from "../../auth/tokens/signing-keys.ts";
 import { signJwt } from "../../auth/tokens/jwt.ts";
 import { verifyAccessToken } from "../../auth/tokens/access-token.ts";
 import { encodeJsonBase64Url } from "../../shared/base64url.ts";
-import { testStaticUser } from "../support/static-user.ts";
+import { testUserProfile } from "../support/user-profile.ts";
 
 test("access token verifier rejects future issued-at values", () => {
   const config = testConfig();
@@ -81,7 +81,7 @@ function accessClaims(config: ServiceConfig, overrides: Record<string, unknown>)
   const now = nowSeconds();
   return {
     iss: config.issuer,
-    sub: testStaticUser.sub,
+    sub: testUserProfile.sub,
     aud: config.actionsAudience,
     exp: now + 900,
     iat: now,
@@ -89,12 +89,12 @@ function accessClaims(config: ServiceConfig, overrides: Record<string, unknown>)
     jti: "token-claim-test",
     client_id: "local-test",
     scope: "openid profile email",
-    name: testStaticUser.name,
-    given_name: testStaticUser.given_name,
-    family_name: testStaticUser.family_name,
-    preferred_username: testStaticUser.preferred_username,
-    email: testStaticUser.email,
-    email_verified: testStaticUser.email_verified,
+    name: testUserProfile.name,
+    given_name: testUserProfile.given_name,
+    family_name: testUserProfile.family_name,
+    preferred_username: testUserProfile.preferred_username,
+    email: testUserProfile.email,
+    email_verified: testUserProfile.email_verified,
     ...overrides,
   };
 }

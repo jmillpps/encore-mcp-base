@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import * as oauth from "oauth4webapi";
-import { completeAuthorizationCodeFlow } from "../support/oauth-client.ts";
+import { completeAuthorizationCodeFlow, manualRedirect } from "../support/oauth-client.ts";
 import { readJson, requireString } from "../support/http.ts";
 import { bearer } from "../support/mcp.ts";
 import { startService, type TestService } from "../support/service-process.ts";
-import { testStaticUser } from "../support/static-user.ts";
+import { testUserProfile } from "../support/user-profile.ts";
 
 const gptActionsClient: oauth.Client = { client_id: "gpt-actions" };
 const gptActionsClientSecret = "gpt-actions-secret";
@@ -21,10 +21,10 @@ test("Actions endpoints reject missing tokens and accept scoped Actions tokens",
   const flow = await completeAuthorizationCodeFlow(service, service.actionsAudience);
   const profile = await fetch(`${service.origin}/actions/profile`, { headers: { authorization: bearer(flow.tokens.access_token) } });
   assert.equal(profile.status, 200);
-  assert.equal((await readJson(profile)).email, testStaticUser.email);
+  assert.equal((await readJson(profile)).email, testUserProfile.email);
   const lowerCaseProfile = await fetch(`${service.origin}/actions/profile`, { headers: { authorization: `bearer ${flow.tokens.access_token}` } });
   assert.equal(lowerCaseProfile.status, 200);
-  assert.equal((await readJson(lowerCaseProfile)).email, testStaticUser.email);
+  assert.equal((await readJson(lowerCaseProfile)).email, testUserProfile.email);
   const session = await fetch(`${service.origin}/actions/session`, { headers: { authorization: bearer(flow.tokens.access_token) } });
   assert.equal(session.status, 200);
   assert.equal((await readJson(session)).audience, service.actionsAudience);
@@ -41,7 +41,7 @@ test("GPT Actions OAuth can link and refresh without resource parameters", async
   const flow = await completeGptActionsFlowWithoutResource(service);
   const profile = await fetch(`${service.origin}/actions/profile`, { headers: { authorization: bearer(flow.tokens.access_token) } });
   assert.equal(profile.status, 200);
-  assert.equal((await readJson(profile)).email, testStaticUser.email);
+  assert.equal((await readJson(profile)).email, testUserProfile.email);
   const session = await fetch(`${service.origin}/actions/session`, { headers: { authorization: bearer(flow.tokens.access_token) } });
   assert.equal(session.status, 200);
   assert.equal((await readJson(session)).audience, service.actionsAudience);
@@ -89,9 +89,9 @@ async function completeGptActionsFlowWithoutResource(service: TestService): Prom
   url.searchParams.set("state", state);
   url.searchParams.set("code_challenge", codeChallenge);
   url.searchParams.set("code_challenge_method", "S256");
-  const authorizationResponse = await fetch(url, { redirect: "manual" });
-  assert.equal(authorizationResponse.status, 302);
-  const callbackUrl = new URL(requireString(authorizationResponse.headers.get("location"), "location"));
+  const upstreamRedirect = await manualRedirect(url);
+  const serviceCallbackRedirect = await manualRedirect(upstreamRedirect);
+  const callbackUrl = await manualRedirect(serviceCallbackRedirect);
   const callbackParameters = oauth.validateAuthResponse(as, gptActionsClient, callbackUrl, state);
   const tokenResponse = await oauth.authorizationCodeGrantRequest(
     as,

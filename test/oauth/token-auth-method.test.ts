@@ -12,7 +12,7 @@ import type { OAuthClient, TokenEndpointAuthMethod } from "../../auth/client-typ
 import { readConfig, type ServiceConfig } from "../../shared/config.ts";
 import { sha256Base64Url } from "../../shared/crypto.ts";
 import { ServiceError } from "../../shared/errors.ts";
-import { testStaticUser } from "../support/static-user.ts";
+import { testUserProfile } from "../support/user-profile.ts";
 
 test("authorization code grant accepts client_secret_basic only for basic clients", async (t) => {
   const { config, store, client } = await setup(t, "client_secret_basic");
@@ -83,7 +83,7 @@ async function issueCode(store: DiskOAuthStore, config: ServiceConfig, client: O
     redirectUri: "http://localhost:4000/callback",
     resource: config.actionsAudience,
     scopes: ["openid"],
-    user: testStaticUser,
+    user: testUserProfile,
     ttlSeconds: 300,
   });
 }

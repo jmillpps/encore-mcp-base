@@ -1,7 +1,6 @@
 import type { ServiceConfig } from "../shared/config.ts";
 import { randomToken, s256Challenge } from "../shared/crypto.ts";
-import { ServiceError } from "../shared/errors.ts";
-import { readStaticUser, type StaticUser } from "./static-user.ts";
+import type { UserProfile } from "./user-profile.ts";
 import type { DiskOAuthStore } from "./storage/disk-store.ts";
 import type { UpstreamAuthorizationStateRecord } from "./storage/store-records.ts";
 
@@ -17,18 +16,17 @@ export interface ValidatedAuthorization {
 }
 
 export async function createLoginRedirect(config: ServiceConfig, store: DiskOAuthStore, request: ValidatedAuthorization): Promise<string> {
-  if (!config.cognito.enabled) return createServiceAuthorizationCode(config, store, request, readStaticUser());
   const codeVerifier = randomToken(32);
   const state = await store.createUpstreamAuthorizationState({
     ...request,
     codeVerifier,
     ttlSeconds: config.authorizationCodeTtlSeconds,
   });
-  const url = new URL(config.cognito.authorizationUrl);
+  const url = new URL(config.upstreamOidc.authorizationUrl);
   url.searchParams.set("response_type", "code");
-  url.searchParams.set("client_id", config.cognito.clientId);
-  url.searchParams.set("redirect_uri", config.cognito.redirectUri);
-  url.searchParams.set("scope", config.cognito.scopes.join(" "));
+  url.searchParams.set("client_id", config.upstreamOidc.clientId);
+  url.searchParams.set("redirect_uri", config.upstreamOidc.redirectUri);
+  url.searchParams.set("scope", config.upstreamOidc.scopes.join(" "));
   url.searchParams.set("state", state);
   url.searchParams.set("code_challenge", s256Challenge(codeVerifier));
   url.searchParams.set("code_challenge_method", "S256");
@@ -39,7 +37,7 @@ export async function createServiceAuthorizationCode(
   config: ServiceConfig,
   store: DiskOAuthStore,
   request: ValidatedAuthorization | UpstreamAuthorizationStateRecord,
-  user: StaticUser,
+  user: UserProfile,
 ): Promise<string> {
   const code = await store.createAuthorizationCode({
     clientId: request.clientId,
@@ -56,8 +54,4 @@ export async function createServiceAuthorizationCode(
   redirect.searchParams.set("code", code);
   redirect.searchParams.set("state", request.clientState);
   return redirect.toString();
-}
-
-export function assertCognitoEnabled(config: ServiceConfig): void {
-  if (!config.cognito.enabled) throw new ServiceError("bad_request", "upstream login is disabled", 400);
 }

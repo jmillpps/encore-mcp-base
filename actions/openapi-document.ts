@@ -39,7 +39,7 @@ function actionPaths(): JsonObject {
         security: [{ OAuth2: ["openid", "profile", "email"] }],
         "x-openai-isConsequential": false,
         responses: {
-          200: jsonResponse("Static authenticated profile.", "StaticUser"),
+          200: jsonResponse("Authenticated user profile.", "UserProfile"),
           401: jsonResponse("Invalid bearer token.", "ErrorResponse"),
           403: jsonResponse("Missing required scope.", "ErrorResponse"),
         },
@@ -87,7 +87,7 @@ function schemas(): JsonObject {
       time: property("Server time when the health response was produced.", { type: "string", format: "date-time" }),
       service: property("Service identifier that produced the health response.", { type: "string" }),
     }),
-    StaticUser: objectSchema("Static OpenID Connect profile for the authenticated user.", ["sub", "given_name", "family_name", "name", "preferred_username", "email", "email_verified"], {
+    UserProfile: objectSchema("OpenID Connect profile for the authenticated user.", ["sub", "given_name", "family_name", "name", "preferred_username", "email", "email_verified"], {
       sub: property("Stable subject identifier for the authenticated user.", { type: "string" }),
       given_name: property("Given name for the authenticated user.", { type: "string" }),
       family_name: property("Family name for the authenticated user.", { type: "string" }),

@@ -15,12 +15,13 @@ export interface ServiceConfig {
   rateLimitWindowSeconds: number;
   rateLimitMaxRequests: number;
   mcpSseMaxConnections: number;
-  cognito: CognitoConfig;
+  upstreamOidc: UpstreamOidcConfig;
   production: boolean;
 }
 
-export interface CognitoConfig {
-  enabled: boolean;
+export type UpstreamOidcTokenAuthMethod = "client_secret_post" | "client_secret_basic";
+
+export interface UpstreamOidcConfig {
   issuer: string;
   authorizationUrl: string;
   tokenUrl: string;
@@ -29,6 +30,7 @@ export interface CognitoConfig {
   clientSecret: string;
   redirectUri: string;
   scopes: string[];
+  tokenEndpointAuthMethod: UpstreamOidcTokenAuthMethod;
 }
 
 export function readConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig {
@@ -52,7 +54,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
     rateLimitWindowSeconds: readNumber(env, "RATE_LIMIT_WINDOW_SECONDS", 60, production),
     rateLimitMaxRequests: readNumber(env, "RATE_LIMIT_MAX_REQUESTS", 120, production),
     mcpSseMaxConnections: readNumber(env, "MCP_SSE_MAX_CONNECTIONS", 1024, production),
-    cognito: readCognitoConfig(env, production),
+    upstreamOidc: readUpstreamOidcConfig(env, issuer, production),
     production,
   };
 }
@@ -107,47 +109,32 @@ function readNumber(env: NodeJS.ProcessEnv, key: string, fallback: number, produ
   return parsed;
 }
 
-function readCognitoConfig(env: NodeJS.ProcessEnv, production: boolean): CognitoConfig {
-  const enabled = readBoolean(env, "COGNITO_ENABLED", false);
-  if (!enabled) {
-    return {
-      enabled: false,
-      issuer: "",
-      authorizationUrl: "",
-      tokenUrl: "",
-      userinfoUrl: "",
-      clientId: "",
-      clientSecret: "",
-      redirectUri: "",
-      scopes: [],
-    };
-  }
-  const scopes = parseList(env.COGNITO_SCOPES ?? "openid profile email");
-  if (!scopes.includes("openid")) throw new Error("COGNITO_SCOPES must include openid");
+function readUpstreamOidcConfig(env: NodeJS.ProcessEnv, serviceIssuer: string, production: boolean): UpstreamOidcConfig {
+  const localIssuer = "http://127.0.0.1:4100";
+  const scopes = parseList(env.UPSTREAM_OIDC_SCOPES ?? "openid profile email");
+  if (!scopes.includes("openid")) throw new Error("UPSTREAM_OIDC_SCOPES must include openid");
   return {
-    enabled,
-    issuer: readHttpUrl(env, "COGNITO_ISSUER_URL", "", production),
-    authorizationUrl: readHttpUrl(env, "COGNITO_AUTHORIZATION_URL", "", production),
-    tokenUrl: readHttpUrl(env, "COGNITO_TOKEN_URL", "", production),
-    userinfoUrl: readHttpUrl(env, "COGNITO_USERINFO_URL", "", production),
-    clientId: readRequiredText(env, "COGNITO_CLIENT_ID"),
-    clientSecret: readRequiredText(env, "COGNITO_CLIENT_SECRET"),
-    redirectUri: readHttpUrl(env, "COGNITO_REDIRECT_URI", "", production),
+    issuer: readHttpUrl(env, "UPSTREAM_OIDC_ISSUER_URL", localIssuer, production),
+    authorizationUrl: readHttpUrl(env, "UPSTREAM_OIDC_AUTHORIZATION_URL", `${localIssuer}/oauth2/authorize`, production),
+    tokenUrl: readHttpUrl(env, "UPSTREAM_OIDC_TOKEN_URL", `${localIssuer}/oauth2/token`, production),
+    userinfoUrl: readHttpUrl(env, "UPSTREAM_OIDC_USERINFO_URL", `${localIssuer}/oauth2/userInfo`, production),
+    clientId: readText(env, "UPSTREAM_OIDC_CLIENT_ID", "local-upstream-client", production),
+    clientSecret: readText(env, "UPSTREAM_OIDC_CLIENT_SECRET", "local-upstream-secret", production),
+    redirectUri: readHttpUrl(env, "UPSTREAM_OIDC_REDIRECT_URI", `${serviceIssuer}/oauth/callback`, production),
     scopes,
+    tokenEndpointAuthMethod: readUpstreamTokenAuthMethod(env),
   };
 }
 
-function readRequiredText(env: NodeJS.ProcessEnv, key: string): string {
-  const value = env[key]?.trim();
+function readText(env: NodeJS.ProcessEnv, key: string, fallback: string, production: boolean): string {
+  const value = env[key]?.trim() ?? (production ? "" : fallback);
   if (!value) throw new Error(`${key} is required`);
   if (/[\r\n]/.test(value)) throw new Error(`${key} cannot contain line breaks`);
   return value;
 }
 
-function readBoolean(env: NodeJS.ProcessEnv, key: string, fallback: boolean): boolean {
-  const value = env[key];
-  if (value === undefined) return fallback;
-  if (value === "true") return true;
-  if (value === "false") return false;
-  throw new Error(`${key} must be true or false`);
+function readUpstreamTokenAuthMethod(env: NodeJS.ProcessEnv): UpstreamOidcTokenAuthMethod {
+  const value = env.UPSTREAM_OIDC_TOKEN_AUTH_METHOD ?? "client_secret_post";
+  if (value === "client_secret_post" || value === "client_secret_basic") return value;
+  throw new Error("UPSTREAM_OIDC_TOKEN_AUTH_METHOD must be client_secret_post or client_secret_basic");
 }

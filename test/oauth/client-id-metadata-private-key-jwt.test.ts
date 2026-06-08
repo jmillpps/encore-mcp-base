@@ -6,7 +6,7 @@ import { encodeBase64Url, encodeJsonBase64Url } from "../../shared/base64url.ts"
 import { callTool, initializeMcp, bearer } from "../support/mcp.ts";
 import { readJson, requireString } from "../support/http.ts";
 import { startService } from "../support/service-process.ts";
-import { testStaticUser } from "../support/static-user.ts";
+import { testUserProfile } from "../support/user-profile.ts";
 import {
   authorizeMetadataDocumentClient,
   fetchAuthorizationUrl,
@@ -37,7 +37,7 @@ test("metadata document private_key_jwt clients complete OAuth with signed clien
     expectedNonce: oauth.expectNoNonce,
   });
   const profile = await callTool(service, sessionId, "identity.profile", bearer(tokens.access_token));
-  assert.equal((profile.structuredContent as Record<string, unknown>).email, testStaticUser.email);
+  assert.equal((profile.structuredContent as Record<string, unknown>).email, testUserProfile.email);
 });
 
 test("metadata document private_key_jwt rejects invalid client assertions without consuming the code", async (t) => {

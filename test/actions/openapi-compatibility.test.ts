@@ -51,11 +51,11 @@ test("OpenAPI Actions compatibility enforces ChatGPT production limits", () => {
     profileOperation(document).parameters = [{ in: "query", name: "q", schema: { type: "string" }, description: "x".repeat(701) }];
   }, /parameter description/);
   assertRejects((document) => {
-    schema(document, "StaticUser").description = "";
-  }, /StaticUser schema description/);
+    schema(document, "UserProfile").description = "";
+  }, /UserProfile schema description/);
   assertRejects((document) => {
-    property(schema(document, "StaticUser"), "email").description = "";
-  }, /StaticUser.email property description/);
+    property(schema(document, "UserProfile"), "email").description = "";
+  }, /UserProfile.email property description/);
   assertRejects((document) => {
     oauthFlow(document).authorizationUrl = "https://auth.example.test/oauth/authorize";
   }, /authorizationUrl/);

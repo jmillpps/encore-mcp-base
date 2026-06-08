@@ -1,6 +1,6 @@
 import { verifyBearer } from "../../auth/bearer.ts";
 import { identityProfileScopes } from "../../auth/scopes.ts";
-import { userProfileFromClaims } from "../../auth/static-user.ts";
+import { userProfileFromClaims } from "../../auth/user-profile.ts";
 import { readOnlyToolAnnotations } from "../tool-annotations.ts";
 import { booleanSchema, emptyInputSchema, objectSchema, stringSchema } from "../tool-schemas.ts";
 import type { McpTool, ToolContext } from "../tool-types.ts";

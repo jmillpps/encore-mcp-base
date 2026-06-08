@@ -1,11 +1,11 @@
 import type { ServiceConfig } from "../../shared/config.ts";
 import { nowSeconds } from "../../shared/time.ts";
-import type { StaticUser } from "../static-user.ts";
+import type { UserProfile } from "../user-profile.ts";
 import { getSigningKey } from "./signing-keys.ts";
 import { signJwt } from "./jwt.ts";
 import type { IdTokenClaims } from "./token-claims.ts";
 
-export function issueIdToken(config: ServiceConfig, user: StaticUser, clientId: string, authTime: number, nonce?: string): string {
+export function issueIdToken(config: ServiceConfig, user: UserProfile, clientId: string, authTime: number, nonce?: string): string {
   const now = nowSeconds();
   const key = getSigningKey(config);
   const claims: IdTokenClaims = {

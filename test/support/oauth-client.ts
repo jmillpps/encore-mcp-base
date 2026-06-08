@@ -44,10 +44,9 @@ export async function authorizeCode(
   url.searchParams.set("code_challenge", codeChallenge);
   url.searchParams.set("code_challenge_method", "S256");
   if (nonce) url.searchParams.set("nonce", nonce);
-  const response = await fetch(url, { redirect: "manual" });
-  assert.equal(response.status, 302);
-  const location = requireString(response.headers.get("location"), "location");
-  const callbackUrl = new URL(location);
+  const upstreamRedirect = await manualRedirect(url);
+  const serviceCallbackRedirect = await manualRedirect(upstreamRedirect);
+  const callbackUrl = await manualRedirect(serviceCallbackRedirect);
   const callbackParameters = oauth.validateAuthResponse(as, localClient, callbackUrl, state);
   const code = requireString(callbackParameters.get("code"), "code");
   return { as, callbackParameters, codeVerifier, code };
@@ -109,4 +108,10 @@ export async function refreshTokens(
 function requiredEndpoint(value: string | undefined, name: string): string {
   if (typeof value !== "string") assert.fail(`${name} must be discovered`);
   return value;
+}
+
+export async function manualRedirect(url: URL): Promise<URL> {
+  const response = await fetch(url, { redirect: "manual" });
+  assert.equal(response.status, 302);
+  return new URL(requireString(response.headers.get("location"), "location"));
 }

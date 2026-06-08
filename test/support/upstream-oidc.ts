@@ -4,7 +4,7 @@ import type { AddressInfo } from "node:net";
 import { once } from "node:events";
 import { randomToken, s256Challenge } from "../../shared/crypto.ts";
 import { readBody } from "../../shared/http.ts";
-import type { StaticUser } from "../../auth/static-user.ts";
+import type { UserProfile } from "../../auth/user-profile.ts";
 import type { TestContext } from "node:test";
 
 export interface UpstreamOidcServer {
@@ -14,7 +14,7 @@ export interface UpstreamOidcServer {
   authorizationUrl: string;
   tokenUrl: string;
   userinfoUrl: string;
-  profile: StaticUser;
+  profile: UserProfile;
   stop: () => Promise<void>;
 }
 
@@ -23,7 +23,7 @@ interface AuthorizationRecord {
   codeChallenge: string;
 }
 
-export async function startUpstreamOidcServer(t: TestContext, profile: StaticUser): Promise<UpstreamOidcServer> {
+export async function startUpstreamOidcServer(t: TestContext, profile: UserProfile): Promise<UpstreamOidcServer> {
   const clientId = "upstream-client";
   const clientSecret = "upstream-secret";
   const codes = new Map<string, AuthorizationRecord>();
@@ -95,14 +95,15 @@ async function token(
   const form = new URLSearchParams(await readBody(req));
   const code = requiredParam(form, "code");
   const record = codes.get(code);
+  const credentials = upstreamCredentials(req, form);
   if (!record) {
     writeJson(res, 400, { error: "invalid_grant" });
     return;
   }
   if (
     form.get("grant_type") !== "authorization_code" ||
-    form.get("client_id") !== clientId ||
-    form.get("client_secret") !== clientSecret ||
+    credentials.clientId !== clientId ||
+    credentials.clientSecret !== clientSecret ||
     form.get("redirect_uri") !== record.redirectUri ||
     s256Challenge(requiredParam(form, "code_verifier")) !== record.codeChallenge
   ) {
@@ -115,7 +116,17 @@ async function token(
   writeJson(res, 200, { access_token: accessToken, token_type: "Bearer", expires_in: 300 });
 }
 
-function userinfo(req: IncomingMessage, res: ServerResponse, accessTokens: Set<string>, profile: StaticUser): void {
+function upstreamCredentials(req: IncomingMessage, form: URLSearchParams): { clientId: string | null; clientSecret: string | null } {
+  const authorization = req.headers.authorization;
+  if (typeof authorization !== "string") return { clientId: form.get("client_id"), clientSecret: form.get("client_secret") };
+  if (!authorization.startsWith("Basic ")) return { clientId: null, clientSecret: null };
+  const decoded = Buffer.from(authorization.slice("Basic ".length), "base64").toString("utf8");
+  const separator = decoded.indexOf(":");
+  if (separator < 1) return { clientId: null, clientSecret: null };
+  return { clientId: decoded.slice(0, separator), clientSecret: decoded.slice(separator + 1) };
+}
+
+function userinfo(req: IncomingMessage, res: ServerResponse, accessTokens: Set<string>, profile: UserProfile): void {
   const authorization = req.headers.authorization ?? "";
   const token = authorization.startsWith("Bearer ") ? authorization.slice("Bearer ".length) : "";
   if (!accessTokens.has(token)) {

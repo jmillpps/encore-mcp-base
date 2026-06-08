@@ -1,4 +1,4 @@
-import { userProfileFromJson, userProfileJson } from "../static-user.ts";
+import { userProfileFromJson, userProfileJson } from "../user-profile.ts";
 import type { RefreshTokenRecord } from "./store-records.ts";
 import { compact, hash, optionalHash, row, scopes, scopesJson, seconds, text, type DiskRow } from "./store-row-primitives.ts";
 import { authTime, optionalOrderedSeconds, orderedSeconds } from "./store-row-time.ts";

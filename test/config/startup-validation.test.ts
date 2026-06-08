@@ -4,13 +4,9 @@ import test from "node:test";
 import { validateStartup } from "../../auth/startup.ts";
 import { sha256Base64Url } from "../../shared/crypto.ts";
 import { expectServiceStartupFailure } from "../support/service-process.ts";
-import { testStaticUserEnv } from "../support/static-user.ts";
 
 test("startup validation accepts complete production OAuth configuration", () => {
   assert.doesNotThrow(() => validateStartup(productionEnv({ OAUTH_PRIVATE_KEY_PEM: privateKeyPem(), OAUTH_KEY_ID: "prod-key-1" })));
-  assert.doesNotThrow(() =>
-    validateStartup(productionEnv({ ...cognitoEnv(), ...withoutStaticUser(), OAUTH_PRIVATE_KEY_PEM: privateKeyPem(), OAUTH_KEY_ID: "prod-key-1" })),
-  );
 });
 
 test("startup validation rejects incomplete production OAuth configuration", () => {
@@ -20,9 +16,8 @@ test("startup validation rejects incomplete production OAuth configuration", () 
   assert.throws(() => validateStartup(productionEnv({ OAUTH_STORE_PATH: " oauth-store.json" })), /store path cannot include surrounding whitespace/);
   assert.throws(() => validateStartup(productionEnv({ OAUTH_STORE_PATH: "oauth-store.txt" })), /store path must end with .json/);
   assert.throws(() => validateStartup(productionEnv({ OAUTH_STORE_PATH: "../oauth-store.json" })), /store path cannot traverse upward/);
-  assert.throws(() => validateStartup(productionEnv({ STATIC_USER_EMAIL: "" })), /STATIC_USER_EMAIL is required/);
-  assert.throws(() => validateStartup(productionEnv({ STATIC_USER_EMAIL_VERIFIED: "" })), /STATIC_USER_EMAIL_VERIFIED is required/);
-  assert.throws(() => validateStartup(productionEnv({ ...cognitoEnv(), COGNITO_CLIENT_SECRET: "" })), /COGNITO_CLIENT_SECRET is required/);
+  assert.throws(() => validateStartup(productionEnv({ UPSTREAM_OIDC_CLIENT_SECRET: "" })), /UPSTREAM_OIDC_CLIENT_SECRET is required/);
+  assert.throws(() => validateStartup(productionEnv({ UPSTREAM_OIDC_REDIRECT_URI: "" })), /UPSTREAM_OIDC_REDIRECT_URI is required/);
 });
 
 test("Encore production startup fails closed when signing key material is missing", async (t) => {
@@ -46,7 +41,7 @@ function productionEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
     RATE_LIMIT_MAX_REQUESTS: "120",
     MCP_SSE_MAX_CONNECTIONS: "1024",
     OAUTH_CLIENTS_JSON: JSON.stringify([clientRecord()]),
-    ...testStaticUserEnv,
+    ...upstreamOidcEnv(),
     ...overrides,
   };
 }
@@ -69,20 +64,16 @@ function privateKeyPem(): string {
   return generateKeyPairSync("rsa", { modulusLength: 2048 }).privateKey.export({ type: "pkcs8", format: "pem" }).toString();
 }
 
-function cognitoEnv(): NodeJS.ProcessEnv {
+function upstreamOidcEnv(): NodeJS.ProcessEnv {
   return {
-    COGNITO_ENABLED: "true",
-    COGNITO_ISSUER_URL: "https://cognito-idp.example.test/pool",
-    COGNITO_AUTHORIZATION_URL: "https://auth.example.test/oauth2/authorize",
-    COGNITO_TOKEN_URL: "https://auth.example.test/oauth2/token",
-    COGNITO_USERINFO_URL: "https://auth.example.test/oauth2/userInfo",
-    COGNITO_CLIENT_ID: "cognito-client",
-    COGNITO_CLIENT_SECRET: "cognito-secret",
-    COGNITO_REDIRECT_URI: "https://issuer.example.test/oauth/cognito/callback",
-    COGNITO_SCOPES: "openid profile email",
+    UPSTREAM_OIDC_ISSUER_URL: "https://idp.example.test",
+    UPSTREAM_OIDC_AUTHORIZATION_URL: "https://login.example.test/oauth2/authorize",
+    UPSTREAM_OIDC_TOKEN_URL: "https://login.example.test/oauth2/token",
+    UPSTREAM_OIDC_USERINFO_URL: "https://login.example.test/oauth2/userInfo",
+    UPSTREAM_OIDC_CLIENT_ID: "upstream-client",
+    UPSTREAM_OIDC_CLIENT_SECRET: "upstream-secret",
+    UPSTREAM_OIDC_REDIRECT_URI: "https://issuer.example.test/oauth/callback",
+    UPSTREAM_OIDC_SCOPES: "openid profile email",
+    UPSTREAM_OIDC_TOKEN_AUTH_METHOD: "client_secret_post",
   };
-}
-
-function withoutStaticUser(): NodeJS.ProcessEnv {
-  return Object.fromEntries(Object.keys(testStaticUserEnv).map((key) => [key, undefined]));
 }

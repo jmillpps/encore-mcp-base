@@ -1,5 +1,5 @@
 import { isOidcNonce } from "../nonce.ts";
-import { userProfileFromJson, userProfileJson } from "../static-user.ts";
+import { userProfileFromJson, userProfileJson } from "../user-profile.ts";
 import type { AuthorizationCodeRecord } from "./store-records.ts";
 import { compact, hash, malformed, methodS256, optionalHash, optionalText, row, scopes, scopesJson, seconds, text, type DiskRow } from "./store-row-primitives.ts";
 import { authTime, optionalOrderedSeconds, orderedSeconds } from "./store-row-time.ts";

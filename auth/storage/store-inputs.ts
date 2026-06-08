@@ -1,4 +1,4 @@
-import type { StaticUser } from "../static-user.ts";
+import type { UserProfile } from "../user-profile.ts";
 
 export interface AuthorizationCodeInput {
   clientId: string;
@@ -8,7 +8,7 @@ export interface AuthorizationCodeInput {
   nonce?: string;
   codeChallenge?: string;
   codeChallengeMethod?: "S256";
-  user: StaticUser;
+  user: UserProfile;
   ttlSeconds: number;
 }
 
@@ -22,7 +22,7 @@ export interface AuthorizationCodeExpectation {
 
 export interface RefreshTokenInput {
   clientId: string;
-  user: StaticUser;
+  user: UserProfile;
   resource: string;
   scopes: string[];
   authTime: number;

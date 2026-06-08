@@ -7,7 +7,8 @@ import { dirname, join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import type { TestContext } from "node:test";
-import { testStaticUserEnv } from "./static-user.ts";
+import { startUpstreamOidcServer } from "./upstream-oidc.ts";
+import { testUserProfile } from "./user-profile.ts";
 
 export interface TestService {
   origin: string;
@@ -24,11 +25,12 @@ const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 export async function startService(t: TestContext, envOverrides: ServiceEnvOverrides = {}): Promise<TestService> {
   const port = await freePort();
   const origin = `http://127.0.0.1:${port}`;
+  const upstream = await startUpstreamOidcServer(t, testUserProfile);
   const tempDir = await mkdtemp(join(tmpdir(), "mcp-service-test-"));
   const storePath = join(tempDir, "oauth-store.json");
   const child = spawn("encore", ["run", "--browser=never", "--port", String(port)], {
     cwd: projectRoot,
-    env: serviceEnv(origin, storePath, envOverridesFor(origin, storePath, envOverrides)),
+    env: serviceEnv(origin, storePath, upstreamEnv(origin, upstream), envOverridesFor(origin, storePath, envOverrides)),
     stdio: ["ignore", "pipe", "pipe"],
   });
   let output = "";
@@ -79,10 +81,10 @@ export async function expectServiceStartupFailure(t: TestContext, envOverrides: 
   return output;
 }
 
-function serviceEnv(origin: string, storePath: string, envOverrides: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+function serviceEnv(origin: string, storePath: string, upstream: NodeJS.ProcessEnv, envOverrides: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {
     ...process.env,
-    ...testStaticUserEnv,
+    ...upstream,
     PUBLIC_ISSUER_URL: origin,
     MCP_RESOURCE_URL: `${origin}/mcp`,
     ACTIONS_AUDIENCE: `${origin}/actions`,
@@ -96,6 +98,20 @@ function serviceEnv(origin: string, storePath: string, envOverrides: NodeJS.Proc
 
 function envOverridesFor(origin: string, storePath: string, envOverrides: ServiceEnvOverrides): NodeJS.ProcessEnv {
   return typeof envOverrides === "function" ? envOverrides(origin, storePath) : envOverrides;
+}
+
+function upstreamEnv(origin: string, upstream: { issuer: string; authorizationUrl: string; tokenUrl: string; userinfoUrl: string; clientId: string; clientSecret: string }): NodeJS.ProcessEnv {
+  return {
+    UPSTREAM_OIDC_ISSUER_URL: upstream.issuer,
+    UPSTREAM_OIDC_AUTHORIZATION_URL: upstream.authorizationUrl,
+    UPSTREAM_OIDC_TOKEN_URL: upstream.tokenUrl,
+    UPSTREAM_OIDC_USERINFO_URL: upstream.userinfoUrl,
+    UPSTREAM_OIDC_CLIENT_ID: upstream.clientId,
+    UPSTREAM_OIDC_CLIENT_SECRET: upstream.clientSecret,
+    UPSTREAM_OIDC_REDIRECT_URI: `${origin}/oauth/callback`,
+    UPSTREAM_OIDC_SCOPES: "openid profile email",
+    UPSTREAM_OIDC_TOKEN_AUTH_METHOD: "client_secret_post",
+  };
 }
 
 function cleanEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {

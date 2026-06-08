@@ -3,13 +3,13 @@ import { randomToken } from "../../shared/crypto.ts";
 import { ServiceError } from "../../shared/errors.ts";
 import { nowSeconds } from "../../shared/time.ts";
 import { hasScopes } from "../scopes.ts";
-import type { StaticUser } from "../static-user.ts";
+import type { UserProfile } from "../user-profile.ts";
 import { getSigningKey, getVerificationKeys } from "./signing-keys.ts";
 import { jwtKid, signJwt, verifyJwt } from "./jwt.ts";
 import type { AccessTokenClaims } from "./token-claims.ts";
 
 export interface AccessTokenInput {
-  user: StaticUser;
+  user: UserProfile;
   clientId: string;
   audience: string;
   scopes: string[];

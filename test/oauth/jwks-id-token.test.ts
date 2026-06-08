@@ -3,7 +3,7 @@ import test from "node:test";
 import { completeAuthorizationCodeFlow, localClient } from "../support/oauth-client.ts";
 import { readJson, requireRecord, requireString } from "../support/http.ts";
 import { startService } from "../support/service-process.ts";
-import { testStaticUser } from "../support/static-user.ts";
+import { testUserProfile } from "../support/user-profile.ts";
 
 test("JWKS publishes the signing key for externally validated ID tokens", async (t) => {
   const service = await startService(t);
@@ -14,8 +14,8 @@ test("JWKS publishes the signing key for externally validated ID tokens", async 
   assert.equal(header.typ, "JWT");
   assert.equal(flow.idClaims.iss, service.origin);
   assert.equal(flow.idClaims.aud, localClient.client_id);
-  assert.equal(flow.idClaims.sub, testStaticUser.sub);
-  assert.equal(flow.idClaims.email, testStaticUser.email);
+  assert.equal(flow.idClaims.sub, testUserProfile.sub);
+  assert.equal(flow.idClaims.email, testUserProfile.email);
   const jwks = await readJson(await fetch(requireString(flow.as.jwks_uri, "jwks_uri")));
   const keys = jwks.keys as Record<string, unknown>[];
   assert.ok(keys.some((key) => key.kid === header.kid && key.alg === "RS256" && key.use === "sig"));

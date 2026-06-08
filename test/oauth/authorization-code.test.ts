@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
 import * as oauth from "oauth4webapi";
-import { authorizeCode, completeAuthorizationCodeFlow, discover, exchangeCode, localClient, localRedirectUri } from "../support/oauth-client.ts";
+import { authorizeCode, completeAuthorizationCodeFlow, discover, exchangeCode, localClient, localRedirectUri, manualRedirect } from "../support/oauth-client.ts";
 import { readJson, requireString } from "../support/http.ts";
 import { startService } from "../support/service-process.ts";
 import { authorizationCodeGrant } from "../../auth/tokens/authorization-code.ts";
@@ -13,7 +13,7 @@ import { DiskOAuthStore } from "../../auth/storage/disk-store.ts";
 import { readConfig } from "../../shared/config.ts";
 import { ServiceError, type ErrorCode } from "../../shared/errors.ts";
 import type { OAuthClient } from "../../auth/client-types.ts";
-import { testStaticUser } from "../support/static-user.ts";
+import { testUserProfile } from "../support/user-profile.ts";
 
 test("authorization code flow issues externally processed OIDC tokens and userinfo", async (t) => {
   const service = await startService(t);
@@ -22,13 +22,13 @@ test("authorization code flow issues externally processed OIDC tokens and userin
   assert.equal(flow.tokens.scope, "openid profile email");
   assert.equal(flow.idClaims.iss, service.origin);
   assert.equal(flow.idClaims.aud, localClient.client_id);
-  assert.equal(flow.idClaims.email, testStaticUser.email);
-  assert.equal(flow.idClaims.name, testStaticUser.name);
+  assert.equal(flow.idClaims.email, testUserProfile.email);
+  assert.equal(flow.idClaims.name, testUserProfile.name);
   const userInfoResponse = await oauth.userInfoRequest(flow.as, localClient, flow.tokens.access_token, {
     [oauth.allowInsecureRequests]: true,
   });
   const userInfo = await oauth.processUserInfoResponse(flow.as, localClient, flow.idClaims.sub, userInfoResponse);
-  assert.equal(userInfo.email, testStaticUser.email);
+  assert.equal(userInfo.email, testUserProfile.email);
   const store = await readFile(service.storePath, "utf8");
   assert.equal(store.includes(flow.code), false);
   assert.equal(store.includes(requireString(flow.tokens.refresh_token, "refresh_token")), false);
@@ -88,9 +88,9 @@ test("authorization endpoint accepts id_token_hint during reauthorization", asyn
   const state = oauth.generateRandomState();
   const url = await authorizationUrl(flow.as, service.actionsAudience, state);
   url.searchParams.set("id_token_hint", requireString(flow.tokens.id_token, "id_token"));
-  const response = await fetch(url, { redirect: "manual" });
-  assert.equal(response.status, 302);
-  const callback = new URL(requireString(response.headers.get("location"), "location"));
+  const upstreamRedirect = await manualRedirect(url);
+  const serviceCallbackRedirect = await manualRedirect(upstreamRedirect);
+  const callback = await manualRedirect(serviceCallbackRedirect);
   const params = oauth.validateAuthResponse(flow.as, localClient, callback, state);
   assert.ok(params.get("code"));
 });
@@ -202,7 +202,7 @@ async function createStoredCode(store: DiskOAuthStore, config: ReturnType<typeof
     redirectUri: localRedirectUri,
     resource: config.actionsAudience,
     scopes,
-    user: testStaticUser,
+    user: testUserProfile,
     ttlSeconds: 300,
   });
 }

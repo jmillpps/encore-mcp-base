@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import * as oauth from "oauth4webapi";
-import { completeAuthorizationCodeFlow, discover } from "../support/oauth-client.ts";
+import { completeAuthorizationCodeFlow, discover, manualRedirect } from "../support/oauth-client.ts";
 import { callTool, initializeMcp, postMcp, bearer } from "../support/mcp.ts";
 import { assertExposesHeader, expectOAuthError, readJson, requireRecord, requireString } from "../support/http.ts";
 import { startService, type TestService } from "../support/service-process.ts";
-import { testStaticUser } from "../support/static-user.ts";
+import { testUserProfile } from "../support/user-profile.ts";
 
 const gptAppsMcpClient: oauth.Client = { client_id: "gpt-apps-mcp" };
 const gptAppsMcpSecret = "gpt-apps-secret";
@@ -78,7 +78,7 @@ test("MCP tools return structured content that matches advertised output schemas
   const validFlow = await completeAuthorizationCodeFlow(service, service.mcpResource);
   const session = await callTool(service, sessionId, "auth.session", bearer(validFlow.tokens.access_token));
   const sessionContent = session.structuredContent as Record<string, unknown>;
-  assert.equal(sessionContent.subject, testStaticUser.sub);
+  assert.equal(sessionContent.subject, testUserProfile.sub);
   assert.equal(sessionContent.clientId, "local-test");
   assert.ok(Array.isArray(sessionContent.scopes));
   assert.deepEqual(readToolTextJson(session), session.structuredContent);
@@ -89,7 +89,7 @@ test("MCP protected tools enforce audience and scopes", async (t) => {
   const sessionId = await initializeMcp(service);
   const validFlow = await completeAuthorizationCodeFlow(service, service.mcpResource);
   const profile = await callTool(service, sessionId, "identity.profile", bearer(validFlow.tokens.access_token));
-  assert.equal((profile.structuredContent as Record<string, unknown>).email, testStaticUser.email);
+  assert.equal((profile.structuredContent as Record<string, unknown>).email, testUserProfile.email);
   const actionsFlow = await completeAuthorizationCodeFlow(service, service.actionsAudience);
   const wrongAudience = await postMcp(
     service,
@@ -122,7 +122,7 @@ test("MCP protected tools accept the GPT Apps client required-PKCE token flow", 
   const { tokens, idClaims } = await completeGptAppsMcpFlow(service);
   assert.equal(idClaims.aud, gptAppsMcpClient.client_id);
   const profile = await callTool(service, sessionId, "identity.profile", bearer(tokens.access_token));
-  assert.equal((profile.structuredContent as Record<string, unknown>).email, testStaticUser.email);
+  assert.equal((profile.structuredContent as Record<string, unknown>).email, testUserProfile.email);
   const session = await callTool(service, sessionId, "auth.session", bearer(tokens.access_token));
   assert.equal((session.structuredContent as Record<string, unknown>).clientId, gptAppsMcpClient.client_id);
 });
@@ -180,9 +180,9 @@ async function completeGptAppsMcpFlow(service: TestService): Promise<{ tokens: o
   url.searchParams.set("resource", service.mcpResource);
   url.searchParams.set("code_challenge", codeChallenge);
   url.searchParams.set("code_challenge_method", "S256");
-  const authorization = await fetch(url, { redirect: "manual" });
-  assert.equal(authorization.status, 302);
-  const callback = new URL(requireString(authorization.headers.get("location"), "location"));
+  const upstreamRedirect = await manualRedirect(url);
+  const serviceCallbackRedirect = await manualRedirect(upstreamRedirect);
+  const callback = await manualRedirect(serviceCallbackRedirect);
   const callbackParameters = oauth.validateAuthResponse(as, gptAppsMcpClient, callback, state);
   const tokenResponse = await oauth.authorizationCodeGrantRequest(
     as,

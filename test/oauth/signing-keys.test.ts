@@ -7,7 +7,7 @@ import { getSigningKey } from "../../auth/tokens/signing-keys.ts";
 import { signJwt } from "../../auth/tokens/jwt.ts";
 import { readConfig } from "../../shared/config.ts";
 import { nowSeconds } from "../../shared/time.ts";
-import { testStaticUser } from "../support/static-user.ts";
+import { testUserProfile } from "../support/user-profile.ts";
 
 test("production signing key lookup fails closed without configured key material", () => {
   getSigningKey(readConfig({}), {});
@@ -123,7 +123,7 @@ function accessClaims(config: ReturnType<typeof productionConfig>, kid: string):
   const now = nowSeconds();
   return {
     iss: config.issuer,
-    sub: testStaticUser.sub,
+    sub: testUserProfile.sub,
     aud: config.actionsAudience,
     exp: now + 900,
     iat: now,
@@ -131,12 +131,12 @@ function accessClaims(config: ReturnType<typeof productionConfig>, kid: string):
     jti: kid,
     client_id: "local-test",
     scope: "openid profile email",
-    name: testStaticUser.name,
-    given_name: testStaticUser.given_name,
-    family_name: testStaticUser.family_name,
-    preferred_username: testStaticUser.preferred_username,
-    email: testStaticUser.email,
-    email_verified: testStaticUser.email_verified,
+    name: testUserProfile.name,
+    given_name: testUserProfile.given_name,
+    family_name: testUserProfile.family_name,
+    preferred_username: testUserProfile.preferred_username,
+    email: testUserProfile.email,
+    email_verified: testUserProfile.email_verified,
   };
 }
 

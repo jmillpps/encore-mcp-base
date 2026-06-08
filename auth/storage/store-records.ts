@@ -1,4 +1,4 @@
-import type { StaticUser } from "../static-user.ts";
+import type { UserProfile } from "../user-profile.ts";
 
 export interface AuthorizationCodeRecord {
   codeHash: string;
@@ -9,7 +9,7 @@ export interface AuthorizationCodeRecord {
   nonce?: string;
   codeChallenge?: string;
   codeChallengeMethod?: "S256";
-  user: StaticUser;
+  user: UserProfile;
   expiresAt: number;
   consumedAt?: number;
   authTime: number;
@@ -20,7 +20,7 @@ export interface RefreshTokenRecord {
   tokenHash: string;
   familyId: string;
   clientId: string;
-  user: StaticUser;
+  user: UserProfile;
   resource: string;
   scopes: string[];
   expiresAt: number;

@@ -1,5 +1,5 @@
 import type { ServiceConfig } from "../../shared/config.ts";
-import type { StaticUser } from "../static-user.ts";
+import type { UserProfile } from "../user-profile.ts";
 import { issueAccessToken } from "./access-token.ts";
 import { issueIdToken } from "./id-token.ts";
 
@@ -18,7 +18,7 @@ export interface TokenResponseInput {
   scopes: string[];
   refreshToken: string;
   authTime: number;
-  user: StaticUser;
+  user: UserProfile;
   nonce?: string;
 }
 
