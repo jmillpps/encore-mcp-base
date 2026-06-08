@@ -23,6 +23,21 @@ The provider uses these local credentials:
 
 The provider accepts `client_secret_post` and `client_secret_basic` token authentication.
 
+## Generic Provider Contract
+
+The test provider proves the service contract for any upstream OIDC provider that supplies compatible endpoints and claims.
+
+| Contract item | Test harness behavior |
+| --- | --- |
+| Authorization endpoint | Receives the service-generated request and redirects to `/oauth/callback` with an upstream code. |
+| Token endpoint | Requires the upstream client credentials, redirect URI, code, and PKCE verifier. |
+| Userinfo endpoint | Requires the upstream bearer token and returns profile claims used by the service. |
+| Subject | Supplies the upstream `sub` that becomes the service subject. |
+| Email | Supplies the upstream `email` used by Actions, MCP, and userinfo responses. |
+| Email verification | Supplies `email_verified` as the source value for service profile normalization. |
+
+Deployment-specific providers add tenant, domain, and client registration work outside the runtime tests. Runtime tests prove the generic protocol behavior.
+
 ## Service Harness
 
 `test/support/service-process.ts` starts the local provider before it starts Encore. The service process receives `UPSTREAM_OIDC_*` values that point to the local provider.
@@ -78,3 +93,17 @@ Add or update runtime tests when changing:
 CDK identity provider tests belong under `test/cdk/`. Runtime identity provider tests belong under `test/oauth/`, `test/actions/`, `test/mcp/`, or focused support modules under `test/support/`.
 
 Vendor tenant verification happens during deployment release checks. Runtime tests prove the generic OIDC provider contract used by those tenants.
+
+## Failure Coverage
+
+Add or update tests for these upstream failure paths when the behavior changes:
+
+| Failure path | Expected proof |
+| --- | --- |
+| Upstream state mismatch | Service rejects the callback and leaves the original authorization request unredeemed. |
+| Upstream token rejection | Service returns a safe OAuth error and records safe diagnostics. |
+| Missing userinfo subject | Service rejects the profile before issuing service tokens. |
+| Missing userinfo email | Service rejects the profile before Actions or MCP receive identity data. |
+| Unsupported `email_verified` value | Profile normalization rejects the claim. |
+| Redirect URI mismatch | Upstream token exchange fails through the local provider. |
+| PKCE mismatch | Upstream token exchange fails through the local provider. |

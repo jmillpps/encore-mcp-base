@@ -33,6 +33,12 @@ npm run check
 - Test-placement check.
 - Full test suite.
 
+## Live Behavior Principle
+
+Tests should prove running service behavior for protocol paths. Prefer a live service process when the behavior crosses HTTP, OAuth, MCP, Actions, storage, diagnostics, or deployment configuration.
+
+Focused module tests are appropriate for pure validation helpers, static repository checks, CDK synthesis helpers, source archive handling, and deterministic parsing rules.
+
 ## Test Areas
 
 | Area | Coverage |
@@ -44,6 +50,17 @@ npm run check
 | Tools | OpenAPI export and client secret generation. |
 
 Identity provider test harness behavior is covered in [Identity Provider Testing](identity-provider-testing.md).
+
+## Evidence Quality
+
+| Evidence | Use |
+| --- | --- |
+| Live HTTP response | Endpoint behavior, status, headers, body shape, and auth failures. |
+| OAuth client helper result | Authorization code, token exchange, refresh rotation, ID token, and userinfo behavior. |
+| MCP helper result | Session initialization, JSON-RPC response shape, tool descriptors, tool calls, and auth challenges. |
+| Store file assertion | Persistence, hashing, expiration, replay windows, and permission handling. |
+| Static check | Dependency direction, file scope, architecture rules, test placement, and generated schema compatibility. |
+| Manual document read | Documentation clarity, modularity, placeholder safety, and source alignment. |
 
 ## Harness Components
 
@@ -71,6 +88,19 @@ Use the changed surface to select tests:
 | Repository boundaries | `npm run check:dependencies`, `npm run check:architecture`, `npm run check:file-scope`, and `npm run check:test-placement`. |
 
 Documentation tests are intentionally absent. Documentation quality is reviewed by reading the files directly.
+
+## Targeted Command Examples
+
+| Change | Example command |
+| --- | --- |
+| Actions OpenAPI | `node --experimental-strip-types --test --test-concurrency=1 test/actions/openapi.test.ts test/actions/openapi-compatibility.test.ts` |
+| Actions auth | `node --experimental-strip-types --test --test-concurrency=1 test/actions/authenticated-actions.test.ts` |
+| MCP transport auth | `node --experimental-strip-types --test --test-concurrency=1 test/mcp/transport-bearer.test.ts` |
+| MCP tool descriptor | `node --experimental-strip-types --test --test-concurrency=1 test/mcp/tool-descriptor-validation.test.ts` |
+| OAuth discovery | `node --experimental-strip-types --test --test-concurrency=1 test/oauth/discovery.test.ts` |
+| Upstream OIDC | `node --experimental-strip-types --test --test-concurrency=1 test/oauth/upstream-oidc-bridge.test.ts` |
+| Store security | `node --experimental-strip-types --test --test-concurrency=1 test/oauth/store-security.test.ts test/oauth/store-file.test.ts` |
+| CDK runtime parameters | `node --experimental-strip-types --test --test-concurrency=1 test/cdk/runtime-parameter-options.test.ts` |
 
 ## Release Gate
 

@@ -33,6 +33,20 @@ Confirm the changed code preserves:
 - Safe caller-facing errors.
 - Durable rate limits on OAuth endpoints and MCP tools.
 
+## Review Sequence
+
+Use this order during review:
+
+1. Identify every public route, tool, background command, configuration source, and stored row touched by the change.
+2. Identify the attacker-controlled fields for each touched path.
+3. Identify the validator that rejects malformed values.
+4. Identify the bearer audience and required scopes.
+5. Identify every secret that can enter the path.
+6. Identify the diagnostics emitted by success, rejection, and service failure paths.
+7. Identify the targeted tests that prove the boundary.
+
+Record unresolved security questions in the change notes before merge.
+
 ## Secret Handling
 
 Raw secrets include client secrets, bearer tokens, authorization codes, refresh tokens, upstream tokens, signing private keys, session IDs, state, nonce, and cookies.
@@ -60,6 +74,19 @@ Review:
 - MCP `WWW-Authenticate` challenge fields.
 - Tool error result text.
 - Diagnostic event fields.
+
+## Abuse Case Matrix
+
+| Area | Abuse case | Required proof |
+| --- | --- | --- |
+| OAuth authorize | Redirect URI substitution, resource substitution, oversized state, invalid PKCE, replayed upstream state. | Authorization and upstream bridge tests. |
+| OAuth token | Reused code, reused refresh token, invalid client auth, invalid resource, invalid client assertion. | Token, refresh, client-auth, and private key JWT tests. |
+| MCP transport | Query bearer token, duplicate auth header, wrong audience, request-ID replay, invalid protocol version. | MCP transport and request-ID tests. |
+| MCP tools | Missing scope, invalid arguments, invalid output shape, unsafe tool error text. | Protected tool, descriptor, and output validation tests. |
+| Actions | Query bearer token, wrong audience, missing scope, schema drift, unsafe error fields. | Actions auth, endpoint, and OpenAPI tests. |
+| Client metadata | Untrusted metadata URL, invalid metadata JSON, invalid JWKS, assertion replay. | Client metadata and private key JWT tests. |
+| Storage | Unsafe path, symlink, permissive file mode, partial write, lock contention. | Store security, store file, and rate-limit store tests. |
+| Diagnostics | Secret leakage through fields, messages, or nested values. | Diagnostics redaction tests. |
 
 ## Test Review
 

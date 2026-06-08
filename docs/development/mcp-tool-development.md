@@ -37,11 +37,34 @@ Tool output returns a tool result envelope with:
 
 The registry validates successful `structuredContent` against the advertised `outputSchema`. A schema mismatch is a service error and should fail tests.
 
+## Tool Execution Path
+
+| Step | Runtime owner | Expected behavior |
+| --- | --- | --- |
+| Transport auth | `mcp/endpoints.mcp.ts` or `mcp/endpoints.sse.ts` | Validate MCP-audience bearer tokens before protected protocol behavior. |
+| JSON-RPC validation | `mcp/json-rpc.ts`, `mcp/request-body.ts`, `mcp/request-params.ts` | Reject malformed request shape and unsupported parameter shape. |
+| Lifecycle validation | `mcp/lifecycle.ts` | Enforce initialization and method ordering. |
+| Tool lookup | `mcp/tool-registry.ts` | Resolve the tool by exact name and validate descriptor integrity. |
+| Argument validation | `mcp/tool-execution.ts` and schema helpers | Validate tool arguments before running capability code. |
+| Scope enforcement | `mcp/tool-security.ts` | Enforce required scopes for protected tools. |
+| Result validation | `mcp/tool-result.ts` | Validate structured output against the descriptor schema. |
+
 ## Authentication And Scopes
 
 Every transport request uses an MCP-audience bearer token. Protected tools also call `verifyBearer` with the tool scopes. Scope failures return a `WWW-Authenticate` challenge and `_meta["mcp/www_authenticate"]` in the tool result.
 
 Use scope arrays from `auth/scopes.ts` when a scope set is shared with Actions or OAuth docs.
+
+## Auth Challenge Behavior
+
+| Failure | Expected MCP behavior |
+| --- | --- |
+| Missing or malformed transport bearer | Transport returns an HTTP auth challenge. |
+| Wrong token audience | Transport rejects the request before JSON-RPC dispatch. |
+| Missing tool scope | Tool result uses a caller-safe error envelope and includes `_meta["mcp/www_authenticate"]`. |
+| Tool runtime rejection | Tool result uses a caller-safe error envelope. |
+
+Protected tool failures should keep token values, session IDs, raw claims, and upstream identity details out of visible result text.
 
 ## Registration Steps
 
@@ -66,3 +89,14 @@ Tool tests should prove:
 - Caller-safe failures use tool error envelopes.
 
 Use `test/support/mcp.ts` for initialization, bearer tokens, session IDs, and tool calls.
+
+## Completion Checklist
+
+Before committing an MCP tool change:
+
+1. Confirm the descriptor fields are stable, specific, and schema-backed.
+2. Confirm annotations match the actual behavior.
+3. Confirm protected tools use the shared scope constants.
+4. Confirm shared capability behavior stays outside `mcp/` when Actions also exposes it.
+5. Confirm `tools/list`, `tools/call`, auth challenge, and schema validation tests pass.
+6. Confirm MCP API docs and GPT Apps setup docs describe the tool accurately.
