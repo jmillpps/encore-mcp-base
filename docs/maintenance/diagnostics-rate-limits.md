@@ -8,6 +8,8 @@ Service diagnostics use structured events. Authentication and OAuth errors retur
 
 Operational review should inspect diagnostic status, endpoint, method, subject, and error code. Secret-bearing fields stay absent from diagnostic output.
 
+Actions error responses include `code`, `message`, `details`, and `internal_message`. Authentication and authorization failures return safe messages. Internal details stay absent from caller-visible responses.
+
 ## Rate Limits
 
 Durable rate-limit buckets apply to:
@@ -22,6 +24,15 @@ Buckets are keyed by logical subject and stored as hashed durable keys. Expired 
 ## Operator Response
 
 Repeated `rate_limited` responses indicate either client retry pressure, account-linking loops, or scripted traffic. Review the endpoint and subject before increasing limits.
+
+Use this order for authentication and authorization failures:
+
+1. Confirm the endpoint and HTTP method.
+2. Confirm the token audience matches the requested surface.
+3. Confirm required scopes are present.
+4. Confirm the bearer token is current.
+5. Confirm the OAuth client record allows the requested resource.
+6. Review rate-limit buckets for the same subject.
 
 ## Safe Review Fields
 

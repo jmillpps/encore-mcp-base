@@ -22,6 +22,12 @@ Authorization code grants require exact redirect matching and PKCE according to 
 
 Resource indicators bind access tokens to the intended audience. Resource errors use generic descriptions.
 
+## Audience And Scope Failures
+
+MCP endpoints accept tokens whose audience equals the MCP resource. Actions endpoints accept tokens whose audience equals the Actions audience.
+
+Wrong-audience tokens fail authorization for the requested surface. Missing scopes return a scope challenge for MCP tools and a forbidden response for Actions endpoints. Invalid bearer tokens receive client-safe authentication errors.
+
 ## MCP Security
 
 Every MCP transport request requires an MCP-audience bearer token. Initialize requests validate auth before JSON parsing and session creation. Protected tools return ChatGPT-compatible auth challenges when scopes are missing.

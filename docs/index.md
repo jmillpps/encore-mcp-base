@@ -49,6 +49,7 @@ The documentation is organized by reader task.
 
 - [Development](development/index.md) lists maintainer guides.
 - [Project Structure](development/project-structure.md) maps code ownership.
+- [Maintainer Critical Areas](development/maintainer-critical-areas.md) maps high-risk project areas to owning docs.
 - [Adding Capabilities](development/adding-capabilities.md) explains MCP and Actions adapters.
 - [Testing](development/testing.md) explains targeted and full verification.
 - [Identity Provider Testing](development/identity-provider-testing.md) explains the local upstream OIDC test harness.

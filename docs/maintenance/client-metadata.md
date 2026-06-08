@@ -52,3 +52,16 @@ ChatGPT can send locale hints such as `ui_locales` during authorization. The ser
 Metadata-document clients using `private_key_jwt` must publish a same-origin `jwks_uri`. JWKS keys must be RSA `RS256` keys with at least 2048-bit modulus length.
 
 Client assertions require valid signatures, accepted audience, current time bounds, and `jti` replay protection.
+
+## Failure Review
+
+Use this order when a metadata-document client fails:
+
+1. Confirm the client ID URL is the intended metadata document URL.
+2. Confirm the URL is HTTPS, public, path-based, and free of credentials, query strings, and fragments.
+3. Confirm DNS resolves to a public address.
+4. Fetch the metadata document from an operator workstation.
+5. Confirm `client_id`, `client_name`, and `redirect_uris`.
+6. Confirm the token endpoint authentication method.
+7. Confirm `jwks_uri` and key shape for `private_key_jwt`.
+8. Check assertion time bounds, audience, subject, issuer, signature, and `jti` uniqueness.
