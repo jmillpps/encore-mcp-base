@@ -25,7 +25,7 @@ This guide maps developer learning areas to the documents that explain the servi
 | Local end-to-end scenarios | Prove local health, discovery, OAuth, MCP, Actions, and state reset behavior with evidence. | [Local End-To-End Scenarios](../user-guides/local-end-to-end.md) |
 | Security requirements for developers | Review trust boundaries, validation, scopes, secrets, signing keys, diagnostics, and storage. | [Security Review](security-review.md), [Security Model](../architecture/security-model.md) |
 | Deployment inputs developers need to know | Understand public origins, audiences, clients, upstream OIDC values, Parameter Store, and stack outputs. | [Runtime Parameters](../deployment/runtime-parameters.md), [Production Deployment](../deployment/production.md) |
-| Contribution, commit, and release readiness | Keep feature slices small, run targeted checks, commit source before builds, and update docs. | [Testing](testing.md), [Source Build](../deployment/source-build.md), [Documentation Standards](documentation.md) |
+| Contribution, commit, and release readiness | Keep feature slices small, run targeted checks, commit source before builds, and update docs. | [Change Readiness](change-readiness.md), [Testing](testing.md), [Source Build](../deployment/source-build.md) |
 
 ## Reading Paths
 
@@ -38,7 +38,7 @@ Use these paths by task:
 | Configure GPT Actions | [GPT Actions Setup](../user-guides/gpt-actions.md), then [Actions API Reference](../api/actions.md). |
 | Add a capability | [Adding Capabilities](adding-capabilities.md), then the MCP and Actions development guides needed for the surface. |
 | Review security | [Security Review](security-review.md), then [Security Model](../architecture/security-model.md). |
-| Prepare release | [Testing](testing.md), [Release Verification](../deployment/release-verification.md), and [Source Build](../deployment/source-build.md). |
+| Prepare release | [Change Readiness](change-readiness.md), [Testing](testing.md), [Release Verification](../deployment/release-verification.md), and [Source Build](../deployment/source-build.md). |
 
 ## Completion Outcome
 

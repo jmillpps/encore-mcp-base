@@ -81,3 +81,5 @@ npm run check
 ```
 
 Use [Local End-To-End Scenarios](../user-guides/local-end-to-end.md) for developer evidence across OAuth, MCP, and Actions.
+
+Use [Change Readiness](change-readiness.md) before committing, building, or releasing a completed slice.

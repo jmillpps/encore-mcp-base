@@ -58,6 +58,7 @@ The documentation is organized by reader task.
 - [Actions Endpoint Development](development/actions-endpoint-development.md) explains route, bearer, OpenAPI, and test requirements.
 - [Shared Types And Schemas](development/shared-types-schemas.md) explains shared models and validation changes.
 - [Security Review](development/security-review.md) gives developer security review checks.
+- [Change Readiness](development/change-readiness.md) explains commit, verification, documentation, and release readiness.
 - [Testing](development/testing.md) explains targeted and full verification.
 - [Identity Provider Testing](development/identity-provider-testing.md) explains the local upstream OIDC test harness.
 - [Documentation Standards](development/documentation.md) explains repository documentation rules.

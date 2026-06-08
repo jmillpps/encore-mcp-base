@@ -11,6 +11,7 @@ This section supports maintainers who change the service.
 - [Actions Endpoint Development](actions-endpoint-development.md) explains how to add GPT Actions endpoints.
 - [Shared Types And Schemas](shared-types-schemas.md) explains shared data shape ownership.
 - [Security Review](security-review.md) gives merge-time security checks for developers.
+- [Change Readiness](change-readiness.md) explains commit, verification, documentation, and release readiness.
 - [Testing](testing.md) explains targeted and full verification.
 - [Identity Provider Testing](identity-provider-testing.md) explains the local upstream OIDC test harness.
 - [Documentation Standards](documentation.md) explains repository documentation rules.
