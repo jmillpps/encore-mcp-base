@@ -15,15 +15,15 @@ Production mode is active when `NODE_ENV=production`.
 | `OAUTH_PRIVATE_KEY_PEM` | PEM | Active RSA private key for token signing. |
 | `OAUTH_PRIVATE_KEY_PEM_FILE` | file path | Active RSA private key file used when the key is loaded from Parameter Store onto the instance filesystem. |
 | `OAUTH_KEY_ID` | string | Active signing key ID. |
-| `COGNITO_ENABLED` | boolean | Enables Cognito upstream login. |
-| `COGNITO_ISSUER_URL` | URL | Cognito issuer URL. Required when Cognito is enabled. |
-| `COGNITO_AUTHORIZATION_URL` | URL | Cognito authorization endpoint. Required when Cognito is enabled. |
-| `COGNITO_TOKEN_URL` | URL | Cognito token endpoint. Required when Cognito is enabled. |
-| `COGNITO_USERINFO_URL` | URL | Cognito userinfo endpoint. Required when Cognito is enabled. |
-| `COGNITO_CLIENT_ID` | string | Cognito OAuth app client ID. Required when Cognito is enabled. |
-| `COGNITO_CLIENT_SECRET` | string | Cognito OAuth app client secret. Required when Cognito is enabled. |
-| `COGNITO_REDIRECT_URI` | URL | Service callback URL for Cognito. Required when Cognito is enabled. |
-| `COGNITO_SCOPES` | string list | Cognito scopes. Must include `openid`. Required when Cognito is enabled. |
+| `UPSTREAM_OIDC_ISSUER_URL` | URL | Upstream identity provider issuer URL. |
+| `UPSTREAM_OIDC_AUTHORIZATION_URL` | URL | Upstream authorization endpoint. |
+| `UPSTREAM_OIDC_TOKEN_URL` | URL | Upstream token endpoint. |
+| `UPSTREAM_OIDC_USERINFO_URL` | URL | Upstream userinfo endpoint. |
+| `UPSTREAM_OIDC_CLIENT_ID` | string | Upstream OAuth client ID. |
+| `UPSTREAM_OIDC_CLIENT_SECRET` | string | Upstream OAuth client secret. |
+| `UPSTREAM_OIDC_REDIRECT_URI` | URL | Service callback URL, normally `https://service.example.com/oauth/callback`. |
+| `UPSTREAM_OIDC_SCOPES` | string list | Upstream scopes. Must include `openid`. |
+| `UPSTREAM_OIDC_TOKEN_AUTH_METHOD` | enum | Upstream token client authentication method. Supported values are `client_secret_post` and `client_secret_basic`. |
 | `ACCESS_TOKEN_TTL_SECONDS` | integer | Access token lifetime. |
 | `ID_TOKEN_TTL_SECONDS` | integer | ID token lifetime. |
 | `AUTHORIZATION_CODE_TTL_SECONDS` | integer | Authorization code lifetime. |
@@ -37,17 +37,10 @@ Production mode is active when `NODE_ENV=production`.
 | Variable | Purpose |
 | --- | --- |
 | `OAUTH_PREVIOUS_PUBLIC_KEYS_JSON` | Previous public signing keys kept available for token verification and JWKS publication. |
-| `STATIC_USER_SUB` | Stable subject identifier for static profile mode. |
-| `STATIC_USER_GIVEN_NAME` | Given name for static profile mode. |
-| `STATIC_USER_FAMILY_NAME` | Family name for static profile mode. |
-| `STATIC_USER_NAME` | Display name for static profile mode. |
-| `STATIC_USER_PREFERRED_USERNAME` | Preferred username for static profile mode. |
-| `STATIC_USER_EMAIL` | Email address for static profile mode. |
-| `STATIC_USER_EMAIL_VERIFIED` | Email verification claim for static profile mode. |
 
 ## Local Defaults
 
-Local development supplies defaults for URLs, origins, token lifetimes, rate limits, and local clients.
+Local development supplies defaults for URLs, origins, token lifetimes, rate limits, local clients, and a local upstream OIDC provider.
 
 | Variable | Local value |
 | --- | --- |
@@ -63,13 +56,15 @@ Local development supplies defaults for URLs, origins, token lifetimes, rate lim
 | `RATE_LIMIT_WINDOW_SECONDS` | `60` |
 | `RATE_LIMIT_MAX_REQUESTS` | `120` |
 | `MCP_SSE_MAX_CONNECTIONS` | `1024` |
-| `STATIC_USER_SUB` | `user_example` |
-| `STATIC_USER_GIVEN_NAME` | `Example` |
-| `STATIC_USER_FAMILY_NAME` | `User` |
-| `STATIC_USER_NAME` | `Example User` |
-| `STATIC_USER_PREFERRED_USERNAME` | `example.user` |
-| `STATIC_USER_EMAIL` | `user@example.test` |
-| `STATIC_USER_EMAIL_VERIFIED` | `true` |
+| `UPSTREAM_OIDC_ISSUER_URL` | `http://localhost:4000` |
+| `UPSTREAM_OIDC_AUTHORIZATION_URL` | `http://localhost:4000/dev/upstream/authorize` |
+| `UPSTREAM_OIDC_TOKEN_URL` | `http://localhost:4000/dev/upstream/token` |
+| `UPSTREAM_OIDC_USERINFO_URL` | `http://localhost:4000/dev/upstream/userinfo` |
+| `UPSTREAM_OIDC_CLIENT_ID` | `local-upstream-client` |
+| `UPSTREAM_OIDC_CLIENT_SECRET` | `local-upstream-secret` |
+| `UPSTREAM_OIDC_REDIRECT_URI` | `http://localhost:4000/oauth/callback` |
+| `UPSTREAM_OIDC_SCOPES` | `openid profile email` |
+| `UPSTREAM_OIDC_TOKEN_AUTH_METHOD` | `client_secret_post` |
 
 ## URL Rules
 
@@ -83,17 +78,21 @@ Production URLs use HTTPS and public hostnames. URLs must omit credentials, quer
 
 Integer environment variables use positive safe integers. Production startup fails when a required integer is missing, empty, non-integer, zero, or negative.
 
-## Static Identity Rules
+## Upstream Identity Rules
 
-Cognito mode reads profile claims from Cognito userinfo. Static profile mode reads `STATIC_USER_*` values. Profile string values must be present, must be at most 256 characters, and must omit line breaks. `STATIC_USER_EMAIL` must be an email address. `STATIC_USER_EMAIL_VERIFIED` must be `true` or `false`.
+Production identity comes from upstream OIDC userinfo. Userinfo must return `sub`, `email`, and `email_verified`. Optional display claims include `given_name`, `family_name`, `name`, and `preferred_username`.
 
-## Cognito Rules
+Profile string values must be present when required, must be at most 256 characters, and must omit line breaks. `email` must be an email address. `email_verified` must be a boolean value.
 
-Cognito endpoint URLs use HTTPS and public hostnames in production. `COGNITO_SCOPES` must include `openid`. The service uses PKCE for Cognito authorization and exchanges Cognito codes through the configured token endpoint.
+## Upstream OIDC Rules
+
+Upstream endpoint URLs use HTTPS and public hostnames in production. `UPSTREAM_OIDC_SCOPES` must include `openid`. The service uses PKCE for upstream authorization and exchanges upstream authorization codes through the configured token endpoint.
+
+The upstream identity provider must register `UPSTREAM_OIDC_REDIRECT_URI` as an allowed callback URL. The service callback route is `/oauth/callback`.
 
 ## Startup Validation
 
-Startup validation reads configuration, resolves the store path, loads clients, validates identity mode, and loads signing keys. Production startup fails when required security material is missing or unsafe.
+Startup validation reads configuration, resolves the store path, loads clients, validates upstream OIDC settings, and loads signing keys. Production startup fails when required security material is missing or unsafe.
 
 ## CDK Runtime Parameters
 

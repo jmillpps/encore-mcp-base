@@ -21,7 +21,7 @@ npm install
 npm run dev
 ```
 
-The development server listens on `http://localhost:4000` by default. The local profile supplies default URLs, local OAuth clients, generated signing keys, and `var/oauth-store.json`.
+The development server listens on `http://localhost:4000` by default. Local development supplies default URLs, local OAuth clients, a local upstream OIDC provider, generated signing keys, and `var/oauth-store.json`.
 
 Keep the development server running in one terminal. Use a second terminal for verification commands.
 

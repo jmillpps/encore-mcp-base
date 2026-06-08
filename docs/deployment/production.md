@@ -1,6 +1,6 @@
 # Production Deployment
 
-Production deployment runs the Encore service with explicit public URLs, registered OAuth clients, Cognito upstream login, durable storage, allowed origins, signing keys, token lifetimes, and rate limits.
+Production deployment runs the Encore service with explicit public URLs, registered OAuth clients, upstream OIDC login, durable storage, allowed origins, signing keys, token lifetimes, and rate limits.
 
 ## Required Setup
 
@@ -12,10 +12,11 @@ Production deployment runs the Encore service with explicit public URLs, registe
 6. Register GPT clients in `OAUTH_CLIENTS_JSON`.
 7. Configure `ALLOWED_ORIGINS` for ChatGPT origins.
 8. Configure RSA signing key material.
-9. Configure Cognito upstream login.
-10. Use the public `/privacy` URL in GPT Action configuration.
-11. Use the public `/actions/openapi.json` URL for GPT Actions schema import.
-12. Set token lifetimes, rate limits, and SSE connection limits.
+9. Configure the upstream OIDC identity provider.
+10. Register `/oauth/callback` as the upstream provider callback URL.
+11. Use the public `/privacy` URL in GPT Action configuration.
+12. Use the public `/actions/openapi.json` URL for GPT Actions schema import.
+13. Set token lifetimes, rate limits, and SSE connection limits.
 
 ## Client Registry
 
@@ -45,6 +46,32 @@ node --experimental-strip-types tools/generate-client-secret.ts
 
 Store `clientSecret` in the GPT OAuth configuration. Store `clientSecretHash` in `OAUTH_CLIENTS_JSON`.
 
+## Upstream Identity Provider
+
+Configure these runtime variables:
+
+| Variable | Purpose |
+| --- | --- |
+| `UPSTREAM_OIDC_ISSUER_URL` | Upstream issuer URL. |
+| `UPSTREAM_OIDC_AUTHORIZATION_URL` | Upstream authorization endpoint. |
+| `UPSTREAM_OIDC_TOKEN_URL` | Upstream token endpoint. |
+| `UPSTREAM_OIDC_USERINFO_URL` | Upstream userinfo endpoint. |
+| `UPSTREAM_OIDC_CLIENT_ID` | Upstream OAuth client ID. |
+| `UPSTREAM_OIDC_CLIENT_SECRET` | Upstream OAuth client secret. |
+| `UPSTREAM_OIDC_REDIRECT_URI` | Public service callback URL. |
+| `UPSTREAM_OIDC_SCOPES` | Upstream scopes. |
+| `UPSTREAM_OIDC_TOKEN_AUTH_METHOD` | Upstream token client authentication method. |
+
+The default upstream scopes are `openid profile email`. Required userinfo claims are `sub`, `email`, and `email_verified`.
+
+The public service callback URL is:
+
+```text
+https://service.example.com/oauth/callback
+```
+
+Identity provider behavior is covered in [Identity Provider](identity-provider.md).
+
 ## Deployment Checks
 
 Run before release:
@@ -69,11 +96,11 @@ Legacy `/sse` and `/messages` sessions are process-bound. Use sticky routing for
 Keep these values in the deployment secret manager:
 
 - `OAUTH_PRIVATE_KEY_PEM`
-- `COGNITO_CLIENT_SECRET`
+- `UPSTREAM_OIDC_CLIENT_SECRET`
 - OAuth client raw secrets configured in ChatGPT
 
 Keep `OAUTH_CLIENTS_JSON` in environment configuration or a secret-backed config source. It contains secret hashes and operational client policy.
 
 ## AWS CDK Path
 
-The AWS CDK deployment path is covered in [AWS CDK Deployment](aws-cdk.md). Command sequencing is covered in [CDK Operations](cdk-operations.md). Runtime Parameter Store values are covered in [Runtime Parameters](runtime-parameters.md). Source packaging and image builds are covered in [Source Build](source-build.md). Cognito hosted login is covered in [Cognito Upstream Login](cognito-upstream.md). Post-deployment checks are covered in [Release Verification](release-verification.md).
+The AWS CDK deployment path is covered in [AWS CDK Deployment](aws-cdk.md). Command sequencing is covered in [CDK Operations](cdk-operations.md). Runtime Parameter Store values are covered in [Runtime Parameters](runtime-parameters.md). Source packaging and image builds are covered in [Source Build](source-build.md). Identity provider setup is covered in [Identity Provider](identity-provider.md). Post-deployment checks are covered in [Release Verification](release-verification.md).

@@ -24,7 +24,9 @@ aws cloudformation describe-stacks \
   --output text
 ```
 
-Required outputs include `PublicUrl`, `McpResourceUrl`, `ActionsAudience`, `ParameterPrefix`, `RepositoryUri`, `SourceBucketName`, `CodeBuildProjectName`, `InstanceId`, `CognitoUserPoolId`, and `CognitoClientId`.
+Required outputs include `PublicUrl`, `McpResourceUrl`, `ActionsAudience`, `ParameterPrefix`, `ParameterKeyId`, `RepositoryUri`, `SourceBucketName`, `CodeBuildProjectName`, `InstanceId`, `IdentityProviderMode`, `UpstreamOidcClientId`, and `UpstreamOidcRedirectUri`.
+
+Cognito mode also publishes `CognitoUserPoolId`, `CognitoClientId`, and `CognitoHostedUiBaseUrl`.
 
 ## Public Endpoint Verification
 
@@ -70,6 +72,14 @@ The schema response should contain:
 | `paths./actions/session` | Session operation. |
 | `components.securitySchemes.OAuth2` | Authorization code flow. |
 
+Verify the service callback route is deployed:
+
+```sh
+curl -I https://service.example.com/oauth/callback
+```
+
+A direct callback request without upstream parameters returns an OAuth error response.
+
 ## Runtime Verification
 
 Check systemd service status through SSM:
@@ -114,7 +124,7 @@ https://service.example.com/oauth/authorize
 https://service.example.com/oauth/token
 ```
 
-Complete account linking through Cognito hosted login. After sign-in, refresh the app and confirm ChatGPT lists the MCP tools:
+Complete account linking through the configured upstream identity provider. After sign-in, refresh the app and confirm ChatGPT lists the MCP tools:
 
 - `health.check`
 - `identity.profile`
@@ -138,7 +148,7 @@ Use the public privacy URL:
 https://service.example.com/privacy
 ```
 
-Complete account linking through Cognito hosted login. Run the profile and session Actions. The profile action should return the Cognito-backed identity profile. The session action should return token metadata with the Actions audience.
+Complete account linking through the configured upstream identity provider. Run the profile and session Actions. The profile action should return the upstream identity profile. The session action should return token metadata with the Actions audience.
 
 ## Failure Review
 
@@ -155,4 +165,4 @@ Use this order when a release check fails:
 9. Check OpenAPI schema.
 10. Check ChatGPT account linking settings.
 
-Keep raw tokens, OAuth codes, client secrets, Cognito secrets, and user-specific profile values out of diagnostic notes.
+Keep raw tokens, OAuth codes, client secrets, upstream client secrets, and user-specific profile values out of diagnostic notes.

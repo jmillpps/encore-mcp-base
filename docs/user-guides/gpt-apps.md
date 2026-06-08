@@ -116,9 +116,9 @@ After refresh, ChatGPT should list `health.check`, `identity.profile`, and `auth
 
 Connected custom apps are available from normal ChatGPT chats through app invocation. Current ChatGPT custom GPT chats omit connected app tools in the GPT preview and live GPT chat. Use a normal ChatGPT chat for Apps tool execution until ChatGPT exposes custom apps to custom GPT chats.
 
-## Cognito Sign-In
+## Identity Provider Sign-In
 
-Production GPT Apps authentication redirects through the service OAuth endpoint to Cognito hosted login. Sign in with a Cognito user from the deployed user pool. After Cognito returns to `/oauth/cognito/callback`, the service issues the GPT Apps authorization code and ChatGPT exchanges it for an MCP-audience access token.
+Production GPT Apps authentication redirects through the service OAuth endpoint to the configured upstream identity provider. Sign in with the upstream provider account. After the provider returns to `/oauth/callback`, the service issues the GPT Apps authorization code and ChatGPT exchanges it for an MCP-audience access token.
 
 ## Client Metadata
 

@@ -1,20 +1,20 @@
 # Identity Profile
 
-Production identity claims come from Cognito userinfo during OAuth login. Local development uses a configured profile for deterministic OAuth, MCP, and Actions behavior.
+Identity claims come from upstream OIDC userinfo during OAuth login. The service binds the verified profile to the authorization grant and reuses that profile across OAuth, MCP, and Actions responses.
 
 ## Profile Fields
 
-| Claim | Value |
+| Claim | Rule |
 | --- | --- |
-| `sub` | `user_example` |
-| `given_name` | `Example` |
-| `family_name` | `User` |
-| `name` | `Example User` |
-| `preferred_username` | `example.user` |
-| `email` | `user@example.test` |
-| `email_verified` | `true` |
+| `sub` | Required stable subject from the upstream provider. |
+| `email` | Required email address. |
+| `email_verified` | Required boolean email verification claim. |
+| `given_name` | Optional given name. |
+| `family_name` | Optional family name. |
+| `name` | Optional display name. Derived from available name parts when omitted. |
+| `preferred_username` | Optional username. Derived from email local part when omitted. |
 
-These values are local examples. Cognito-enabled production returns claims from the authenticated Cognito user.
+String values must be at most 256 characters and must omit line breaks.
 
 ## Surfaces
 

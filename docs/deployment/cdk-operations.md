@@ -2,7 +2,7 @@
 
 This guide gives the operating sequence for deploying, updating, verifying, and tearing down the AWS CDK environment.
 
-## Operator Inputs
+## Shared Operator Inputs
 
 Set deployment inputs in the shell that runs CDK:
 
@@ -16,12 +16,44 @@ export CDK_DEFAULT_REGION="$AWS_REGION"
 export CDK_DOMAIN_NAME="service.example.com"
 export CDK_HOSTED_ZONE_ID="$HOSTED_ZONE_ID"
 export CDK_HOSTED_ZONE_NAME="example.com"
-export CDK_COGNITO_DOMAIN_PREFIX="example-mcp-service-prod"
 export CDK_PARAMETER_PREFIX="/example-mcp-service/prod/env"
 export CDK_INSTANCE_TYPE="t4g.micro"
 ```
 
 Keep these values in an ignored operator shell file, CI secret store, or deployment runbook. Keep concrete deployment values out of repository files.
+
+## External Identity Provider Inputs
+
+Use these values when an upstream provider already exists:
+
+```sh
+export CDK_IDENTITY_PROVIDER_MODE="external"
+export CDK_UPSTREAM_OIDC_ISSUER_URL="https://idp.example.com"
+export CDK_UPSTREAM_OIDC_AUTHORIZATION_URL="https://idp.example.com/oauth2/authorize"
+export CDK_UPSTREAM_OIDC_TOKEN_URL="https://idp.example.com/oauth2/token"
+export CDK_UPSTREAM_OIDC_USERINFO_URL="https://idp.example.com/oauth2/userinfo"
+export CDK_UPSTREAM_OIDC_CLIENT_ID="$UPSTREAM_OIDC_CLIENT_ID"
+export CDK_UPSTREAM_OIDC_CLIENT_SECRET="$UPSTREAM_OIDC_CLIENT_SECRET"
+export CDK_UPSTREAM_OIDC_SCOPES="openid profile email"
+export CDK_UPSTREAM_OIDC_TOKEN_AUTH_METHOD="client_secret_post"
+```
+
+Register this callback URL in the upstream provider:
+
+```text
+https://service.example.com/oauth/callback
+```
+
+## Cognito Identity Provider Inputs
+
+Use these values when CDK should create a quick-start upstream provider:
+
+```sh
+export CDK_IDENTITY_PROVIDER_MODE="cognito"
+export CDK_COGNITO_DOMAIN_PREFIX="example-mcp-service-prod"
+```
+
+Cognito mode creates the user pool, app client, and hosted UI domain during deployment. The seed command reads the generated app client secret from AWS.
 
 ## Preflight
 
@@ -59,7 +91,7 @@ Run a deployment diff:
 npm --prefix ci/cdk run cdk -- diff "$CDK_STACK_NAME"
 ```
 
-Review resource changes before deploy. Check IAM policies, security group ingress, Parameter Store paths, Cognito settings, and removal policies.
+Review resource changes before deploy. Check IAM policies, security group ingress, Parameter Store paths, identity provider mode, DNS records, and removal policies.
 
 ## Deploy Or Update Infrastructure
 
@@ -69,7 +101,7 @@ Deploy the stack:
 npm --prefix ci/cdk run deploy -- "$CDK_STACK_NAME"
 ```
 
-The stack creates infrastructure and writes non-secret runtime parameters. It also creates the Cognito user pool, Cognito app client, hosted UI domain, ECR repository, source bucket, CodeBuild project, EC2 instance, Elastic IP, DNS record, KMS key, and service role.
+The stack creates infrastructure and writes non-secret runtime parameters. It creates Cognito resources when `CDK_IDENTITY_PROVIDER_MODE=cognito`.
 
 Read stack outputs:
 
@@ -95,7 +127,7 @@ npm --prefix ci/cdk run seed:parameters -- \
   --mcp-redirect-uri "$MCP_REDIRECT_URI"
 ```
 
-Repeat redirect URI flags for each ChatGPT callback URL. The seed command preserves existing signing keys and ChatGPT client secrets across repeated runs.
+Repeat redirect URI flags for each ChatGPT callback URL. The seed command preserves existing signing keys, upstream client secrets, and ChatGPT client secrets across repeated runs.
 
 Read the generated ChatGPT secrets from Parameter Store when configuring ChatGPT:
 
@@ -190,4 +222,4 @@ Destroy the stack from the same configured account and region:
 npm --prefix ci/cdk run destroy -- "$CDK_STACK_NAME"
 ```
 
-The stack owns the EC2 instance, DNS record, Elastic IP, Cognito user pool, Cognito app client, ECR repository, source bucket, KMS key, Parameter Store values, CodeBuild project, and generated build resources.
+The stack owns the EC2 instance, DNS record, Elastic IP, ECR repository, source bucket, KMS key, Parameter Store values, CodeBuild project, and generated build resources. Cognito resources are stack-owned when Cognito mode is selected.

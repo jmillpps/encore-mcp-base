@@ -1,6 +1,6 @@
 # OAuth Provider Architecture
 
-The service acts as a private OAuth and OIDC provider for configured GPT clients. It supports authorization code flow, Cognito upstream login, refresh tokens, signed access tokens, ID tokens, userinfo, JWKS, discovery metadata, static clients, and Client ID Metadata Document clients.
+The service acts as a private OAuth and OIDC provider for configured GPT clients. It supports authorization code flow, upstream OIDC login, refresh tokens, signed access tokens, ID tokens, userinfo, JWKS, discovery metadata, static clients, and Client ID Metadata Document clients.
 
 ## Client Types
 
@@ -42,11 +42,13 @@ Access tokens and ID tokens are signed with RS256. ID tokens and profile endpoin
 
 Authorization codes, upstream login states, and refresh tokens are stored as SHA-256 hashes. Token grant failures preserve valid authorization codes and refresh tokens when no consuming step completed.
 
-## Cognito Login
+## Upstream OIDC Login
 
-When Cognito is enabled, `/oauth/authorize` validates the GPT client request and stores an upstream login state. The service redirects the browser to Cognito hosted login with PKCE. `/oauth/cognito/callback` consumes the upstream state once, exchanges the Cognito code, reads Cognito userinfo, then issues the service authorization code to the original GPT redirect URI.
+`/oauth/authorize` validates the GPT client request and stores an upstream login state. The service redirects the browser to the configured upstream identity provider with PKCE. `/oauth/callback` consumes the upstream state once, exchanges the upstream authorization code, reads upstream userinfo, then issues the service authorization code to the original GPT redirect URI.
 
-The Cognito callback is owned by the service origin. Cognito users authenticate against the deployed user pool. The service uses Cognito userinfo claims for the issued ID token, userinfo response, MCP profile tool, and Actions profile endpoint.
+The callback is owned by the service origin. Users authenticate against the configured upstream identity provider. The service uses upstream userinfo claims for the issued ID token, userinfo response, MCP profile tool, and Actions profile endpoint.
+
+Required upstream userinfo claims are `sub`, `email`, and `email_verified`. Optional display claims are normalized into the service identity profile.
 
 ## Client Authentication
 

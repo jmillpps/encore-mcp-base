@@ -18,7 +18,7 @@ The service implements private OAuth and OIDC endpoints for GPT account linking 
 | Method | Path | Auth | Purpose |
 | --- | --- | --- | --- |
 | `GET` | `/oauth/authorize` | client request parameters | Authorization code request. |
-| `GET` | `/oauth/cognito/callback` | Cognito callback parameters | Upstream login callback. |
+| `GET` | `/oauth/callback` | upstream IdP callback parameters | Upstream login callback. |
 | `POST` | `/oauth/token` | client authentication | Authorization code and refresh token grants. |
 | `GET` | `/oauth/userinfo` | bearer token with `openid` | OIDC userinfo. |
 | `GET` | `/oauth/jwks` | none | Public signing keys. |
@@ -51,7 +51,7 @@ Optional parameters:
 
 The endpoint rejects duplicate parameters, unsupported parameters, query access tokens, unregistered redirect URIs, unknown clients, unsupported scopes, and unapproved resources.
 
-Successful local authorization returns a redirect to the registered `redirect_uri` with `code` and optional `state`. Cognito-enabled authorization redirects to Cognito first, then returns the service code after Cognito callback processing.
+Successful authorization validates the ChatGPT client request, stores upstream authorization state, and redirects the browser to the configured upstream identity provider. The upstream provider redirects to `/oauth/callback`. The service consumes the upstream state once, exchanges the upstream code, reads userinfo, and redirects to the registered ChatGPT `redirect_uri` with the service authorization code and optional `state`.
 
 ## Token Grants
 

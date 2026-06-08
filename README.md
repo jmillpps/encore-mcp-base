@@ -2,7 +2,7 @@
 
 GPT MCP Service is a TypeScript Encore service that exposes one private OAuth-backed integration surface for ChatGPT. It supports GPT Apps through MCP Streamable HTTP and legacy HTTP/SSE, and it supports GPT Actions through REST endpoints described by OpenAPI 3.1.
 
-The service is built for private GPT integrations that need stable authentication, scoped user profile access, and a small maintainable capability surface. The current identity profile is a static OpenID Connect user. The OAuth provider, token storage, MCP transports, Actions endpoints, OpenAPI export, diagnostics, rate limits, and production configuration checks are implemented in this repository.
+The service is built for private GPT integrations that need stable authentication, upstream OIDC identity proof, scoped user profile access, and a small maintainable capability surface. The OAuth provider, token storage, MCP transports, Actions endpoints, OpenAPI export, diagnostics, rate limits, and production configuration checks are implemented in this repository.
 
 The repository is useful for GPT builders, operators, and maintainers who need one secure service boundary for Apps and Actions.
 

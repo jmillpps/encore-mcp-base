@@ -11,7 +11,7 @@ The archive contains:
 | Path | Purpose |
 | --- | --- |
 | `actions/` | GPT Actions service endpoints and schema builder. |
-| `auth/` | OAuth, OIDC, Cognito bridge, token, and storage code. |
+| `auth/` | OAuth, OIDC, upstream identity provider, token, and storage code. |
 | `mcp/` | MCP transports, protocol handling, tools, and session code. |
 | `shared/` | Shared runtime modules. |
 | `encore.app` | Encore app manifest. |

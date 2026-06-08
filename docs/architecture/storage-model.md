@@ -7,7 +7,7 @@ The service stores OAuth, rate-limit, and MCP session state in one JSON file. Th
 | Record group | Purpose |
 | --- | --- |
 | Authorization codes | Code exchange state and PKCE metadata. |
-| Upstream authorization states | Cognito login state and original GPT redirect state. |
+| Upstream authorization states | Upstream IdP login state and original GPT redirect state. |
 | Refresh tokens | Refresh rotation state and token family metadata. |
 | MCP sessions | Streamable HTTP session state and request ID history. |
 | Rate-limit buckets | Durable counters by bucket and subject. |
@@ -16,7 +16,7 @@ The service stores OAuth, rate-limit, and MCP session state in one JSON file. Th
 
 The store keeps SHA-256 hashes for authorization codes, upstream authorization states, refresh tokens, and MCP session IDs.
 
-Raw OAuth client secrets, Cognito client secrets, and signing key material live in Parameter Store. The runtime store keeps OAuth state and session state.
+Raw OAuth client secrets, upstream IdP client secrets, and signing key material live in Parameter Store. The runtime store keeps OAuth state and session state.
 
 ## Update Model
 
