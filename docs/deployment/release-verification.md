@@ -75,7 +75,7 @@ The schema response should contain:
 Verify the service callback route is deployed:
 
 ```sh
-curl -I https://service.example.com/oauth/callback
+curl -i https://service.example.com/oauth/callback
 ```
 
 A direct callback request without upstream parameters returns an OAuth error response.

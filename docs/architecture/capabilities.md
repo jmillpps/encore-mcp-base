@@ -69,7 +69,7 @@ flowchart LR
 | Documentation | Update API docs, architecture docs, user guides, and development guides that mention the capability. |
 | Security | Review scopes, audiences, input validation, output validation, diagnostics, and rate limits. |
 
-## Why This Split Exists
+## Split Rationale
 
 GPT Apps and GPT Actions expose different protocols. MCP needs JSON-RPC tool descriptors, tool result envelopes, SSE semantics, and auth challenges. Actions needs REST endpoints, OAuth2 OpenAPI security, response schemas, and operation metadata. Shared capability behavior remains consistent across both surfaces.
 

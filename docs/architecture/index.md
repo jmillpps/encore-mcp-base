@@ -26,13 +26,13 @@ This section explains stable system design, protocol boundaries, trust boundarie
 
 ## Decision Anchors
 
-| Question | Start with | Confirm with |
+| Decision | Start with | Confirm with |
 | --- | --- | --- |
-| Which endpoint owns this behavior? | [Overview](overview.md) | [Request Lifecycle](../development/request-lifecycle.md) |
-| Which token audience should a caller use? | [Security Model](security-model.md) | [Configuration Reference](../api/configuration.md) |
-| Which OAuth flow creates the token? | [OAuth Provider](oauth-provider.md) | [OAuth API Reference](../api/oauth.md) |
-| Which MCP transport path is involved? | [MCP Transports](mcp-transports.md) | [MCP API Reference](../api/mcp.md) |
-| Which Actions schema rule applies? | [Actions And OpenAPI](actions-openapi.md) | [OpenAPI Contract](../api/openapi.md) |
-| Which state record can change? | [Storage Model](storage-model.md) | [Storage Maintenance](../maintenance/storage.md) |
+| Endpoint ownership | [Overview](overview.md) | [Request Lifecycle](../development/request-lifecycle.md) |
+| Token audience | [Security Model](security-model.md) | [Configuration Reference](../api/configuration.md) |
+| OAuth flow | [OAuth Provider](oauth-provider.md) | [OAuth API Reference](../api/oauth.md) |
+| MCP transport path | [MCP Transports](mcp-transports.md) | [MCP API Reference](../api/mcp.md) |
+| Actions schema rule | [Actions And OpenAPI](actions-openapi.md) | [OpenAPI Contract](../api/openapi.md) |
+| State record ownership | [Storage Model](storage-model.md) | [Storage Maintenance](../maintenance/storage.md) |
 
 Use [Request Lifecycle](../development/request-lifecycle.md) for a developer trace through the runtime paths.

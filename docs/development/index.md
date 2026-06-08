@@ -8,7 +8,7 @@ This section supports developers and maintainers who change the service. It defi
 | --- | --- | --- |
 | 1 | [Developer Critical Areas](developer-critical-areas.md) | Choose the right learning path for the task. |
 | 2 | [Project Structure](project-structure.md) | Locate code ownership, dependency boundaries, tests, tools, and docs. |
-| 3 | [Request Lifecycle](request-lifecycle.md) | Trace how OAuth, MCP, Actions, shared capabilities, diagnostics, and storage interact. |
+| 3 | [Request Lifecycle](request-lifecycle.md) | Trace OAuth, MCP, Actions, shared capabilities, diagnostics, and storage interactions. |
 | 4 | [Adding Capabilities](adding-capabilities.md) | Follow the shared-behavior and protocol-adapter pattern. |
 | 5 | [MCP Tool Development](mcp-tool-development.md) | Add GPT Apps tools with descriptors, schemas, scopes, auth challenges, and live tests. |
 | 6 | [Actions Endpoint Development](actions-endpoint-development.md) | Add GPT Actions endpoints with Encore routes, bearer validation, OpenAPI operations, and live tests. |
@@ -22,7 +22,7 @@ This section supports developers and maintainers who change the service. It defi
 | Step | Read | Purpose |
 | --- | --- | --- |
 | 1 | [Maintainer Critical Areas](maintainer-critical-areas.md) | Understand high-risk project areas and their owning docs. |
-| 2 | [Identity Provider Testing](identity-provider-testing.md) | Understand how local upstream OIDC proves generic provider behavior. |
+| 2 | [Identity Provider Testing](identity-provider-testing.md) | Understand local upstream OIDC proof for generic provider behavior. |
 | 3 | [Documentation Standards](documentation.md) | Keep documentation modular, direct, generic, and separate from code. |
 | 4 | [External References](../reference/external-references.md) | Check authoritative sources before changing protocol or platform guidance. |
 

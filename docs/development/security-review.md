@@ -106,14 +106,14 @@ Add or update tests for:
 - Rate-limit enforcement.
 - Store file permission rejection.
 
-## Merge Review Questions
+## Merge Evidence
 
-Answer these questions before merging:
+Collect these answers before merging:
 
-- Which public surface accepts the changed input?
-- Which validator rejects malformed input?
-- Which token audience applies?
-- Which scopes apply?
-- Which secrets could appear during this path?
-- Which diagnostics prove the behavior without exposing secrets?
-- Which targeted tests prove the security boundary?
+- Public surface that accepts the changed input.
+- Validator that rejects malformed input.
+- Token audience for the path.
+- Scopes required by the path.
+- Secrets that can enter the path.
+- Diagnostics that prove the behavior with safe fields.
+- Targeted tests that prove the security boundary.

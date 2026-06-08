@@ -21,7 +21,7 @@ This documentation is organized by reader task. Start with the path that matches
 | --- | --- | --- |
 | [User Guides](user-guides/index.md) | Outcome-driven workflows for local development, GPT Apps, GPT Actions, and end-to-end proof. | You need to run, connect, import, or manually verify the service. |
 | [API](api/index.md) | Public protocol contracts, endpoint shapes, authentication rules, schemas, and configuration values. | You need exact request, response, status, scope, audience, and environment behavior. |
-| [Architecture](architecture/index.md) | Runtime layout, trust boundaries, transport design, OAuth provider design, storage, and capability sharing. | You need to understand why code is shaped the way it is before changing it. |
+| [Architecture](architecture/index.md) | Runtime layout, trust boundaries, transport design, OAuth provider design, storage, and capability sharing. | You need design context before changing code. |
 | [Deployment](deployment/index.md) | Production environment setup, AWS CDK, Parameter Store, identity provider modes, build flow, and release verification. | You need to deploy, update, seed, restart, validate, or tear down the service. |
 | [Development](development/index.md) | Code ownership, change workflow, tool and endpoint development, schema ownership, tests, and documentation rules. | You need to extend, refactor, review, test, or document the service. |
 | [Maintenance](maintenance/index.md) | Operational procedures for signing keys, durable storage, client metadata, diagnostics, and rate limits. | You need to operate or recover a running service. |
