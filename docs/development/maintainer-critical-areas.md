@@ -49,3 +49,26 @@ Every change should preserve these rules:
 - Real tests for service behavior.
 - Documentation under `docs/` with generic examples.
 - Private deployment values stay out of repository docs.
+
+## Maintainer Proof Points
+
+| Area | Proof to require before merge |
+| --- | --- |
+| OAuth | Authorization, token, refresh, userinfo, discovery, and client-auth tests pass for the changed behavior. |
+| MCP | Streamable HTTP, legacy transport when affected, tool descriptor, auth challenge, session, and request-ID tests pass. |
+| Actions | OpenAPI compatibility, Actions auth, endpoint behavior, and error-shape tests pass. |
+| Identity provider | Local upstream OIDC tests prove generic provider behavior and claim normalization. |
+| Deployment | CDK synthesis or targeted CDK tests prove infrastructure changes. |
+| Storage | Store permissions, locking, atomic writes, expiration, and replay behavior remain covered. |
+| Security | Input validation, least privilege, secret handling, diagnostics redaction, and rate-limit behavior are reviewed. |
+| Documentation | Affected docs are read manually and match the implementation and official sources. |
+
+## Risk Triggers
+
+| Trigger | Extra review |
+| --- | --- |
+| New public endpoint | API docs, security review, OpenAPI or MCP surface docs, and live endpoint tests. |
+| New scope or audience | OAuth docs, client registry docs, token tests, Actions or MCP auth tests, and setup guides. |
+| New secret or parameter | Runtime parameter docs, deployment docs, Parameter Store handling, and redaction review. |
+| New external URL fetch | SSRF review, DNS behavior, timeout, size limit, cache behavior, and failure tests. |
+| Store schema change | Migration plan, backup and restore notes, compatibility review, and store tests. |

@@ -26,3 +26,23 @@ This section covers production setup, AWS deployment, runtime configuration, ide
 | ChatGPT setup | [GPT Apps Setup](../user-guides/gpt-apps.md), [GPT Actions Setup](../user-guides/gpt-actions.md) | [External References](../reference/external-references.md#mcp-and-chatgpt-apps) |
 
 Keep operator-specific account IDs, domains, hosted zones, resource IDs, stack names, parameter paths, client secrets, and identity provider tenant values outside tracked files.
+
+## Deployment Decision Points
+
+| Decision | Required input | Owning doc |
+| --- | --- | --- |
+| External IdP or CDK Cognito mode | Upstream OIDC issuer, endpoints, client credentials, callback registration, and userinfo claims. | [Identity Provider](identity-provider.md) |
+| Static clients or metadata-document clients | ChatGPT callback URLs, scopes, resources, client auth method, redirect URI policy, and key material. | [Client Registry](client-registry.md) |
+| CDK-managed runtime or alternate hosting | Public HTTPS origin, persistent store path, Parameter Store or equivalent secret source, and reverse proxy behavior. | [Production Deployment](production.md) |
+| URL import or file upload for Actions schema | Deployed issuer URL, public `/actions/openapi.json`, and OpenAPI compatibility result. | [OpenAPI Export](openapi-export.md) |
+| Release readiness | Infrastructure checks, public endpoint checks, OAuth flow proof, GPT Apps proof, GPT Actions proof, and rollback material. | [Release Verification](release-verification.md) |
+
+## Verification Anchors
+
+| Surface | Minimum production proof |
+| --- | --- |
+| OAuth discovery | `/.well-known/openid-configuration` returns public issuer, token endpoint, userinfo endpoint, and JWKS URL. |
+| MCP protected resource | `/.well-known/oauth-protected-resource/mcp` returns the MCP resource and authorization server. |
+| GPT Apps | ChatGPT account linking succeeds and `tools/list` returns the expected tool descriptors. |
+| GPT Actions | ChatGPT imports `/actions/openapi.json`, links OAuth, and calls `/actions/session`. |
+| Runtime storage | OAuth refresh and MCP initialize work after restart. |

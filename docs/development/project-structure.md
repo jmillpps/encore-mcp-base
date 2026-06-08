@@ -17,6 +17,15 @@ The repository keeps implementation, documentation, tooling, and tests in separa
 
 `shared/` is the lowest-level runtime root. `auth/` may use `shared/`. `actions/` and `mcp/` may use `auth/` and `shared/`. Runtime code imports from runtime roots.
 
+| Root | Import boundary |
+| --- | --- |
+| `shared/` | Node standard library and type-only local primitives. |
+| `auth/` | `shared/` plus focused auth submodules. |
+| `mcp/` | `auth/`, `shared/`, and focused MCP submodules. |
+| `actions/` | `auth/`, `shared/`, and focused Actions submodules. |
+| `tools/` | Runtime modules and Node standard library for local verification. |
+| `test/` | Runtime modules and support harnesses needed for live behavior tests. |
+
 ## File Scope
 
 Files stay focused on one behavior. Protocol adapters stay thin. Shared capability behavior belongs in focused modules that can be reused by MCP and Actions surfaces.
@@ -53,3 +62,13 @@ Use this order before editing:
 ## File Size
 
 Keep a file centered on one job. Split a file when it starts owning several validation paths, transport paths, or output formats. Prefer clear names and small functions over explanatory code comments.
+
+## Generated And Local Files
+
+| File class | Rule |
+| --- | --- |
+| Encore generated files | Treat as generated runtime support. Edit source files that produce behavior. |
+| OpenAPI artifacts under `var/` | Generated local outputs stay out of the repository unless a release process explicitly requires them. |
+| Planning files | `AGENTS.md`, `PRD.md`, and operator notes stay local and untracked. |
+| Documentation | Repository documentation belongs under `docs/`, with the root `README.md` as the public entrypoint. |
+| Tests | Test files stay under `test/` and target live behavior or focused runtime modules. |

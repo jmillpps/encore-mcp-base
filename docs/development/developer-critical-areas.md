@@ -43,3 +43,24 @@ Use these paths by task:
 ## Completion Outcome
 
 A developer who follows this map should be able to start the service, configure ChatGPT Apps, configure GPT Actions, explain account linking, add a shared capability, verify the changed surface, and prepare the change for release.
+
+## Developer Proof Points
+
+| Capability | Proof |
+| --- | --- |
+| Local runtime | Start the Encore service and verify health, discovery, protected resource metadata, and OpenAPI. |
+| OAuth flow | Complete a local authorization-code flow through the test upstream OIDC provider. |
+| MCP tool behavior | Initialize a session, list tools, call an unprotected tool, and call a protected tool with scoped credentials. |
+| Actions behavior | Import or export OpenAPI, call a public endpoint, and call a protected endpoint with an Actions-audience token. |
+| Security review | Identify attacker-controlled input, token audience, required scopes, secret handling, diagnostics, and storage impact. |
+| Release preparation | Run targeted checks during the slice and the full gate before release. |
+
+## Developer Boundaries
+
+| Boundary | Rule |
+| --- | --- |
+| Dependencies | Runtime code stays TypeScript with the minimal runtime dependency set. |
+| Documentation | Durable explanations live in `docs/`; code stays focused on implementation. |
+| Tests | Tests prove live service behavior and stay under `test/`. |
+| Git | Commit each coherent feature, fix, refactor, test, or documentation slice. |
+| Secrets | Examples use placeholders and keep private deployment values outside tracked files. |
