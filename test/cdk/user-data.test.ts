@@ -13,7 +13,7 @@ type UserDataModule = {
       domainName: string;
       hostedZoneId: string;
       hostedZoneName: string;
-      cognitoDomainPrefix: string;
+      identityProvider: { mode: string };
       parameterPrefix: string;
       instanceType: string;
       allowedOrigins: string;
@@ -36,7 +36,7 @@ test("user data derives instance runtime placement from operator service name", 
       domainName: "service.example.com",
       hostedZoneId: "EXAMPLEZONE",
       hostedZoneName: "example.com",
-      cognitoDomainPrefix: "operator-mcp-sandbox",
+      identityProvider: { mode: "external" },
       parameterPrefix: "/operator-mcp/sandbox/env",
       instanceType: "t4g.micro",
       allowedOrigins: "https://chatgpt.com https://chat.openai.com",

@@ -7,10 +7,32 @@ export interface DeploymentConfig {
   domainName: string;
   hostedZoneId: string;
   hostedZoneName: string;
-  cognitoDomainPrefix: string;
+  identityProvider: IdentityProviderConfig;
   parameterPrefix: string;
   instanceType: string;
   allowedOrigins: string;
+}
+
+export type IdentityProviderConfig = ExternalIdentityProviderConfig | CognitoIdentityProviderConfig;
+
+export interface ExternalIdentityProviderConfig {
+  mode: "external";
+  upstreamOidc: UpstreamOidcDeploymentConfig;
+}
+
+export interface CognitoIdentityProviderConfig {
+  mode: "cognito";
+  cognitoDomainPrefix: string;
+}
+
+export interface UpstreamOidcDeploymentConfig {
+  issuerUrl: string;
+  authorizationUrl: string;
+  tokenUrl: string;
+  userinfoUrl: string;
+  clientId: string;
+  scopes: string;
+  tokenAuthMethod: "client_secret_post" | "client_secret_basic";
 }
 
 const resourceNamePattern = /^[a-z][a-z0-9-]{0,62}$/;
@@ -19,6 +41,7 @@ const stackNamePattern = /^[A-Za-z][A-Za-z0-9-]{0,127}$/;
 const hostedZoneIdPattern = /^[A-Z0-9]+$/;
 const parameterPrefixPattern = /^\/[A-Za-z0-9_.\-/]+$/;
 const instanceTypePattern = /^[a-z0-9][a-z0-9.-]*$/;
+const scopePattern = /^[A-Za-z0-9:_./-]+$/;
 
 export function deploymentConfig(env: NodeJS.ProcessEnv = process.env): DeploymentConfig {
   const environmentName = resourceName(env, "CDK_ENVIRONMENT_NAME");
@@ -35,7 +58,7 @@ export function deploymentConfig(env: NodeJS.ProcessEnv = process.env): Deployme
     domainName,
     hostedZoneId: hostedZoneId(env),
     hostedZoneName,
-    cognitoDomainPrefix: cognitoDomainPrefix(env),
+    identityProvider: identityProvider(env),
     parameterPrefix: parameterPrefix(env),
     instanceType: instanceType(env),
     allowedOrigins: env.CDK_ALLOWED_ORIGINS ?? "https://chatgpt.com https://chat.openai.com",
@@ -73,10 +96,51 @@ function hostedZoneId(env: NodeJS.ProcessEnv): string {
   return value;
 }
 
+function identityProvider(env: NodeJS.ProcessEnv): IdentityProviderConfig {
+  const mode = requiredEnv(env, "CDK_IDENTITY_PROVIDER_MODE");
+  if (mode === "external") return { mode, upstreamOidc: upstreamOidc(env) };
+  if (mode === "cognito") return { mode, cognitoDomainPrefix: cognitoDomainPrefix(env) };
+  throw new Error("CDK_IDENTITY_PROVIDER_MODE must be external or cognito");
+}
+
 function cognitoDomainPrefix(env: NodeJS.ProcessEnv): string {
   const value = requiredEnv(env, "CDK_COGNITO_DOMAIN_PREFIX");
   if (!resourceNamePattern.test(value)) throw new Error("CDK_COGNITO_DOMAIN_PREFIX contains invalid characters");
   return value;
+}
+
+function upstreamOidc(env: NodeJS.ProcessEnv): UpstreamOidcDeploymentConfig {
+  const scopes = oidcScopes(env.CDK_UPSTREAM_OIDC_SCOPES ?? "openid profile email");
+  return {
+    issuerUrl: httpsUrl(env, "CDK_UPSTREAM_OIDC_ISSUER_URL"),
+    authorizationUrl: httpsUrl(env, "CDK_UPSTREAM_OIDC_AUTHORIZATION_URL"),
+    tokenUrl: httpsUrl(env, "CDK_UPSTREAM_OIDC_TOKEN_URL"),
+    userinfoUrl: httpsUrl(env, "CDK_UPSTREAM_OIDC_USERINFO_URL"),
+    clientId: requiredEnv(env, "CDK_UPSTREAM_OIDC_CLIENT_ID"),
+    scopes,
+    tokenAuthMethod: oidcTokenAuthMethod(env.CDK_UPSTREAM_OIDC_TOKEN_AUTH_METHOD ?? "client_secret_post"),
+  };
+}
+
+function oidcScopes(value: string): string {
+  const scopes = value.split(/\s+/).map((scope) => scope.trim()).filter(Boolean);
+  if (!scopes.includes("openid")) throw new Error("CDK_UPSTREAM_OIDC_SCOPES must include openid");
+  if (!scopes.every((scope) => scopePattern.test(scope))) throw new Error("CDK_UPSTREAM_OIDC_SCOPES contains invalid scopes");
+  return scopes.join(" ");
+}
+
+function oidcTokenAuthMethod(value: string): "client_secret_post" | "client_secret_basic" {
+  if (value === "client_secret_post" || value === "client_secret_basic") return value;
+  throw new Error("CDK_UPSTREAM_OIDC_TOKEN_AUTH_METHOD must be client_secret_post or client_secret_basic");
+}
+
+function httpsUrl(env: NodeJS.ProcessEnv, key: string): string {
+  const value = requiredEnv(env, key);
+  const url = new URL(value);
+  if (url.protocol !== "https:") throw new Error(`${key} must use https`);
+  if (url.username || url.password || url.search || url.hash) throw new Error(`${key} contains unsupported URL parts`);
+  if (url.hostname === "localhost" || url.hostname.endsWith(".localhost")) throw new Error(`${key} must use a public host`);
+  return url.href.replace(/\/$/, "");
 }
 
 function parameterPrefix(env: NodeJS.ProcessEnv): string {

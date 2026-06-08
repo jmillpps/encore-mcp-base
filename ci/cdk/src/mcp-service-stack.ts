@@ -16,6 +16,20 @@ export interface McpServiceStackProps extends cdk.StackProps {
   config: DeploymentConfig;
 }
 
+interface IdentityProviderResources {
+  upstreamOidc: {
+    issuerUrl: string;
+    authorizationUrl: string;
+    tokenUrl: string;
+    userinfoUrl: string;
+    clientId: string;
+    redirectUri: string;
+    scopes: string;
+    tokenAuthMethod: string;
+  };
+  outputs: Record<string, string>;
+}
+
 export class McpServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: McpServiceStackProps) {
     super(scope, id, props);
@@ -42,42 +56,7 @@ export class McpServiceStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
     });
-    const userPool = new cognito.UserPool(this, "UserPool", {
-      userPoolName: props.config.awsResourceName,
-      selfSignUpEnabled: false,
-      signInAliases: { email: true },
-      standardAttributes: {
-        email: { required: true, mutable: true },
-        givenName: { required: true, mutable: true },
-        familyName: { required: true, mutable: true },
-      },
-      accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
-      passwordPolicy: {
-        minLength: 14,
-        requireDigits: true,
-        requireLowercase: true,
-        requireSymbols: true,
-        requireUppercase: true,
-      },
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-    });
-    const userPoolClient = new cognito.UserPoolClient(this, "UserPoolClient", {
-      userPool,
-      generateSecret: true,
-      preventUserExistenceErrors: true,
-      supportedIdentityProviders: [cognito.UserPoolClientIdentityProvider.COGNITO],
-      oAuth: {
-        flows: { authorizationCodeGrant: true },
-        callbackUrls: [`${publicUrl}/oauth/cognito/callback`],
-        logoutUrls: [publicUrl],
-        scopes: [cognito.OAuthScope.OPENID, cognito.OAuthScope.PROFILE, cognito.OAuthScope.EMAIL],
-      },
-    });
-    const cognitoDomainPrefix = props.config.cognitoDomainPrefix;
-    new cognito.UserPoolDomain(this, "UserPoolDomain", {
-      userPool,
-      cognitoDomain: { domainPrefix: cognitoDomainPrefix },
-    });
+    const identityProvider = this.identityProvider(props.config, publicUrl);
     const vpc = new ec2.Vpc(this, "Vpc", {
       maxAzs: 2,
       natGateways: 0,
@@ -143,9 +122,7 @@ export class McpServiceStack extends cdk.Stack {
       publicUrl,
       mcpResource,
       actionsAudience,
-      cognitoDomainPrefix,
-      userPoolId: userPool.userPoolId,
-      userPoolClientId: userPoolClient.userPoolClientId,
+      upstreamOidc: identityProvider.upstreamOidc,
     });
     const buildProject = this.imageBuildProject(sourceBucket, repository);
     this.outputs({
@@ -159,9 +136,7 @@ export class McpServiceStack extends cdk.Stack {
       CodeBuildProjectName: buildProject.projectName,
       InstanceId: instance.instanceId,
       ElasticIp: elasticIp.ref,
-      CognitoUserPoolId: userPool.userPoolId,
-      CognitoClientId: userPoolClient.userPoolClientId,
-      CognitoHostedUiBaseUrl: `https://${cognitoDomainPrefix}.auth.${this.region}.amazoncognito.com`,
+      ...identityProvider.outputs,
     });
   }
 
@@ -169,9 +144,7 @@ export class McpServiceStack extends cdk.Stack {
     publicUrl: string;
     mcpResource: string;
     actionsAudience: string;
-    cognitoDomainPrefix: string;
-    userPoolId: string;
-    userPoolClientId: string;
+    upstreamOidc: IdentityProviderResources["upstreamOidc"];
   }): void {
     this.stringParameter("NodeEnv", config, "NODE_ENV", "production");
     this.stringParameter("ImageTag", config, "IMAGE_TAG", "latest");
@@ -187,15 +160,88 @@ export class McpServiceStack extends cdk.Stack {
     this.stringParameter("RateLimitWindow", config, "RATE_LIMIT_WINDOW_SECONDS", "60");
     this.stringParameter("RateLimitMaxRequests", config, "RATE_LIMIT_MAX_REQUESTS", "120");
     this.stringParameter("McpSseMaxConnections", config, "MCP_SSE_MAX_CONNECTIONS", "1024");
-    this.stringParameter("CognitoEnabled", config, "COGNITO_ENABLED", "true");
-    this.stringParameter("CognitoIssuerUrl", config, "COGNITO_ISSUER_URL", `https://cognito-idp.${this.region}.amazonaws.com/${values.userPoolId}`);
-    this.stringParameter("CognitoAuthorizationUrl", config, "COGNITO_AUTHORIZATION_URL", `https://${values.cognitoDomainPrefix}.auth.${this.region}.amazoncognito.com/oauth2/authorize`);
-    this.stringParameter("CognitoTokenUrl", config, "COGNITO_TOKEN_URL", `https://${values.cognitoDomainPrefix}.auth.${this.region}.amazoncognito.com/oauth2/token`);
-    this.stringParameter("CognitoUserinfoUrl", config, "COGNITO_USERINFO_URL", `https://${values.cognitoDomainPrefix}.auth.${this.region}.amazoncognito.com/oauth2/userInfo`);
-    this.stringParameter("CognitoJwksUrl", config, "COGNITO_JWKS_URL", `https://cognito-idp.${this.region}.amazonaws.com/${values.userPoolId}/.well-known/jwks.json`);
-    this.stringParameter("CognitoClientId", config, "COGNITO_CLIENT_ID", values.userPoolClientId);
-    this.stringParameter("CognitoRedirectUri", config, "COGNITO_REDIRECT_URI", `${values.publicUrl}/oauth/cognito/callback`);
-    this.stringParameter("CognitoScopes", config, "COGNITO_SCOPES", "openid profile email");
+    this.stringParameter("UpstreamOidcIssuerUrl", config, "UPSTREAM_OIDC_ISSUER_URL", values.upstreamOidc.issuerUrl);
+    this.stringParameter("UpstreamOidcAuthorizationUrl", config, "UPSTREAM_OIDC_AUTHORIZATION_URL", values.upstreamOidc.authorizationUrl);
+    this.stringParameter("UpstreamOidcTokenUrl", config, "UPSTREAM_OIDC_TOKEN_URL", values.upstreamOidc.tokenUrl);
+    this.stringParameter("UpstreamOidcUserinfoUrl", config, "UPSTREAM_OIDC_USERINFO_URL", values.upstreamOidc.userinfoUrl);
+    this.stringParameter("UpstreamOidcClientId", config, "UPSTREAM_OIDC_CLIENT_ID", values.upstreamOidc.clientId);
+    this.stringParameter("UpstreamOidcRedirectUri", config, "UPSTREAM_OIDC_REDIRECT_URI", values.upstreamOidc.redirectUri);
+    this.stringParameter("UpstreamOidcScopes", config, "UPSTREAM_OIDC_SCOPES", values.upstreamOidc.scopes);
+    this.stringParameter("UpstreamOidcTokenAuthMethod", config, "UPSTREAM_OIDC_TOKEN_AUTH_METHOD", values.upstreamOidc.tokenAuthMethod);
+  }
+
+  private identityProvider(config: DeploymentConfig, publicUrl: string): IdentityProviderResources {
+    const redirectUri = `${publicUrl}/oauth/callback`;
+    if (config.identityProvider.mode === "external") {
+      return {
+        upstreamOidc: {
+          ...config.identityProvider.upstreamOidc,
+          redirectUri,
+        },
+        outputs: {
+          IdentityProviderMode: "external",
+          UpstreamOidcClientId: config.identityProvider.upstreamOidc.clientId,
+          UpstreamOidcRedirectUri: redirectUri,
+        },
+      };
+    }
+    const userPool = new cognito.UserPool(this, "UserPool", {
+      userPoolName: config.awsResourceName,
+      selfSignUpEnabled: false,
+      signInAliases: { email: true },
+      standardAttributes: {
+        email: { required: true, mutable: true },
+        givenName: { required: true, mutable: true },
+        familyName: { required: true, mutable: true },
+      },
+      accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
+      passwordPolicy: {
+        minLength: 14,
+        requireDigits: true,
+        requireLowercase: true,
+        requireSymbols: true,
+        requireUppercase: true,
+      },
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+    const userPoolClient = new cognito.UserPoolClient(this, "UserPoolClient", {
+      userPool,
+      generateSecret: true,
+      preventUserExistenceErrors: true,
+      supportedIdentityProviders: [cognito.UserPoolClientIdentityProvider.COGNITO],
+      oAuth: {
+        flows: { authorizationCodeGrant: true },
+        callbackUrls: [redirectUri],
+        logoutUrls: [publicUrl],
+        scopes: [cognito.OAuthScope.OPENID, cognito.OAuthScope.PROFILE, cognito.OAuthScope.EMAIL],
+      },
+    });
+    const domainPrefix = config.identityProvider.cognitoDomainPrefix;
+    new cognito.UserPoolDomain(this, "UserPoolDomain", {
+      userPool,
+      cognitoDomain: { domainPrefix },
+    });
+    const hostedUiBaseUrl = `https://${domainPrefix}.auth.${this.region}.amazoncognito.com`;
+    return {
+      upstreamOidc: {
+        issuerUrl: `https://cognito-idp.${this.region}.amazonaws.com/${userPool.userPoolId}`,
+        authorizationUrl: `${hostedUiBaseUrl}/oauth2/authorize`,
+        tokenUrl: `${hostedUiBaseUrl}/oauth2/token`,
+        userinfoUrl: `${hostedUiBaseUrl}/oauth2/userInfo`,
+        clientId: userPoolClient.userPoolClientId,
+        redirectUri,
+        scopes: "openid profile email",
+        tokenAuthMethod: "client_secret_post",
+      },
+      outputs: {
+        IdentityProviderMode: "cognito",
+        UpstreamOidcClientId: userPoolClient.userPoolClientId,
+        UpstreamOidcRedirectUri: redirectUri,
+        CognitoUserPoolId: userPool.userPoolId,
+        CognitoClientId: userPoolClient.userPoolClientId,
+        CognitoHostedUiBaseUrl: hostedUiBaseUrl,
+      },
+    };
   }
 
   private imageBuildProject(sourceBucket: s3.Bucket, repository: ecr.Repository): codebuild.Project {

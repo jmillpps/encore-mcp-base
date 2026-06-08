@@ -10,9 +10,9 @@ const prefix = requiredOutput(outputs, "ParameterPrefix");
 const keyId = requiredOutput(outputs, "ParameterKeyId");
 const actionsAudience = requiredOutput(outputs, "ActionsAudience");
 const mcpResource = requiredOutput(outputs, "McpResourceUrl");
-const cognitoUserPoolId = requiredOutput(outputs, "CognitoUserPoolId");
-const cognitoClientId = requiredOutput(outputs, "CognitoClientId");
-const cognitoSecret = await cognitoClientSecret(cognitoUserPoolId, cognitoClientId);
+const identityProviderMode = requiredOutput(outputs, "IdentityProviderMode");
+const upstreamOidcClientId = requiredOutput(outputs, "UpstreamOidcClientId");
+const upstreamOidcSecret = await upstreamOidcClientSecret(outputs, identityProviderMode);
 const actionsSecret = await existingSecure(prefix, "CHATGPT_ACTIONS_CLIENT_SECRET") ?? randomToken(32);
 const mcpSecret = await existingSecure(prefix, "CHATGPT_MCP_CLIENT_SECRET") ?? randomToken(32);
 const privateKeyPem = await existingSecure(prefix, "OAUTH_PRIVATE_KEY_PEM") ?? generatePrivateKeyPem();
@@ -20,7 +20,7 @@ const keyName = sha256(privateKeyPem).slice(0, 24);
 
 await putSecure(prefix, keyId, "OAUTH_PRIVATE_KEY_PEM", privateKeyPem);
 await putString(prefix, "OAUTH_KEY_ID", keyName);
-await putSecure(prefix, keyId, "COGNITO_CLIENT_SECRET", cognitoSecret);
+await putSecure(prefix, keyId, "UPSTREAM_OIDC_CLIENT_SECRET", upstreamOidcSecret);
 await putSecure(prefix, keyId, "CHATGPT_ACTIONS_CLIENT_SECRET", actionsSecret);
 await putSecure(prefix, keyId, "CHATGPT_MCP_CLIENT_SECRET", mcpSecret);
 await putSecure(prefix, keyId, "OAUTH_CLIENTS_JSON", JSON.stringify([
@@ -55,7 +55,8 @@ console.log(JSON.stringify({
   actionsClientSecretParameter: `${prefix}/CHATGPT_ACTIONS_CLIENT_SECRET`,
   mcpClientId: options.mcpClientId,
   mcpClientSecretParameter: `${prefix}/CHATGPT_MCP_CLIENT_SECRET`,
-  cognitoClientId,
+  identityProviderMode,
+  upstreamOidcClientId,
 }, null, 2));
 
 function requiredOutput(outputs: Record<string, string>, name: string): string {
@@ -69,6 +70,19 @@ async function cognitoClientSecret(userPoolId: string, clientId: string): Promis
   const client = (response as { UserPoolClient?: { ClientSecret?: string } }).UserPoolClient;
   if (!client?.ClientSecret) throw new Error("Cognito client secret missing");
   return client.ClientSecret;
+}
+
+async function upstreamOidcClientSecret(outputs: Record<string, string>, mode: string): Promise<string> {
+  if (mode === "cognito") {
+    return cognitoClientSecret(requiredOutput(outputs, "CognitoUserPoolId"), requiredOutput(outputs, "CognitoClientId"));
+  }
+  if (mode === "external") {
+    const value = process.env.CDK_UPSTREAM_OIDC_CLIENT_SECRET?.trim();
+    if (!value) throw new Error("CDK_UPSTREAM_OIDC_CLIENT_SECRET is required for external identity provider mode");
+    if (/[\r\n]/.test(value)) throw new Error("CDK_UPSTREAM_OIDC_CLIENT_SECRET cannot include line breaks");
+    return value;
+  }
+  throw new Error("IdentityProviderMode output must be external or cognito");
 }
 
 async function putString(prefix: string, name: string, value: string): Promise<void> {
