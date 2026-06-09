@@ -1,7 +1,7 @@
 import { serviceName } from "../../shared/service-info.ts";
 import { defineToolResultCardWidget } from "./tool-result-card.ts";
 
-export const healthStatusCardUri = "ui://widget/health-status-card-v2.html";
+export const healthStatusCardUri = "ui://widget/health-status-card-v1.html";
 export const healthStatusCardStylePath = "/app-ui/health-status-card-v1.css";
 export const healthStatusCardScriptPath = "/app-ui/health-status-card-v1.js";
 

@@ -155,8 +155,8 @@ Local development values live in [GPT Apps Setup](docs/user-guides/gpt-apps.md) 
 
 | Resource URI | Required scopes | Purpose |
 | --- | --- | --- |
-| `ui://widget/health-status-card-v2.html` | none | HTML component template for service health. |
-| `ui://widget/profile-summary-card-v2.html` | `openid profile email` | HTML component template for the signed-in OIDC profile. |
+| `ui://widget/health-status-card-v1.html` | none | HTML component template for service health. |
+| `ui://widget/profile-summary-card-v1.html` | `openid profile email` | HTML component template for the signed-in OIDC profile. |
 
 ### Widget Framework Assets
 

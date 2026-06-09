@@ -89,7 +89,7 @@ Choose the highest-level builder that matches the component. Use `defineToolResu
 1. Place shared capability data under `shared/` or the domain module that owns the data.
 2. Choose `defineToolResultCardWidget` for field-based cards.
 3. Choose `defineWidget` with `defineWidgetBase` for custom layouts or interactive bundles.
-4. Export a versioned resource URI and versioned asset paths from the widget module.
+4. Export a stable resource URI and versioned asset paths from the widget module.
 5. Register the widget in `mcp/widgets/index.ts`.
 6. Expose every asset through an exact public route in `mcp/endpoints.widget-assets.ts`.
 7. Create or update the render tool under `mcp/tools/`.
@@ -291,7 +291,11 @@ Widget assets are public read-only files served from exact versioned paths. Use 
 
 Keep executable widget behavior in `scriptAsset` entries. Keep visual rules in `styleAsset` entries. `defineWidget` adds configured-origin asset tags to the HTML template and returns a resource definition for the MCP registry.
 
-Change the resource URI and asset path version when a template, asset, or data contract changes in a breaking way.
+Keep the resource URI stable for compatible rendering fixes. The resource URI is the ChatGPT template pointer and the MCP resource identity.
+
+Change JavaScript and CSS asset paths when browser-visible asset content changes. Versioned asset paths give ChatGPT and browsers a fresh cache key.
+
+Change the resource URI when the component template or data contract changes in a breaking way.
 
 ## Validation Rules
 
@@ -317,7 +321,7 @@ Treat HTML, JavaScript, CSS, metadata, domains, and resource URIs as security-se
 | Area | Rule |
 | --- | --- |
 | URI | Use `ui`, `https`, or `http` schemes accepted by the service. |
-| Versioning | Change the resource URI for breaking template updates. |
+| Versioning | Keep resource URIs stable for compatible rendering fixes and version asset paths when asset content changes. |
 | Scopes | Set `requiredScopes` for resources that render protected user data. |
 | Tool auth | Use the same scopes on render tools that read or return protected data. |
 | Interaction auth | Enforce scopes on every component-callable tool and direct endpoint. |

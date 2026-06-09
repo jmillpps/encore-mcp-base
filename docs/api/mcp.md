@@ -102,8 +102,8 @@ Current resources:
 
 | Resource URI | MIME type | Scopes | Purpose |
 | --- | --- | --- | --- |
-| `ui://widget/health-status-card-v2.html` | `text/html;profile=mcp-app` | none | ChatGPT-rendered service health card. |
-| `ui://widget/profile-summary-card-v2.html` | `text/html;profile=mcp-app` | `openid profile email` | ChatGPT-rendered authenticated profile card. |
+| `ui://widget/health-status-card-v1.html` | `text/html;profile=mcp-app` | none | ChatGPT-rendered service health card. |
+| `ui://widget/profile-summary-card-v1.html` | `text/html;profile=mcp-app` | `openid profile email` | ChatGPT-rendered authenticated profile card. |
 
 `resources/list` returns descriptors with URI, name, title, description, and MIME type. `resources/templates/list` returns the registered template list. The current implementation has no parameterized resource templates.
 
