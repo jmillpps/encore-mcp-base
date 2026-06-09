@@ -11,7 +11,7 @@ This section supports developers and maintainers who change the service. It defi
 | 3 | [Request Lifecycle](request-lifecycle.md) | Trace OAuth, MCP, Actions, shared capabilities, diagnostics, and storage interactions. |
 | 4 | [Adding Capabilities](adding-capabilities.md) | Follow the shared-behavior and protocol-adapter pattern. |
 | 5 | [MCP Tool Development](mcp-tool-development.md) | Add GPT Apps tools with descriptors, schemas, scopes, auth challenges, and live tests. |
-| 6 | [MCP Apps UI Resources](mcp-app-ui-resources.md) | Add ChatGPT-rendered UI resources with descriptors, CSP metadata, scopes, and live tests. |
+| 6 | [MCP Apps UI Resources](mcp-app-ui-resources.md) | Add ChatGPT-rendered UI resources with widget framework declarations, asset routes, CSP metadata, scopes, and live tests. |
 | 7 | [Actions Endpoint Development](actions-endpoint-development.md) | Add GPT Actions endpoints with Encore routes, bearer validation, OpenAPI operations, and live tests. |
 | 8 | [Shared Types And Schemas](shared-types-schemas.md) | Preserve shared request, response, identity, tool, and OpenAPI shapes. |
 | 9 | [Security Review](security-review.md) | Review trust boundaries, secrets, tokens, diagnostics, rate limits, and attacker-controlled input. |

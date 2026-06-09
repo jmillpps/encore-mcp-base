@@ -19,7 +19,7 @@ Start with the full documentation map at [docs/index.md](docs/index.md).
 
 | Area | Included behavior |
 | --- | --- |
-| GPT Apps | MCP Streamable HTTP at `/mcp`, legacy HTTP/SSE at `/sse` and `/messages`, UI resources, protocol baseline `2025-11-25`. |
+| GPT Apps | MCP Streamable HTTP at `/mcp`, legacy HTTP/SSE at `/sse` and `/messages`, UI resources, widget assets at `/app-ui/*`, protocol baseline `2025-11-25`. |
 | GPT Actions | REST endpoints, OpenAPI 3.1, public read-only schema at `/actions/openapi.json`, read-only operation declarations for ChatGPT. |
 | OAuth provider | Authorization code grants, refresh grants, PKCE, client authentication, RS256 access tokens, ID tokens, JWKS, discovery, userinfo. |
 | Upstream identity | OIDC authorization bridge through `/oauth/callback`, upstream userinfo claim validation, generic provider configuration. |
@@ -32,7 +32,7 @@ Start with the full documentation map at [docs/index.md](docs/index.md).
 | Standard or platform | Project use | Detail |
 | --- | --- | --- |
 | MCP `2025-11-25` | GPT Apps transport, tool, and resource protocol. | Streamable HTTP at `/mcp`, legacy HTTP/SSE compatibility, session IDs, protocol negotiation, tool descriptors, resource descriptors, auth challenges. |
-| OpenAI ChatGPT Apps | Remote MCP server integration. | OAuth account linking, protected resource metadata, Client ID Metadata Document support, read-only tool declarations, UI resource templates, server instructions. |
+| OpenAI ChatGPT Apps | Remote MCP server integration. | OAuth account linking, protected resource metadata, Client ID Metadata Document support, read-only tool declarations, UI resource templates, widget CSP metadata, server instructions. |
 | GPT Actions | REST action import and OAuth linking. | OpenAPI URL import, OAuth authorization URL, token URL, scopes, bearer-protected operations, read-only action metadata. |
 | OAuth 2.0 and OIDC | Account linking and identity. | Authorization code flow, PKCE, refresh tokens, resource indicators, authorization server metadata, protected resource metadata, userinfo, ID tokens, JWKS. |
 | OpenAPI 3.1 | Actions schema. | OAuth2 authorization code flow, JSON response schemas, operation IDs, schema descriptions, and compatibility checks. |
@@ -49,13 +49,20 @@ flowchart LR
   Actions["GPT Actions"] --> Rest["/actions/* REST"]
   Browser["Account linking browser"] --> OAuth["/oauth/*"]
   OAuth --> Idp["Upstream OIDC provider"]
-  Mcp --> Capabilities["Shared capabilities"]
+  Mcp --> Tools["MCP tools"]
+  Tools --> Capabilities["Shared capabilities"]
+  Tools --> ToolDescriptor["tools/list descriptor with ui://widget URI"]
+  Tools --> ToolResult["tools/call result with structuredContent"]
+  ToolDescriptor --> UiResources["resources/read UI HTML template"]
+  ToolResult --> Iframe["ChatGPT sandbox iframe"]
+  UiResources --> Iframe
+  Iframe --> WidgetAssets["/app-ui/* JavaScript and CSS"]
   Sse --> Capabilities
   Rest --> Capabilities
   OAuth --> Store["OAuth store and signing keys"]
 ```
 
-The service issues separate audience-bound tokens for MCP and Actions. MCP tools and Actions endpoints use the same capability implementation where behavior overlaps.
+The service issues separate audience-bound tokens for MCP and Actions. MCP tools and Actions endpoints use the same capability implementation where behavior overlaps. Render-tool descriptors point ChatGPT to MCP UI resources, tool calls return `structuredContent`, and ChatGPT iframes load versioned widget assets from `/app-ui/*`. The widget framework composes reusable base assets, feature assets, render-tool metadata, scopes, and CSP metadata. Detailed widget implementation guidance lives in [MCP Apps UI Resources](docs/development/mcp-app-ui-resources.md).
 
 ## Prerequisites
 
@@ -140,6 +147,15 @@ Local development values live in [GPT Apps Setup](docs/user-guides/gpt-apps.md) 
 | `ui://widget/health-status-card-v1.html` | none | HTML component template for service health. |
 | `ui://widget/profile-summary-card-v1.html` | `openid profile email` | HTML component template for the signed-in OIDC profile. |
 
+### Widget Framework Assets
+
+| Asset | Purpose |
+| --- | --- |
+| `/app-ui/mcp-widget-bridge-v1.js` | Shared bridge for initial tool output and later tool-result messages. |
+| `/app-ui/tool-result-card-base-v1.css` | Shared responsive card layout for declarative tool-result widgets. |
+
+Feature widgets add their own versioned `/app-ui/*` JavaScript and CSS assets. The full asset list is documented in [MCP API Reference](docs/api/mcp.md).
+
 ### Actions Endpoints
 
 | Endpoint | Required scopes | Purpose |
@@ -204,7 +220,7 @@ Security details live in [Security Model](docs/architecture/security-model.md), 
 | Path | Purpose |
 | --- | --- |
 | `auth/` | OAuth provider, upstream OIDC bridge, client registry, token issuance, storage, rate limits, discovery. |
-| `mcp/` | MCP transports, JSON-RPC protocol, sessions, tool registry, UI resource registry, validation, auth challenges. |
+| `mcp/` | MCP transports, JSON-RPC protocol, sessions, tool registry, UI resource registry, widget framework, validation, auth challenges. |
 | `actions/` | GPT Actions endpoints, bearer validation, privacy endpoint, OpenAPI document. |
 | `shared/` | Configuration, HTTP helpers, JSON helpers, diagnostics, crypto, service metadata. |
 | `ci/cdk/` | AWS CDK stack, deployment commands, runtime parameter seeding, image build helpers. |
@@ -265,7 +281,7 @@ Deployment guides:
 | --- | --- |
 | Run locally | [Local Development](docs/user-guides/local-development.md) |
 | Connect GPT Apps | [GPT Apps Setup](docs/user-guides/gpt-apps.md) |
-| Add ChatGPT UI resources | [MCP Apps UI Resources](docs/development/mcp-app-ui-resources.md) |
+| Add ChatGPT UI resources and widgets | [MCP Apps UI Resources](docs/development/mcp-app-ui-resources.md) |
 | Import GPT Actions | [GPT Actions Setup](docs/user-guides/gpt-actions.md) |
 | Understand architecture | [Architecture Overview](docs/architecture/overview.md) |
 | Review APIs | [API Documentation](docs/api/index.md) |

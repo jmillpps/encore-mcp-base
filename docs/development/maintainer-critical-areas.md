@@ -12,7 +12,7 @@ This guide gives maintainers the project map for the areas that carry the most o
 | Upstream identity provider model | Maintain the generic upstream OIDC contract and the service-owned `/oauth/callback` path. | [Identity Provider](../deployment/identity-provider.md), [Identity Profile](../api/identity-profile.md) |
 | Token audience and scope rules | Preserve MCP and Actions audience separation, resource binding, and scope checks. | [Security Model](../architecture/security-model.md), [Capabilities](../architecture/capabilities.md) |
 | MCP transports | Maintain Streamable HTTP, legacy HTTP/SSE, session behavior, JSON-RPC validation, and SSE lifetime rules. | [MCP Transports](../architecture/mcp-transports.md), [MCP API](../api/mcp.md) |
-| MCP Apps UI resources | Maintain resource descriptors, UI templates, render-tool metadata, CSP metadata, scopes, and ChatGPT rendering expectations. | [MCP Apps UI Resources](mcp-app-ui-resources.md), [MCP API](../api/mcp.md) |
+| MCP Apps UI resources | Maintain resource descriptors, widget framework declarations, inherited assets, public asset routes, render-tool metadata, CSP metadata, scopes, and ChatGPT rendering expectations. | [MCP Apps UI Resources](mcp-app-ui-resources.md), [MCP API](../api/mcp.md) |
 | GPT Actions and OpenAPI | Keep REST endpoints and the generated OpenAPI document aligned with ChatGPT Actions expectations. | [Actions And OpenAPI](../architecture/actions-openapi.md), [OpenAPI Contract](../api/openapi.md) |
 | Capability development pattern | Implement shared behavior once and expose it through focused MCP and Actions adapters. | [Adding Capabilities](adding-capabilities.md), [Capabilities](../architecture/capabilities.md) |
 | Configuration and startup validation | Keep production startup fail-closed for unsafe URLs, missing secrets, unsafe keys, missing clients, and invalid lifetimes. | [Configuration Reference](../api/configuration.md), [Production Deployment](../deployment/production.md) |
@@ -56,7 +56,7 @@ Every change should preserve these rules:
 | Area | Proof to require before merge |
 | --- | --- |
 | OAuth | Authorization, token, refresh, userinfo, discovery, and client-auth tests pass for the changed behavior. |
-| MCP | Streamable HTTP, legacy transport when affected, tool descriptor, UI resource, auth challenge, session, and request-ID tests pass. |
+| MCP | Streamable HTTP, legacy transport when affected, tool descriptor, UI resource, widget framework, auth challenge, session, and request-ID tests pass. |
 | Actions | OpenAPI compatibility, Actions auth, endpoint behavior, and error-shape tests pass. |
 | Identity provider | Local upstream OIDC tests prove generic provider behavior and claim normalization. |
 | Deployment | CDK synthesis or targeted CDK tests prove infrastructure changes. |

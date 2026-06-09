@@ -34,10 +34,11 @@ MCP adapters define and validate:
 - Structured content validation before responses leave the service.
 - UI resource metadata for render tools.
 - Resource read scope checks for protected component templates.
+- Widget framework declarations, inherited assets, exact asset routes, and CSP metadata for inline components.
 
 Protected MCP tools receive the request context with the active configuration, the bearer token, and a rate-limit subject. The registry enforces required scopes before the tool returns a protocol result.
 
-MCP UI resources expose HTML component templates through `resources/list` and `resources/read`. Render tools point to those templates through `_meta.ui.resourceUri` and `_meta["openai/outputTemplate"]`.
+MCP UI resources expose HTML component templates through `resources/list` and `resources/read`. Render tools point to those templates through `_meta.ui.resourceUri` and `_meta["openai/outputTemplate"]`. Widget assets are public read-only `/app-ui/*` files loaded by the ChatGPT component iframe.
 
 ### Actions Adapter Contract
 
@@ -60,8 +61,11 @@ flowchart LR
   Shared["Shared Capability"] --> McpAdapter["MCP Tool Adapter"]
   Shared --> ActionsAdapter["Actions REST Adapter"]
   McpAdapter --> McpRegistry["Tool Registry"]
+  McpAdapter --> UiResource["MCP UI Resource"]
+  UiResource --> WidgetAssets["Widget Assets"]
   ActionsAdapter --> OpenApi["OpenAPI Operation"]
   McpRegistry --> ChatGptApps["ChatGPT Apps"]
+  WidgetAssets --> ChatGptApps
   OpenApi --> ChatGptActions["GPT Actions"]
 ```
 
@@ -71,7 +75,7 @@ flowchart LR
 | --- | --- |
 | Shared behavior | Add or update the focused shared module and shared response shape. |
 | MCP exposure | Add a tool descriptor, schemas, annotations, scope list, registry entry, and live MCP tests. |
-| MCP UI exposure | Add a UI resource, resource metadata, render-tool metadata, scope checks, and live resource tests. |
+| MCP UI exposure | Add a widget definition, UI resource, asset routes, resource metadata, render-tool metadata, scope checks, and live resource tests. |
 | Actions exposure | Add an Encore endpoint, bearer validation, response model, OpenAPI operation, and live Actions tests. |
 | Documentation | Update API docs, architecture docs, user guides, and development guides that mention the capability. |
 | Security | Review scopes, audiences, input validation, output validation, diagnostics, and rate limits. |

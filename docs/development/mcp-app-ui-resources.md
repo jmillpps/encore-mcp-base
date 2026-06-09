@@ -17,6 +17,22 @@ Use this guide when an MCP tool renders a ChatGPT inline component.
 | Render tools | `mcp/tools/` |
 | Protocol dispatch | `mcp/protocol.ts` |
 
+## Implementation Map
+
+| File | Responsibility |
+| --- | --- |
+| `mcp/widgets/widget-definition.ts` | Low-level widget declarations, base widget inheritance, asset helpers, asset validation, markup validation, and CSP merging. |
+| `mcp/widgets/tool-result-card.ts` | Public entrypoint for declarative tool-result card widgets. |
+| `mcp/widgets/tool-result-card-types.ts` | Tool-result card option, field, and theme types. |
+| `mcp/widgets/tool-result-card-base.ts` | Shared bridge script and shared card CSS used by derived card widgets. |
+| `mcp/widgets/tool-result-card-rendering.ts` | Static card markup, generated renderer JavaScript, and generated theme CSS. |
+| `mcp/widgets/tool-result-card-validation.ts` | Field ID, data path, text, field format, and theme value validation. |
+| `mcp/widgets/index.ts` | Widget registration, resource collection, asset collection, and duplicate asset conflict checks. |
+| `mcp/widgets/runtime-metadata.ts` | Runtime widget domain and CSP resource-domain injection during `resources/read`. |
+| `mcp/widgets/asset-response.ts` | Public asset response headers and body lookup. |
+| `mcp/endpoints.widget-assets.ts` | Exact public Encore raw routes for versioned `/app-ui/*` assets. |
+| `mcp/app-ui.ts` | Resource metadata, render-tool metadata, ChatGPT aliases, and descriptor validation. |
+
 ## Resource Contract
 
 Every UI resource has a stable URI, MIME type, HTML content, metadata, and optional scopes. The UI MIME type is `text/html;profile=mcp-app`. The URI is the cache key used by ChatGPT. Change the URI when the HTML, JavaScript, CSS, or data contract changes in a breaking way.
@@ -42,6 +58,29 @@ The widget framework has three layers.
 `defineWidgetBase` creates a reusable bundle of assets and widget metadata. A base can declare shared JavaScript, shared CSS, border preference, standard UI metadata, and CSP. A derived widget inherits the base and adds its own markup, assets, scopes, and metadata.
 
 `defineToolResultCardWidget` inherits `toolResultCardBase`. The base provides `mcpWidget`, a small browser bridge that reads `window.openai.toolOutput`, structured content fallbacks, and `ui/notifications/tool-result` messages. Derived cards provide field mappings, text, theme tokens, scopes, and CSP additions.
+
+## Builder Selection
+
+| Need | Builder |
+| --- | --- |
+| Render fields from tool `structuredContent` in a card | `defineToolResultCardWidget` |
+| Share JavaScript, CSS, metadata, or CSP across several widgets | `defineWidgetBase` with `defineWidget` |
+| Build a custom component shell with custom browser behavior | `defineWidget` |
+| Add component-callable tools | `toolUiResource` with `visibility` and `widgetAccessible` |
+
+Choose the highest-level builder that matches the component. Use `defineToolResultCardWidget` for ordinary data cards. Use `defineWidgetBase` and `defineWidget` for custom layouts, custom client behavior, or shared widget families.
+
+## Build Lifecycle
+
+1. A widget module exports a stable resource URI and versioned asset paths.
+2. The widget builder validates markup, assets, metadata, scopes, CSP, field mappings, and theme values.
+3. The builder returns an MCP resource definition and its assets.
+4. `mcp/widgets/index.ts` registers the widget, collects resources, and collects unique assets.
+5. `mcp/resource-registry.ts` exposes the resource through `resources/list` and `resources/read`.
+6. `mcp/widgets/runtime-metadata.ts` adds the configured widget origin during `resources/read`.
+7. `mcp/endpoints.widget-assets.ts` exposes each asset through an exact public route.
+8. A render tool links the UI resource through `toolUiResource`.
+9. ChatGPT calls the render tool, receives `structuredContent`, reads the UI resource, and loads the asset paths from `/app-ui/*`.
 
 ## Developer Flow
 
@@ -102,7 +141,24 @@ export const accountCardWidget = defineToolResultCardWidget({
 });
 ```
 
-Field IDs become DOM IDs. Use letters, numbers, `_`, and `-`. Data paths use dot-separated property names. Theme values accept color and gradient values without external URLs.
+Field IDs become DOM IDs. Use letters, numbers, `_`, and `-`. Data paths use dot-separated property names. Theme values accept local color and gradient values.
+
+### Tool-Result Card Options
+
+| Option | Purpose |
+| --- | --- |
+| `resourceUri` | Stable `ui://` template URI returned through MCP resources. |
+| `name`, `title`, `description` | MCP resource descriptor fields. |
+| `widgetDescription` | ChatGPT component summary metadata. |
+| `stylePath`, `scriptPath` | Feature-specific versioned `/app-ui/*` assets. |
+| `requiredScopes` | Scopes required before `resources/read` returns protected HTML. |
+| `csp` | Additional component origins for fetch, assets, subframes, and trusted redirects. |
+| `theme` | CSS custom property values for the shared card base. |
+| `header` | Static and data-bound title, subtitle, avatar, and eyebrow values. |
+| `status` | Optional status value path and summary text. |
+| `fields` | Label, DOM ID, data path, fallback, and formatter for each displayed value. |
+
+The generated feature script reads the declared field paths from the tool result. The generated feature style sets theme variables. The inherited bridge script handles initial and later tool results.
 
 ## Custom Base Widgets
 
@@ -144,6 +200,16 @@ export const activitySummaryWidget = defineWidget({
 
 The registry de-duplicates inherited assets by path. A duplicate path with different content fails at startup.
 
+### Base Widget Rules
+
+| Rule | Detail |
+| --- | --- |
+| Shared asset paths | Use versioned `/app-ui/*` paths owned by the base module. |
+| Shared metadata | Put common border preference, UI fields, and CSP fields on the base. |
+| Derived assets | Put feature-specific styling and behavior on the derived widget. |
+| CSP merging | Base and derived CSP lists are merged with duplicate entries removed. |
+| Asset conflicts | Identical inherited assets are reused. Conflicting path definitions fail startup. |
+
 ## MCP And Actions Sharing
 
 Keep capability behavior protocol-neutral. The shared capability module builds the data. MCP data tools, MCP render tools, and Actions endpoints call that module.
@@ -174,6 +240,17 @@ For direct browser fetch calls from a component, add the target origin to `widge
 | `_meta["openai/widgetAccessible"]` | ChatGPT alias that allows component-initiated tool calls when enabled. |
 
 The default UI visibility for render tools is `["model", "app"]`. Data tools keep `["model"]`.
+
+## Existing Framework Assets
+
+| Asset | Owner | Purpose |
+| --- | --- | --- |
+| `/app-ui/mcp-widget-bridge-v1.js` | `tool-result-card-base.ts` | Reads initial `window.openai` tool output and listens for `ui/notifications/tool-result`. |
+| `/app-ui/tool-result-card-base-v1.css` | `tool-result-card-base.ts` | Provides responsive card layout, typography, spacing, and field styles. |
+| `/app-ui/health-status-card-v1.css` | `health-status-card.ts` | Provides health card theme variables. |
+| `/app-ui/health-status-card-v1.js` | `health-status-card.ts` | Maps health structured content into card fields. |
+| `/app-ui/profile-summary-card-v1.css` | `profile-summary-card.ts` | Provides profile card theme variables. |
+| `/app-ui/profile-summary-card-v1.js` | `profile-summary-card.ts` | Maps profile structured content into card fields. |
 
 ## Resource Metadata
 
@@ -214,6 +291,23 @@ Keep executable widget behavior in `scriptAsset` entries. Keep visual rules in `
 
 Change the resource URI and asset path version when a template, asset, or data contract changes in a breaking way.
 
+## Validation Rules
+
+The widget framework validates declarations before the service exposes resources or assets.
+
+| Area | Validation |
+| --- | --- |
+| Markup | Inline `<script>`, inline `<style>`, and inline event handlers are rejected. |
+| Asset paths | Asset paths must live under `/app-ui/` and end in `.js` or `.css`. |
+| Asset type | JavaScript assets must use JavaScript content type and CSS assets must use CSS content type. |
+| Asset body | Empty asset bodies are rejected. |
+| Duplicate assets | Duplicate paths with different definitions are rejected. |
+| Field IDs | Field IDs must be short DOM-safe identifiers. |
+| Data paths | Data paths must use dot-separated property names. |
+| Field format | Supported field formats are `text` and `verified`. |
+| Theme values | Theme values must be bounded CSS color or gradient values with no external URL fetches. |
+| CSP | Origins must pass the resource metadata origin validation. |
+
 ## Security Rules
 
 Treat HTML, JavaScript, CSS, metadata, domains, and resource URIs as security-sensitive service outputs.
@@ -253,6 +347,17 @@ Run the focused test command while developing:
 ```sh
 node --experimental-strip-types --test --test-concurrency=1 test/mcp/app-ui-resources.test.ts test/mcp/widget-framework.test.ts test/mcp/protected-tools.test.ts
 ```
+
+## Troubleshooting
+
+| Symptom | Check |
+| --- | --- |
+| ChatGPT shows structured content with no component | Confirm the render tool descriptor has `_meta.ui.resourceUri` and `_meta["openai/outputTemplate"]`. |
+| ChatGPT reports a missing widget domain | Confirm `WIDGET_DOMAIN` is set to a unique origin and `resources/read` returns `_meta.ui.domain`. |
+| Browser blocks widget assets | Confirm `/app-ui/*` routes return `200`, expected content types, and CSP resource-domain metadata includes the widget origin. |
+| Protected card shows fallback values | Confirm the render tool returns the expected `structuredContent` after scope enforcement succeeds. |
+| Component fetches fail | Confirm the target origin is present in `widget.csp.connectDomains` and the endpoint accepts the component request. |
+| Component tool calls fail | Confirm `_meta.ui.visibility` includes `app`, `widgetAccessible` is enabled when ChatGPT needs the alias, and the target tool enforces scopes. |
 
 ## Manual ChatGPT Verification
 

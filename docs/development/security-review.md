@@ -11,6 +11,7 @@ Review every value crossing these boundaries:
 | ChatGPT OAuth requests | Client ID, redirect URI, state, scopes, resource, nonce, PKCE, ID token hints. |
 | Upstream identity provider | Authorization code, state, token response, userinfo claims. |
 | MCP transport | Headers, session IDs, protocol version, JSON-RPC messages, tool arguments, resource URIs, resource metadata. |
+| MCP widget assets | Asset paths, response headers, JavaScript content, CSS content, CSP metadata, and widget declarations. |
 | Actions endpoints | Headers, query parameters, bearer tokens, request paths. |
 | Client metadata | Metadata URL, metadata JSON, JWKS URL, JWKS keys, client assertions. |
 | Runtime configuration | Environment variables, Parameter Store values, file paths, URL strings. |
@@ -83,7 +84,7 @@ Review:
 | OAuth token | Reused code, reused refresh token, invalid client auth, invalid resource, invalid client assertion. | Token, refresh, client-auth, and private key JWT tests. |
 | MCP transport | Query bearer token, duplicate auth header, wrong audience, request-ID replay, invalid protocol version. | MCP transport and request-ID tests. |
 | MCP tools | Missing scope, invalid arguments, invalid output shape, unsafe tool error text. | Protected tool, descriptor, and output validation tests. |
-| MCP resources | Missing scope, unsafe URI, unsafe metadata, invalid MIME type, invalid content shape. | App UI resource tests. |
+| MCP resources and widgets | Missing scope, unsafe URI, unsafe metadata, invalid MIME type, invalid content shape, unsafe widget declaration, unsafe asset path, conflicting asset definition. | App UI resource and widget framework tests. |
 | Actions | Query bearer token, wrong audience, missing scope, schema drift, unsafe error fields. | Actions auth, endpoint, and OpenAPI tests. |
 | Client metadata | Untrusted metadata URL, invalid metadata JSON, invalid JWKS, assertion replay. | Client metadata and private key JWT tests. |
 | Storage | Unsafe path, symlink, permissive file mode, partial write, lock contention. | Store security, store file, and rate-limit store tests. |
@@ -106,6 +107,7 @@ Add or update tests for:
 - Invalid metadata client.
 - Rate-limit enforcement.
 - Store file permission rejection.
+- Unsafe widget declarations and widget asset conflicts.
 
 ## Merge Evidence
 
