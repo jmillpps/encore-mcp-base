@@ -18,7 +18,7 @@ This section documents public service contracts. It focuses on protocol behavior
 | Contract area | Owning docs | Owning code |
 | --- | --- | --- |
 | OAuth authorization, token, userinfo, JWKS, and discovery | [OAuth API Reference](oauth.md) | `auth/` |
-| MCP Streamable HTTP, legacy SSE, JSON-RPC, sessions, and tools | [MCP API Reference](mcp.md) | `mcp/` |
+| MCP Streamable HTTP, legacy SSE, JSON-RPC, sessions, tools, and resources | [MCP API Reference](mcp.md) | `mcp/` |
 | GPT Actions REST and public read-only OpenAPI endpoint | [Actions API Reference](actions.md), [OpenAPI Contract](openapi.md) | `actions/` |
 | Identity claim normalization | [Identity Profile](identity-profile.md) | `auth/user-profile.ts` |
 | Runtime configuration and production startup validation | [Configuration Reference](configuration.md) | `shared/config.ts`, `auth/startup.ts` |
@@ -37,7 +37,7 @@ This section documents public service contracts. It focuses on protocol behavior
 | Change type | Required API review |
 | --- | --- |
 | New OAuth field, endpoint, grant, or client auth method | Update OAuth API docs, client registry docs, discovery expectations, and OAuth tests. |
-| New MCP tool or transport behavior | Update MCP API docs, capability docs, GPT Apps guide, and MCP live tests. |
+| New MCP tool, resource, or transport behavior | Update MCP API docs, capability docs, GPT Apps guide, and MCP live tests. |
 | New Actions endpoint | Update Actions API docs, OpenAPI contract docs, Actions guide, and OpenAPI compatibility tests. |
 | New identity claim | Update identity profile docs, token claim behavior, OpenAPI schemas, MCP output schemas, and upstream IdP tests. |
 | New configuration variable | Update configuration docs, runtime parameter docs, CDK docs, production startup tests, and deployment guides. |

@@ -6,7 +6,7 @@ The repository keeps implementation, documentation, tooling, and tests in separa
 | --- | --- |
 | `actions/` | GPT Actions REST endpoint adapters. |
 | `auth/` | OAuth provider, OIDC, token issuance, clients, scopes, and durable auth state. |
-| `mcp/` | MCP protocol, transports, tools, sessions, descriptors, and result validation. |
+| `mcp/` | MCP protocol, transports, tools, UI resources, sessions, descriptors, and result validation. |
 | `shared/` | Shared runtime primitives with no imports from feature roots. |
 | `ci/cdk/` | AWS CDK deployment, parameter seeding, source packaging, and deployment tests. |
 | `tools/` | Local operator commands and repository checks. |
@@ -50,6 +50,7 @@ Use this order before editing:
 | Durable OAuth state | `auth/storage/` |
 | MCP transport behavior | `mcp/endpoints.*.ts` and focused transport modules under `mcp/` |
 | MCP tool adapter | `mcp/tools/` plus `mcp/tool-registry.ts` |
+| MCP UI resource | `mcp/resources/`, `mcp/app-ui.ts`, `mcp/resource-registry.ts`, and `mcp/resource-validation.ts` |
 | Actions route adapter | `actions/endpoints.*.ts` |
 | Actions bearer validation | `actions/action-bearer.ts` |
 | OpenAPI schema generation | `actions/openapi-document.ts` and `tools/export-openapi.ts` |

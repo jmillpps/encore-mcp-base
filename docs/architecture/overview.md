@@ -11,7 +11,7 @@ Runtime code is grouped by service boundary:
 | Directory | Runtime role | Primary ownership |
 | --- | --- | --- |
 | `auth/` | OAuth provider, upstream OIDC bridge, client registry, token issuance, durable OAuth state, discovery, userinfo, JWKS, and rate limits. | Account linking, token policy, identity proof, client trust, and storage-backed OAuth records. |
-| `mcp/` | MCP Streamable HTTP, legacy HTTP/SSE, JSON-RPC parsing, session lifecycle, tool registry, schema validation, result validation, and auth challenges. | GPT Apps transport behavior and tool protocol behavior. |
+| `mcp/` | MCP Streamable HTTP, legacy HTTP/SSE, JSON-RPC parsing, session lifecycle, tool registry, UI resource registry, schema validation, result validation, and auth challenges. | GPT Apps transport, tool, and resource protocol behavior. |
 | `actions/` | GPT Actions REST endpoints, Actions bearer validation, public privacy endpoint, public OpenAPI endpoint, and OpenAPI document assembly. | GPT Actions HTTP behavior and schema import behavior. |
 | `shared/` | Runtime configuration, HTTP response helpers, JSON record helpers, diagnostics redaction, cryptographic helpers, media-type parsing, network-address validation, and service metadata. | Cross-surface primitives used by protocol adapters. |
 | `tools/` | OpenAPI export, source archive creation, compatibility checks, dependency checks, architecture checks, file-scope checks, and test-placement checks. | Operator and maintainer verification. |
@@ -71,6 +71,6 @@ The AWS CDK path stores runtime parameters in Systems Manager Parameter Store. S
 
 ## Design Rule
 
-New service capabilities should keep core behavior in a shared module. MCP tools and Actions endpoints should act as protocol adapters around that behavior. This keeps the capability implementation consistent across GPT Apps and GPT Actions.
+New service capabilities should keep core behavior in a shared module. MCP tools, MCP UI resources, and Actions endpoints should act as protocol adapters around that behavior. This keeps the capability implementation consistent across GPT Apps and GPT Actions.
 
-Use [Capabilities](capabilities.md), [MCP Tool Development](../development/mcp-tool-development.md), and [Actions Endpoint Development](../development/actions-endpoint-development.md) before adding a new capability surface.
+Use [Capabilities](capabilities.md), [MCP Tool Development](../development/mcp-tool-development.md), [MCP Apps UI Resources](../development/mcp-app-ui-resources.md), and [Actions Endpoint Development](../development/actions-endpoint-development.md) before adding a new capability surface.

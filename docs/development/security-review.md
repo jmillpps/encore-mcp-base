@@ -10,7 +10,7 @@ Review every value crossing these boundaries:
 | --- | --- |
 | ChatGPT OAuth requests | Client ID, redirect URI, state, scopes, resource, nonce, PKCE, ID token hints. |
 | Upstream identity provider | Authorization code, state, token response, userinfo claims. |
-| MCP transport | Headers, session IDs, protocol version, JSON-RPC messages, tool arguments. |
+| MCP transport | Headers, session IDs, protocol version, JSON-RPC messages, tool arguments, resource URIs, resource metadata. |
 | Actions endpoints | Headers, query parameters, bearer tokens, request paths. |
 | Client metadata | Metadata URL, metadata JSON, JWKS URL, JWKS keys, client assertions. |
 | Runtime configuration | Environment variables, Parameter Store values, file paths, URL strings. |
@@ -31,7 +31,7 @@ Confirm the changed code preserves:
 - Store path permission checks.
 - Secret redaction in diagnostics.
 - Safe caller-facing errors.
-- Durable rate limits on OAuth endpoints and MCP tools.
+- Durable rate limits on OAuth endpoints, MCP tools, and MCP resource reads.
 
 ## Review Sequence
 
@@ -83,6 +83,7 @@ Review:
 | OAuth token | Reused code, reused refresh token, invalid client auth, invalid resource, invalid client assertion. | Token, refresh, client-auth, and private key JWT tests. |
 | MCP transport | Query bearer token, duplicate auth header, wrong audience, request-ID replay, invalid protocol version. | MCP transport and request-ID tests. |
 | MCP tools | Missing scope, invalid arguments, invalid output shape, unsafe tool error text. | Protected tool, descriptor, and output validation tests. |
+| MCP resources | Missing scope, unsafe URI, unsafe metadata, invalid MIME type, invalid content shape. | App UI resource tests. |
 | Actions | Query bearer token, wrong audience, missing scope, schema drift, unsafe error fields. | Actions auth, endpoint, and OpenAPI tests. |
 | Client metadata | Untrusted metadata URL, invalid metadata JSON, invalid JWKS, assertion replay. | Client metadata and private key JWT tests. |
 | Storage | Unsafe path, symlink, permissive file mode, partial write, lock contention. | Store security, store file, and rate-limit store tests. |

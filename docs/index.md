@@ -9,7 +9,7 @@ This documentation is organized by reader task. Start with the path that matches
 | Reader | Start here | Continue with |
 | --- | --- | --- |
 | First-time local developer | [Local Development](user-guides/local-development.md) | [Local End-To-End Scenarios](user-guides/local-end-to-end.md), [Testing](development/testing.md) |
-| GPT Apps builder | [GPT Apps Setup](user-guides/gpt-apps.md) | [MCP API Reference](api/mcp.md), [MCP Transports](architecture/mcp-transports.md) |
+| GPT Apps builder | [GPT Apps Setup](user-guides/gpt-apps.md) | [MCP API Reference](api/mcp.md), [MCP Apps UI Resources](development/mcp-app-ui-resources.md), [MCP Transports](architecture/mcp-transports.md) |
 | GPT Actions builder | [GPT Actions Setup](user-guides/gpt-actions.md) | [Actions API Reference](api/actions.md), [OpenAPI Contract](api/openapi.md) |
 | Security reviewer | [Security Model](architecture/security-model.md) | [OAuth Provider](architecture/oauth-provider.md), [Security Review](development/security-review.md) |
 | Production operator | [Production Deployment](deployment/production.md) | [AWS CDK Deployment](deployment/aws-cdk.md), [Release Verification](deployment/release-verification.md) |
@@ -31,7 +31,7 @@ This documentation is organized by reader task. Start with the path that matches
 
 | Topic | Project doc | External source map |
 | --- | --- | --- |
-| MCP transport and tools | [MCP API Reference](api/mcp.md), [MCP Transports](architecture/mcp-transports.md) | [External References](reference/external-references.md#mcp-and-chatgpt-apps) |
+| MCP transport, tools, and resources | [MCP API Reference](api/mcp.md), [MCP Apps UI Resources](development/mcp-app-ui-resources.md), [MCP Transports](architecture/mcp-transports.md) | [External References](reference/external-references.md#mcp-and-chatgpt-apps) |
 | OAuth and OIDC | [OAuth API Reference](api/oauth.md), [OAuth Provider](architecture/oauth-provider.md) | [External References](reference/external-references.md#oauth-and-oidc) |
 | GPT Actions OpenAPI | [Actions API Reference](api/actions.md), [OpenAPI Contract](api/openapi.md) | [External References](reference/external-references.md#gpt-actions-and-openapi) |
 | AWS deployment | [AWS CDK Deployment](deployment/aws-cdk.md), [Runtime Parameters](deployment/runtime-parameters.md) | [External References](reference/external-references.md#aws-and-deployment) |

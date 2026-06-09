@@ -43,8 +43,10 @@ MCP traffic uses these steps:
 5. `mcp/request-body.ts` and JSON-RPC helpers validate the message shape.
 6. `mcp/lifecycle.ts` enforces initialization state and method rules.
 7. `mcp/tool-registry.ts` dispatches `tools/list` and `tools/call`.
-8. Tool adapters validate arguments, enforce scopes, run the capability, and validate structured output.
-9. Transport code writes JSON-RPC responses, `202` acknowledgments, auth challenges, or SSE events.
+8. `mcp/resource-registry.ts` dispatches `resources/list`, `resources/read`, and `resources/templates/list`.
+9. Tool adapters validate arguments, enforce scopes, run the capability, and validate structured output.
+10. Resource adapters validate URIs, enforce scopes, and return content with safe metadata.
+11. Transport code writes JSON-RPC responses, `202` acknowledgments, auth challenges, or SSE events.
 
 Legacy `/sse` sessions are process-bound. Streamable HTTP sessions live in durable OAuth state.
 
@@ -70,7 +72,9 @@ Shared behavior lives outside protocol adapters when both GPT Apps and GPT Actio
 | Capability | Shared source | MCP adapter | Actions adapter |
 | --- | --- | --- | --- |
 | Service health | `shared/service-info.ts`, `shared/time.ts` | `mcp/tools/health-check.ts` | `actions/endpoints.health.ts` |
+| Service health UI | `shared/service-info.ts`, `shared/time.ts` | `mcp/tools/health-status-card.ts`, `mcp/resources/health-status-card.ts` | none |
 | Identity profile | `auth/user-profile.ts` | `mcp/tools/identity-profile.ts` | `actions/endpoints.profile.ts` |
+| Identity profile UI | `auth/user-profile.ts` | `mcp/tools/identity-profile-card.ts`, `mcp/resources/profile-summary-card.ts` | none |
 | OAuth session | token claims from `auth/bearer.ts` | `mcp/tools/auth-session.ts` | `actions/endpoints.session.ts` |
 
 Keep new shared behavior in a focused module. Keep request parsing, protocol envelopes, and protocol metadata inside the adapter.

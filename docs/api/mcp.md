@@ -15,7 +15,7 @@ MCP request endpoints require an MCP-audience bearer token:
 
 `POST /mcp`, `GET /mcp`, `DELETE /mcp`, `GET /sse`, and `POST /messages` require the bearer token. `OPTIONS /mcp` validates origin, query token policy, and duplicate authorization header shape before returning CORS metadata.
 
-Protected tools also enforce tool scopes. Scope failures return a ChatGPT-compatible challenge in the `WWW-Authenticate` transport header and in the tool result metadata.
+Protected tools and protected resources also enforce scopes. Tool scope failures return a ChatGPT-compatible challenge in the `WWW-Authenticate` transport header and in the tool result metadata. Resource scope failures return a JSON-RPC error with the same transport header.
 
 ## Streamable HTTP
 
@@ -43,7 +43,7 @@ Protected tools also enforce tool scopes. Scope failures return a ChatGPT-compat
 
 Initialize responses include `MCP-Session-Id`. Session-bound `POST`, `GET`, and `DELETE` requests send that value in the `MCP-Session-Id` header.
 
-Tool scope failures use a successful JSON-RPC response containing an auth challenge result. The HTTP response also includes `WWW-Authenticate`.
+Tool scope failures use a successful JSON-RPC response containing an auth challenge result. Resource scope failures use a successful JSON-RPC error response. Both responses include `WWW-Authenticate`.
 
 ## Legacy HTTP/SSE
 
@@ -74,6 +74,9 @@ Protected tool scope failures return the same challenge in both the HTTP header 
 | `ping` | optional `_meta` | Empty object. |
 | `tools/list` | optional `_meta`, optional cursor | Tool descriptor list. |
 | `tools/call` | `name`, optional `arguments`, optional `_meta`, optional `task` | Tool result envelope. |
+| `resources/list` | optional `_meta`, optional cursor | Resource descriptor list. |
+| `resources/templates/list` | optional `_meta`, optional cursor | Resource template descriptor list. |
+| `resources/read` | `uri`, optional `_meta` | Resource contents. |
 
 Unsupported methods return JSON-RPC code `-32601`. Invalid params return `-32602`. Calls made before initialization return `-32002` except `initialize`, `ping`, and `notifications/initialized`.
 
@@ -84,10 +87,39 @@ All current tools use an empty input object.
 | Tool | Scopes | Structured output |
 | --- | --- | --- |
 | `health.check` | none | `status`, `timestamp`, `service.name`, `service.version`. |
+| `health.status_card` | none | `status`, `timestamp`, `service.name`, `service.version` for inline UI rendering. |
 | `identity.profile` | `openid profile email` | `sub`, `given_name`, `family_name`, `name`, `preferred_username`, `email`, `email_verified`. |
+| `identity.profile_card` | `openid profile email` | Authenticated profile fields for inline UI rendering. |
 | `auth.session` | `openid` | `subject`, `clientId`, `audience`, `scopes`. |
 
 Tool result resource URIs use `https`, `http`, or `ui` schemes.
+
+## Resources
+
+The server advertises `capabilities.resources` during initialization. Resource subscriptions and list-change notifications are absent in the current capability advertisement.
+
+Current resources:
+
+| Resource URI | MIME type | Scopes | Purpose |
+| --- | --- | --- | --- |
+| `ui://widget/health-status-card-v1.html` | `text/html;profile=mcp-app` | none | ChatGPT-rendered service health card. |
+| `ui://widget/profile-summary-card-v1.html` | `text/html;profile=mcp-app` | `openid profile email` | ChatGPT-rendered authenticated profile card. |
+
+`resources/list` returns descriptors with URI, name, title, description, and MIME type. `resources/templates/list` returns the registered template list. The current implementation has no parameterized resource templates.
+
+`resources/read` validates the URI, enforces resource scopes, applies the MCP resource read rate limit, and returns one or more content objects. UI resources return HTML text content with `_meta.ui` metadata and ChatGPT compatibility aliases.
+
+UI resource metadata includes:
+
+- `_meta.ui.prefersBorder`
+- `_meta.ui.csp`
+- `_meta.ui.domain` when configured
+- `_meta["openai/widgetDescription"]`
+- `_meta["openai/widgetPrefersBorder"]`
+- `_meta["openai/widgetCSP"]`
+- `_meta["openai/widgetDomain"]` when configured
+
+Render tools include `_meta.ui.resourceUri` and `_meta["openai/outputTemplate"]` in their descriptors.
 
 ## JSON-RPC Behavior
 

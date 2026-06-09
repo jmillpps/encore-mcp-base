@@ -7,7 +7,9 @@ Capabilities are the service behaviors that GPT clients can invoke. A capability
 | Capability | MCP tool | Actions endpoint | Required scopes | Output intent |
 | --- | --- | --- | --- | --- |
 | Service health | `health.check` | `GET /health` | none | Confirm service reachability and version metadata. |
+| Service health UI | `health.status_card` | none | none | Render service health as an inline ChatGPT UI card. |
 | Identity profile | `identity.profile` | `GET /actions/profile` | `openid profile email` | Return the authenticated upstream OIDC profile normalized by the service. |
+| Identity profile UI | `identity.profile_card` | none | `openid profile email` | Render the authenticated identity profile as an inline ChatGPT UI card. |
 | OAuth session | `auth.session` | `GET /actions/session` | `openid` | Return subject, client ID, token audience, and granted scopes. |
 
 The MCP and Actions surfaces share identity and session semantics. The protocol adapters shape the request and response for each client surface.
@@ -30,8 +32,12 @@ MCP adapters define and validate:
 - Security schemes derived from required scopes.
 - Auth challenges for missing or invalid authorization.
 - Structured content validation before responses leave the service.
+- UI resource metadata for render tools.
+- Resource read scope checks for protected component templates.
 
 Protected MCP tools receive the request context with the active configuration, the bearer token, and a rate-limit subject. The registry enforces required scopes before the tool returns a protocol result.
+
+MCP UI resources expose HTML component templates through `resources/list` and `resources/read`. Render tools point to those templates through `_meta.ui.resourceUri` and `_meta["openai/outputTemplate"]`.
 
 ### Actions Adapter Contract
 
@@ -65,6 +71,7 @@ flowchart LR
 | --- | --- |
 | Shared behavior | Add or update the focused shared module and shared response shape. |
 | MCP exposure | Add a tool descriptor, schemas, annotations, scope list, registry entry, and live MCP tests. |
+| MCP UI exposure | Add a UI resource, resource metadata, render-tool metadata, scope checks, and live resource tests. |
 | Actions exposure | Add an Encore endpoint, bearer validation, response model, OpenAPI operation, and live Actions tests. |
 | Documentation | Update API docs, architecture docs, user guides, and development guides that mention the capability. |
 | Security | Review scopes, audiences, input validation, output validation, diagnostics, and rate limits. |

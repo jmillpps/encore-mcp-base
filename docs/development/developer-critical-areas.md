@@ -14,10 +14,11 @@ This guide maps developer learning areas to the documents that explain the servi
 | Developer client registration | Configure local clients, production records, secret hashes, redirect URIs, scopes, audiences, and metadata clients. | [Client Registry](../deployment/client-registry.md), [Client Metadata Maintenance](../maintenance/client-metadata.md) |
 | External identity provider contract | Configure a generic upstream OIDC provider and map provider values into runtime configuration. | [Identity Provider](../deployment/identity-provider.md), [Identity Provider Testing](identity-provider-testing.md) |
 | Scopes, audiences, and resource binding | Preserve surface-specific token audiences and scope enforcement while adding behavior. | [Security Model](../architecture/security-model.md), [Configuration Reference](../api/configuration.md) |
-| GPT Apps integration | Configure ChatGPT Apps, account link, initialize MCP, list tools, and troubleshoot transport issues. | [GPT Apps Setup](../user-guides/gpt-apps.md), [MCP API Reference](../api/mcp.md) |
+| GPT Apps integration | Configure ChatGPT Apps, account link, initialize MCP, list tools, read UI resources, and troubleshoot transport issues. | [GPT Apps Setup](../user-guides/gpt-apps.md), [MCP API Reference](../api/mcp.md) |
 | GPT Actions integration | Import OpenAPI, configure OAuth, account link, call Actions endpoints, and troubleshoot schema issues. | [GPT Actions Setup](../user-guides/gpt-actions.md), [Actions API Reference](../api/actions.md) |
 | Capability design pattern | Implement shared behavior once and expose it through protocol adapters. | [Adding Capabilities](adding-capabilities.md), [Capabilities](../architecture/capabilities.md) |
 | MCP tool development | Add descriptors, schemas, scopes, registry entries, auth behavior, and live tool tests. | [MCP Tool Development](mcp-tool-development.md), [MCP API Reference](../api/mcp.md) |
+| MCP Apps UI resource development | Add versioned UI resources, render-tool metadata, CSP metadata, scope checks, and live resource tests. | [MCP Apps UI Resources](mcp-app-ui-resources.md), [MCP API Reference](../api/mcp.md) |
 | Actions endpoint development | Add Encore routes, bearer validation, response models, OpenAPI operations, and live HTTP tests. | [Actions Endpoint Development](actions-endpoint-development.md), [Actions And OpenAPI](../architecture/actions-openapi.md) |
 | Shared types and schemas | Reuse request, response, identity, capability, tool, and OpenAPI models across adapters. | [Shared Types And Schemas](shared-types-schemas.md), [Project Structure](project-structure.md) |
 | Errors, diagnostics, and troubleshooting | Use client-safe errors, auth challenges, diagnostics, redaction, rate limits, and failure order. | [Diagnostics And Rate Limits](../maintenance/diagnostics-rate-limits.md), [Security Review](security-review.md) |
@@ -35,6 +36,7 @@ Use these paths by task:
 | --- | --- |
 | Run locally | [Local Development](../user-guides/local-development.md), then [Local End-To-End Scenarios](../user-guides/local-end-to-end.md). |
 | Configure GPT Apps | [GPT Apps Setup](../user-guides/gpt-apps.md), then [MCP API Reference](../api/mcp.md). |
+| Add a ChatGPT UI component | [MCP Apps UI Resources](mcp-app-ui-resources.md), then [MCP Tool Development](mcp-tool-development.md). |
 | Configure GPT Actions | [GPT Actions Setup](../user-guides/gpt-actions.md), then [Actions API Reference](../api/actions.md). |
 | Add a capability | [Adding Capabilities](adding-capabilities.md), then the MCP and Actions development guides needed for the surface. |
 | Review security | [Security Review](security-review.md), then [Security Model](../architecture/security-model.md). |
@@ -51,6 +53,7 @@ A developer who follows this map should be able to start the service, configure 
 | Local runtime | Start the Encore service and verify health, discovery, protected resource metadata, and OpenAPI. |
 | OAuth flow | Complete a local authorization-code flow through the test upstream OIDC provider. |
 | MCP tool behavior | Initialize a session, list tools, call an unprotected tool, and call a protected tool with scoped credentials. |
+| MCP UI resource behavior | List resources, read UI HTML content, verify UI metadata, and prove protected resource scope challenges. |
 | Actions behavior | Import or export OpenAPI, call a public endpoint, and call a protected endpoint with an Actions-audience token. |
 | Security review | Identify attacker-controlled input, token audience, required scopes, secret handling, diagnostics, and storage impact. |
 | Release preparation | Run targeted checks during the slice and the full gate before release. |

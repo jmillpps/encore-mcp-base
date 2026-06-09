@@ -44,7 +44,7 @@ Focused module tests are appropriate for pure validation helpers, static reposit
 | Area | Coverage |
 | --- | --- |
 | Actions | OAuth scopes, wrong audience tokens, expired tokens, OpenAPI compatibility. |
-| MCP | Transports, auth challenges, protocol versioning, JSON-RPC shape, SSE lifetime, tool descriptors, tool output validation. |
+| MCP | Transports, auth challenges, protocol versioning, JSON-RPC shape, SSE lifetime, tool descriptors, UI resources, tool output validation. |
 | OAuth | Authorization code flow, upstream OIDC login, refresh rotation, client auth, discovery, JWKS, Client ID Metadata Documents, private key JWT. |
 | Security | Duplicate auth headers, diagnostics redaction, rate limits, storage permissions. |
 | Tools | OpenAPI export and client secret generation. |
@@ -81,6 +81,7 @@ Use the changed surface to select tests:
 | OAuth runtime behavior | `test/oauth/*.test.ts` and affected config tests. |
 | Upstream identity provider behavior | `test/oauth/upstream-oidc-bridge.test.ts` and `test/config/user-profile.test.ts`. |
 | MCP transport or tools | Affected `test/mcp/*.test.ts` files. |
+| MCP UI resources | `test/mcp/app-ui-resources.test.ts` plus affected protected-tool tests. |
 | Actions endpoints or schema | Affected `test/actions/*.test.ts` files. |
 | Shared response shape | Affected OAuth, MCP, Actions, and OpenAPI tests. |
 | Security boundary | Affected `test/security/*.test.ts` plus the surface test that owns the boundary. |
@@ -97,6 +98,7 @@ Documentation tests are intentionally absent. Documentation quality is reviewed 
 | Actions auth | `node --experimental-strip-types --test --test-concurrency=1 test/actions/authenticated-actions.test.ts` |
 | MCP transport auth | `node --experimental-strip-types --test --test-concurrency=1 test/mcp/transport-bearer.test.ts` |
 | MCP tool descriptor | `node --experimental-strip-types --test --test-concurrency=1 test/mcp/tool-descriptor-validation.test.ts` |
+| MCP UI resources | `node --experimental-strip-types --test --test-concurrency=1 test/mcp/app-ui-resources.test.ts test/mcp/protected-tools.test.ts` |
 | OAuth discovery | `node --experimental-strip-types --test --test-concurrency=1 test/oauth/discovery.test.ts` |
 | Upstream OIDC | `node --experimental-strip-types --test --test-concurrency=1 test/oauth/upstream-oidc-bridge.test.ts` |
 | Store security | `node --experimental-strip-types --test --test-concurrency=1 test/oauth/store-security.test.ts test/oauth/store-file.test.ts` |

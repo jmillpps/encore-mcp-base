@@ -50,10 +50,23 @@ Current tools:
 | Tool | Scopes | Purpose |
 | --- | --- | --- |
 | `health.check` | none | Confirm service reachability. |
+| `health.status_card` | none | Render service health as an inline UI card. |
 | `identity.profile` | `openid profile email` | Return the authenticated OIDC user profile. |
+| `identity.profile_card` | `openid profile email` | Render the authenticated OIDC user profile as an inline UI card. |
 | `auth.session` | `openid` | Return token subject, client ID, audience, and scopes. |
 
-Tool descriptors include input schemas, output schemas, annotations, security schemes, invocation status text, and ChatGPT metadata.
+Tool descriptors include input schemas, output schemas, annotations, security schemes, invocation status text, and ChatGPT metadata. Render tools also include `_meta.ui.resourceUri` and `_meta["openai/outputTemplate"]`.
+
+## UI Resources
+
+The service exposes ChatGPT-rendered UI templates through MCP resources:
+
+| Resource URI | Scopes | Purpose |
+| --- | --- | --- |
+| `ui://widget/health-status-card-v1.html` | none | Service health card. |
+| `ui://widget/profile-summary-card-v1.html` | `openid profile email` | Authenticated profile card. |
+
+ChatGPT reads these resources through `resources/list` and `resources/read`. UI resources use `text/html;profile=mcp-app` and include CSP metadata. Protected UI resources require the same scopes as the protected render tool.
 
 ## ChatGPT Configuration Steps
 
@@ -116,9 +129,20 @@ Create the custom app from ChatGPT Settings:
 11. Sign in with the app.
 12. Refresh the app after sign-in so ChatGPT reloads the MCP tool list.
 
-After refresh, ChatGPT should list `health.check`, `identity.profile`, and `auth.session` in the app actions section.
+After refresh, ChatGPT should list `health.check`, `health.status_card`, `identity.profile`, `identity.profile_card`, and `auth.session` in the app actions section.
 
 Validate connected app tools in the ChatGPT chat surface that lists the app after account linking and refresh.
+
+## UI Verification
+
+Use manual ChatGPT verification for iframe rendering:
+
+1. Ask the app to check service health with the status card.
+2. Confirm the health card renders inline.
+3. Ask the app to show the authenticated profile card.
+4. Confirm account linking supplies the required scopes.
+5. Confirm the profile card renders inline.
+6. Confirm browser developer tools show the declared CSP behavior.
 
 ## Identity Provider Sign-In
 

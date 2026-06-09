@@ -19,7 +19,7 @@ Start with the full documentation map at [docs/index.md](docs/index.md).
 
 | Area | Included behavior |
 | --- | --- |
-| GPT Apps | MCP Streamable HTTP at `/mcp`, legacy HTTP/SSE at `/sse` and `/messages`, protocol baseline `2025-11-25`. |
+| GPT Apps | MCP Streamable HTTP at `/mcp`, legacy HTTP/SSE at `/sse` and `/messages`, UI resources, protocol baseline `2025-11-25`. |
 | GPT Actions | REST endpoints, OpenAPI 3.1, public read-only schema at `/actions/openapi.json`, read-only operation declarations for ChatGPT. |
 | OAuth provider | Authorization code grants, refresh grants, PKCE, client authentication, RS256 access tokens, ID tokens, JWKS, discovery, userinfo. |
 | Upstream identity | OIDC authorization bridge through `/oauth/callback`, upstream userinfo claim validation, generic provider configuration. |
@@ -31,8 +31,8 @@ Start with the full documentation map at [docs/index.md](docs/index.md).
 
 | Standard or platform | Project use | Detail |
 | --- | --- | --- |
-| MCP `2025-11-25` | GPT Apps transport and tool protocol. | Streamable HTTP at `/mcp`, legacy HTTP/SSE compatibility, session IDs, protocol negotiation, tool descriptors, auth challenges. |
-| OpenAI ChatGPT Apps | Remote MCP server integration. | OAuth account linking, protected resource metadata, Client ID Metadata Document support, read-only tool declarations, server instructions. |
+| MCP `2025-11-25` | GPT Apps transport, tool, and resource protocol. | Streamable HTTP at `/mcp`, legacy HTTP/SSE compatibility, session IDs, protocol negotiation, tool descriptors, resource descriptors, auth challenges. |
+| OpenAI ChatGPT Apps | Remote MCP server integration. | OAuth account linking, protected resource metadata, Client ID Metadata Document support, read-only tool declarations, UI resource templates, server instructions. |
 | GPT Actions | REST action import and OAuth linking. | OpenAPI URL import, OAuth authorization URL, token URL, scopes, bearer-protected operations, read-only action metadata. |
 | OAuth 2.0 and OIDC | Account linking and identity. | Authorization code flow, PKCE, refresh tokens, resource indicators, authorization server metadata, protected resource metadata, userinfo, ID tokens, JWKS. |
 | OpenAPI 3.1 | Actions schema. | OAuth2 authorization code flow, JSON response schemas, operation IDs, schema descriptions, and compatibility checks. |
@@ -128,8 +128,17 @@ Local development values live in [GPT Apps Setup](docs/user-guides/gpt-apps.md) 
 | Tool | Required scopes | Purpose |
 | --- | --- | --- |
 | `health.check` | none | Return service reachability and version metadata. |
+| `health.status_card` | none | Render service health as an inline ChatGPT UI card. |
 | `identity.profile` | `openid profile email` | Return the signed-in OIDC profile. |
+| `identity.profile_card` | `openid profile email` | Render the signed-in OIDC profile as an inline ChatGPT UI card. |
 | `auth.session` | `openid` | Return token subject, client ID, audience, and granted scopes. |
+
+### MCP UI Resources
+
+| Resource URI | Required scopes | Purpose |
+| --- | --- | --- |
+| `ui://widget/health-status-card-v1.html` | none | HTML component template for service health. |
+| `ui://widget/profile-summary-card-v1.html` | `openid profile email` | HTML component template for the signed-in OIDC profile. |
 
 ### Actions Endpoints
 
@@ -167,7 +176,7 @@ The service is built as production infrastructure from the first commit.
 - Production startup requires public HTTPS URLs, durable storage, explicit origins, registered clients, upstream OIDC settings, signing keys, token lifetimes, and rate limits.
 - Access tokens are RS256 JWTs with issuer, subject, audience, expiration, client ID, scopes, and profile claims.
 - MCP endpoints require the MCP audience. Actions endpoints require the Actions audience.
-- Protected MCP tools and Actions endpoints enforce scopes at the adapter boundary.
+- Protected MCP tools, MCP resources, and Actions endpoints enforce scopes at the adapter boundary.
 - Query-string bearer tokens are rejected.
 - Duplicate authorization headers are rejected.
 - OAuth state, refresh tokens, rate-limit buckets, and MCP sessions use a durable JSON store.
@@ -195,7 +204,7 @@ Security details live in [Security Model](docs/architecture/security-model.md), 
 | Path | Purpose |
 | --- | --- |
 | `auth/` | OAuth provider, upstream OIDC bridge, client registry, token issuance, storage, rate limits, discovery. |
-| `mcp/` | MCP transports, JSON-RPC protocol, sessions, tool registry, tool validation, auth challenges. |
+| `mcp/` | MCP transports, JSON-RPC protocol, sessions, tool registry, UI resource registry, validation, auth challenges. |
 | `actions/` | GPT Actions endpoints, bearer validation, privacy endpoint, OpenAPI document. |
 | `shared/` | Configuration, HTTP helpers, JSON helpers, diagnostics, crypto, service metadata. |
 | `ci/cdk/` | AWS CDK stack, deployment commands, runtime parameter seeding, image build helpers. |
@@ -256,6 +265,7 @@ Deployment guides:
 | --- | --- |
 | Run locally | [Local Development](docs/user-guides/local-development.md) |
 | Connect GPT Apps | [GPT Apps Setup](docs/user-guides/gpt-apps.md) |
+| Add ChatGPT UI resources | [MCP Apps UI Resources](docs/development/mcp-app-ui-resources.md) |
 | Import GPT Actions | [GPT Actions Setup](docs/user-guides/gpt-actions.md) |
 | Understand architecture | [Architecture Overview](docs/architecture/overview.md) |
 | Review APIs | [API Documentation](docs/api/index.md) |

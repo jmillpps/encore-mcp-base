@@ -21,9 +21,12 @@ Every tool implements `McpTool` from `mcp/tool-types.ts`:
 | `annotations` | Read-only, destructive, idempotent, and open-world hints. |
 | `invocation` | Status text for invocation start and completion. |
 | `requiredScopes` | OAuth scopes required for protected execution. |
+| `ui` | Optional render-resource metadata for ChatGPT Apps UI components. |
 | `run` | Tool implementation. |
 
 The registry validates descriptor shape, name uniqueness, scope syntax, schemas, annotations, icons, and invocation status text at runtime.
+
+Tools that render inline components set `ui` with `toolUiResource`. The descriptor includes `_meta.ui.resourceUri`, `_meta.ui.visibility`, and `_meta["openai/outputTemplate"]`. Use [MCP Apps UI Resources](mcp-app-ui-resources.md) for the resource, metadata, scope, and test contract.
 
 ## Input And Output
 
@@ -89,6 +92,8 @@ Tool tests should prove:
 - Caller-safe failures use tool error envelopes.
 
 Use `test/support/mcp.ts` for initialization, bearer tokens, session IDs, and tool calls.
+
+UI render tools also need resource tests that cover `resources/list`, `resources/read`, UI metadata, MIME type, and scope behavior.
 
 ## Completion Checklist
 
