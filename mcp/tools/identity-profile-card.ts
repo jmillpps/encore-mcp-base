@@ -31,5 +31,5 @@ export const identityProfileCardTool: McpTool = {
 async function identityProfileCard(context: ToolContext): Promise<Record<string, unknown>> {
   const claims = verifyBearer(context.config, context.authorization, context.config.mcpResource, identityProfileScopes);
   const structuredContent = userProfileFromClaims(claims);
-  return { content: [{ type: "text", text: JSON.stringify(structuredContent) }], structuredContent };
+  return { content: [{ type: "text", text: "Showing the authenticated profile card." }], structuredContent };
 }

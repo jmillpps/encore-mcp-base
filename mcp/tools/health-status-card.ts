@@ -29,6 +29,6 @@ export const healthStatusCardTool: McpTool = {
       timestamp: isoNow(),
       service: { name: serviceName, version: serviceVersion },
     };
-    return { content: [{ type: "text", text: JSON.stringify(structuredContent) }], structuredContent };
+    return { content: [{ type: "text", text: "Showing the service health status card." }], structuredContent };
   },
 };
