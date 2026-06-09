@@ -50,6 +50,18 @@ MCP traffic uses these steps:
 
 Legacy `/sse` sessions are process-bound. Streamable HTTP sessions live in durable OAuth state.
 
+## Widget Asset Requests
+
+ChatGPT iframes load UI assets from the configured widget origin after `resources/read` returns an MCP Apps HTML resource.
+
+Widget asset requests use these steps:
+
+1. The iframe reads versioned CSS and JavaScript paths from the HTML template.
+2. Exact public raw endpoints under `/app-ui/` return the asset content.
+3. Asset responses set content type, immutable cache headers, `x-content-type-options`, `cross-origin-resource-policy`, and `referrer-policy`.
+4. The JavaScript reads initial bridge state from `window.openai`.
+5. The JavaScript listens for `ui/notifications/tool-result` and renders `structuredContent`.
+
 ## Actions Requests
 
 Actions traffic uses these steps:
@@ -72,9 +84,9 @@ Shared behavior lives outside protocol adapters when both GPT Apps and GPT Actio
 | Capability | Shared source | MCP adapter | Actions adapter |
 | --- | --- | --- | --- |
 | Service health | `shared/service-info.ts`, `shared/time.ts` | `mcp/tools/health-check.ts` | `actions/endpoints.health.ts` |
-| Service health UI | `shared/service-info.ts`, `shared/time.ts` | `mcp/tools/health-status-card.ts`, `mcp/resources/health-status-card.ts` | none |
+| Service health UI | `shared/service-info.ts`, `shared/time.ts` | `mcp/tools/health-status-card.ts`, `mcp/resources/health-status-card.ts`, `mcp/widget-assets.ts` | none |
 | Identity profile | `auth/user-profile.ts` | `mcp/tools/identity-profile.ts` | `actions/endpoints.profile.ts` |
-| Identity profile UI | `auth/user-profile.ts` | `mcp/tools/identity-profile-card.ts`, `mcp/resources/profile-summary-card.ts` | none |
+| Identity profile UI | `auth/user-profile.ts` | `mcp/tools/identity-profile-card.ts`, `mcp/resources/profile-summary-card.ts`, `mcp/widget-assets.ts` | none |
 | OAuth session | token claims from `auth/bearer.ts` | `mcp/tools/auth-session.ts` | `actions/endpoints.session.ts` |
 
 Keep new shared behavior in a focused module. Keep request parsing, protocol envelopes, and protocol metadata inside the adapter.

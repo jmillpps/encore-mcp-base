@@ -11,6 +11,7 @@ Use this guide when an MCP tool needs a ChatGPT-rendered HTML and JavaScript com
 | Resource validation | `mcp/resource-validation.ts` |
 | Resource registry | `mcp/resource-registry.ts` |
 | Resource content modules | `mcp/resources/` |
+| Widget assets | `mcp/widget-assets.ts` and `mcp/endpoints.widget-assets.ts` |
 | Render tools | `mcp/tools/` |
 | Protocol dispatch | `mcp/protocol.ts` |
 
@@ -22,18 +23,22 @@ Use `ui://widget/name-v1.html` for service-hosted component templates. Use an `h
 
 The service applies the configured widget origin to every MCP Apps HTML resource during `resources/read`. The origin appears as `_meta.ui.domain` and `_meta["openai/widgetDomain"]`.
 
+HTML templates load JavaScript and CSS through versioned `/app-ui/` asset paths. The service adds the configured widget origin to `_meta.ui.csp.resourceDomains` and `_meta["openai/widgetCSP"].resource_domains` during `resources/read`. ChatGPT can then enforce CSP and load first-party assets from the widget origin.
+
 ## Developer Flow
 
 1. Create a resource module under `mcp/resources/`.
 2. Export a versioned URI constant.
 3. Build the resource with `appHtmlResource`.
 4. Set widget metadata, CSP domains, domain, border preference, and scopes.
-5. Register the resource in `mcp/resource-registry.ts`.
-6. Create a render tool under `mcp/tools/`.
-7. Attach the resource with `toolUiResource`.
-8. Register the tool in `mcp/tool-registry.ts`.
-9. Add live MCP tests under `test/mcp/`.
-10. Update MCP API docs, GPT Apps setup docs, capability docs, and security docs.
+5. Place component JavaScript and CSS in `mcp/widget-assets.ts`.
+6. Expose each asset through an exact public route in `mcp/endpoints.widget-assets.ts`.
+7. Register the resource in `mcp/resource-registry.ts`.
+8. Create a render tool under `mcp/tools/`.
+9. Attach the resource with `toolUiResource`.
+10. Register the tool in `mcp/tool-registry.ts`.
+11. Add live MCP tests under `test/mcp/`.
+12. Update MCP API docs, GPT Apps setup docs, capability docs, and security docs.
 
 ## Minimal Resource
 
@@ -47,7 +52,7 @@ export const accountPanelResource = appHtmlResource({
   name: "account-panel",
   title: "Account Panel",
   description: "Renderable UI resource for account details.",
-  html: "<html><body><main id=\"root\"></main></body></html>",
+  html: "<main id=\"root\"></main><link rel=\"stylesheet\" href=\"/app-ui/account-panel-v1.css\"><script src=\"/app-ui/account-panel-v1.js\"></script>",
   requiredScopes: ["openid", "profile", "email"],
   widget: {
     description: "Shows account details returned by the service.",
@@ -55,7 +60,7 @@ export const accountPanelResource = appHtmlResource({
     domain: "https://app.example.com",
     csp: {
       connectDomains: ["https://api.example.com"],
-      resourceDomains: ["https://static.example.com"],
+      resourceDomains: ["https://app.example.com"],
     },
   },
 });
@@ -118,6 +123,16 @@ Developers can extend the resource and descriptor metadata through these fields:
 | `openAiOutputTemplate` on `toolUiResource` | Set a separate ChatGPT template URI or disable the alias with `false`. |
 | `requiredScopes` on `appHtmlResource` | Require scopes before `resources/read` returns content. |
 
+## Asset Rules
+
+Widget assets are public read-only files served from exact versioned paths. Use `/app-ui/name-v1.js` for JavaScript and `/app-ui/name-v1.css` for CSS. Register every asset route explicitly in `mcp/endpoints.widget-assets.ts`.
+
+Keep executable widget behavior in external JavaScript files. Keep visual rules in external CSS files. HTML templates should contain markup and asset links. This keeps CSP enforcement simple and makes ChatGPT iframe behavior predictable.
+
+Use the configured widget origin as the asset origin. CDK sets the widget origin through `WIDGET_DOMAIN`, and `resources/read` mirrors that origin into the resource CSP metadata.
+
+Change the resource URI and asset path version when a template, asset, or data contract changes in a breaking way.
+
 ## Security Rules
 
 Treat HTML, JavaScript, CSS, metadata, domains, and resource URIs as security-sensitive service outputs.
@@ -131,6 +146,7 @@ Treat HTML, JavaScript, CSS, metadata, domains, and resource URIs as security-se
 | CSP | Declare every network, asset, and frame origin the component needs. |
 | Domain | Use an origin with no path, query, fragment, username, or password. |
 | Widget origin | Use a unique origin for each submitted ChatGPT app. |
+| Inline code | Keep JavaScript and CSS in versioned widget assets. |
 | Secrets | Keep tokens, session IDs, cookies, client secrets, and private user data out of HTML and metadata. |
 | Output | Return protected data through `structuredContent` and component-only `_meta` after the tool is authorized. |
 
@@ -142,6 +158,8 @@ Add live MCP tests for every UI resource feature:
 - `tools/list` exposes `_meta.ui.resourceUri` and `_meta["openai/outputTemplate"]`.
 - `resources/list` exposes descriptors with `text/html;profile=mcp-app`.
 - `resources/read` returns HTML content with UI metadata.
+- UI HTML references versioned CSS and JavaScript assets.
+- Widget asset endpoints return public CSS and JavaScript with safe response headers.
 - Protected resources return scope challenges for missing scopes.
 - Render tools return schema-valid `structuredContent`.
 - Invalid resource URIs, cursors, metadata, MIME types, and content shapes fail safely.

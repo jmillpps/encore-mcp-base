@@ -109,6 +109,8 @@ Current resources:
 
 `resources/read` validates the URI, enforces resource scopes, applies the MCP resource read rate limit, and returns one or more content objects. UI resources return HTML text content with `_meta.ui` metadata and ChatGPT compatibility aliases.
 
+UI resources load first-party JavaScript and CSS from versioned `/app-ui/` paths. The configured widget origin appears in both widget-domain metadata fields and CSP resource-domain metadata fields.
+
 UI resource metadata includes:
 
 - `_meta.ui.prefersBorder`
@@ -120,6 +122,15 @@ UI resource metadata includes:
 - `_meta["openai/widgetDomain"]`
 
 Render tools include `_meta.ui.resourceUri` and `_meta["openai/outputTemplate"]` in their descriptors.
+
+Current widget assets:
+
+| Path | Content type | Purpose |
+| --- | --- | --- |
+| `/app-ui/health-status-card-v1.css` | `text/css` | Health card styling. |
+| `/app-ui/health-status-card-v1.js` | `application/javascript` | Health card bridge handling. |
+| `/app-ui/profile-summary-card-v1.css` | `text/css` | Profile card styling. |
+| `/app-ui/profile-summary-card-v1.js` | `application/javascript` | Profile card bridge handling. |
 
 ## JSON-RPC Behavior
 

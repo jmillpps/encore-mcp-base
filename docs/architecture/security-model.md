@@ -12,6 +12,7 @@ Security is part of every service boundary. Public HTTP input, OAuth metadata, t
 | MCP transport | Origin, Authorization header, query parameters, Accept header, Content-Type header, session headers, JSON body. | `mcp/endpoints.*.ts` and `mcp/transport-headers.ts`. |
 | MCP tool call | Tool name, arguments, `_meta`, task metadata, bearer token, tool output. | `mcp/protocol.ts` and `mcp/tool-registry.ts`. |
 | MCP resource read | Resource URI, cursor, `_meta`, bearer token, resource metadata, HTML content. | `mcp/protocol.ts` and `mcp/resource-registry.ts`. |
+| Widget assets | Asset path, browser request headers, cache behavior, CSS content, JavaScript content. | `mcp/endpoints.widget-assets.ts` and `mcp/widget-assets.ts`. |
 | Actions REST | Authorization header, query parameters, response contracts, OpenAPI metadata. | `actions/action-bearer.ts` and Actions endpoint modules. |
 | Client metadata | Client ID URL, fetched metadata document, redirect URIs, JWKS URI, private key JWT assertions. | `auth/client-metadata-*` and `auth/client-assertion.ts`. |
 | Storage | Store path, existing file type, file mode, file contents, lock state. | `auth/storage/*`. |
@@ -28,6 +29,7 @@ Security is part of every service boundary. Public HTTP input, OAuth metadata, t
 | Rate limits | Durable buckets apply to OAuth endpoints, MCP tools, and MCP resource reads. |
 | Browser origins | MCP transport origins are validated and CORS headers are pinned. |
 | Query tokens | Public endpoints reject `access_token` URI query parameters. |
+| Widget CSP | UI resources pin widget origin and static asset origin through resource metadata. |
 | OpenAPI schema | `/actions/openapi.json` is public, read-only, and generated from the configured issuer. |
 | Store safety | Store reads reject symlinks, shared file permissions, malformed JSON, and upward path traversal. |
 | Metadata clients | Metadata documents and JWKS locations are treated as untrusted network input. |
@@ -63,6 +65,8 @@ Transport endpoints reject query bearer tokens, duplicate authorization headers,
 MCP tools validate descriptors at registry creation and validate tool output before returning the result envelope. Tool output resource links are constrained to safe URI schemes.
 
 MCP resources validate descriptor shape, resource URI schemes, MIME types, content shape, metadata objects, CSP origins, and widget domains before exposure. UI resource metadata avoids secrets and pins network access through explicit CSP fields.
+
+Widget asset endpoints are public read-only routes with exact versioned paths. Asset responses set strict content types, `nosniff`, no-referrer policy, cross-origin resource policy, and immutable cache headers. Widget scripts render data from `window.openai.toolOutput` and `ui/notifications/tool-result` without storing tokens or secrets.
 
 ## Production Security
 

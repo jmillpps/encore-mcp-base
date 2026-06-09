@@ -15,6 +15,7 @@ import { readOnlyToolAnnotations } from "../../mcp/tool-annotations.ts";
 import { emptyInputSchema, objectSchema, stringSchema } from "../../mcp/tool-schemas.ts";
 import { readConfig } from "../../shared/config.ts";
 import { ServiceError } from "../../shared/errors.ts";
+import { healthStatusCardScriptPath, healthStatusCardStylePath, profileSummaryCardScriptPath, profileSummaryCardStylePath } from "../../mcp/widget-assets.ts";
 
 test("MCP Apps UI resources expose capabilities, descriptors, contents, and render tool metadata", async (t) => {
   const service = await startService(t);
@@ -50,7 +51,9 @@ test("MCP Apps UI resources expose capabilities, descriptors, contents, and rend
   const healthContent = firstContent(await readJson(readHealth));
   assert.equal(healthContent.uri, healthStatusCardUri);
   assert.equal(healthContent.mimeType, appUiResourceMimeType);
-  assert.match(requireString(healthContent.text, "health card html"), /Health status/);
+  const healthHtml = requireString(healthContent.text, "health card html");
+  assert.match(healthHtml, /Health status/);
+  assertCspSafeHtml(healthHtml, healthStatusCardStylePath, healthStatusCardScriptPath);
   assertResourceMeta(requireRecord(healthContent._meta, "health card metadata"), service.origin);
 
   const healthTool = await callTool(service, sessionId, "health.status_card", authorization);
@@ -93,11 +96,21 @@ test("MCP protected UI resources enforce OAuth scopes on resource reads and tool
   const profileContent = firstContent(await readJson(readProfile));
   assert.equal(profileContent.uri, profileSummaryCardUri);
   assert.equal(profileContent.mimeType, appUiResourceMimeType);
-  assert.match(requireString(profileContent.text, "profile card html"), /Authenticated user/);
+  const profileHtml = requireString(profileContent.text, "profile card html");
+  assert.match(profileHtml, /Authenticated user/);
+  assertCspSafeHtml(profileHtml, profileSummaryCardStylePath, profileSummaryCardScriptPath);
   assertResourceMeta(requireRecord(profileContent._meta, "profile card metadata"), service.origin);
 
   const profileCard = await callTool(service, sessionId, "identity.profile_card", bearer(validFlow.tokens.access_token));
   assert.equal(requireRecord(profileCard.structuredContent, "profile card output").email, testUserProfile.email);
+});
+
+test("MCP Apps UI assets are public, versioned, and CSP-addressable", async (t) => {
+  const service = await startService(t);
+  await assertAsset(service.origin, healthStatusCardStylePath, "text/css", /Health status|\.status/);
+  await assertAsset(service.origin, healthStatusCardScriptPath, "application/javascript", /ui\/notifications\/tool-result/);
+  await assertAsset(service.origin, profileSummaryCardStylePath, "text/css", /Authenticated user|\.avatar/);
+  await assertAsset(service.origin, profileSummaryCardScriptPath, "application/javascript", /preferred_username/);
 });
 
 test("MCP resource methods reject invalid params, cursors, and missing resources", async (t) => {
@@ -160,10 +173,36 @@ function assertResourceMeta(meta: Record<string, unknown>, widgetDomain: string)
   const ui = requireRecord(meta.ui, "resource ui metadata");
   assert.equal(ui.prefersBorder, true);
   assert.equal(ui.domain, widgetDomain);
-  assert.deepEqual(requireRecord(ui.csp, "standard csp").connectDomains, []);
+  const csp = requireRecord(ui.csp, "standard csp");
+  assert.deepEqual(csp.connectDomains, []);
+  assert.deepEqual(csp.resourceDomains, [widgetDomain]);
   assert.equal(meta["openai/widgetPrefersBorder"], true);
   assert.equal(meta["openai/widgetDomain"], widgetDomain);
-  assert.deepEqual(requireRecord(meta["openai/widgetCSP"], "openai csp").connect_domains, []);
+  const openAiCsp = requireRecord(meta["openai/widgetCSP"], "openai csp");
+  assert.deepEqual(openAiCsp.connect_domains, []);
+  assert.deepEqual(openAiCsp.resource_domains, [widgetDomain]);
+}
+
+function assertCspSafeHtml(html: string, stylePath: string, scriptPath: string): void {
+  assert.equal(html.includes("<style"), false);
+  assert.equal(html.includes("type=\"module\""), false);
+  assert.match(html, new RegExp(`<link rel="stylesheet" href="${escapeRegExp(stylePath)}">`));
+  assert.match(html, new RegExp(`<script src="${escapeRegExp(scriptPath)}"></script>`));
+}
+
+async function assertAsset(origin: string, path: string, contentType: string, bodyPattern: RegExp): Promise<void> {
+  const response = await fetch(`${origin}${path}`);
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type") ?? "", new RegExp(`^${escapeRegExp(contentType)}\\b`));
+  assert.equal(response.headers.get("x-content-type-options"), "nosniff");
+  assert.equal(response.headers.get("cross-origin-resource-policy"), "cross-origin");
+  assert.equal(response.headers.get("referrer-policy"), "no-referrer");
+  assert.equal(response.headers.get("cache-control"), "public, max-age=31536000, immutable");
+  assert.match(await response.text(), bodyPattern);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function firstContent(body: Record<string, unknown>): Record<string, unknown> {
