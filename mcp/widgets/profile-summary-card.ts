@@ -1,7 +1,7 @@
 import { identityProfileScopes } from "../../auth/scopes.ts";
 import { defineToolResultCardWidget } from "./tool-result-card.ts";
 
-export const profileSummaryCardUri = "ui://widget/profile-summary-card-v1.html";
+export const profileSummaryCardUri = "ui://widget/profile-summary-card-v2.html";
 export const profileSummaryCardStylePath = "/app-ui/profile-summary-card-v1.css";
 export const profileSummaryCardScriptPath = "/app-ui/profile-summary-card-v1.js";
 

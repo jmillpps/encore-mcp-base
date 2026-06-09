@@ -155,14 +155,14 @@ Local development values live in [GPT Apps Setup](docs/user-guides/gpt-apps.md) 
 
 | Resource URI | Required scopes | Purpose |
 | --- | --- | --- |
-| `ui://widget/health-status-card-v1.html` | none | HTML component template for service health. |
-| `ui://widget/profile-summary-card-v1.html` | `openid profile email` | HTML component template for the signed-in OIDC profile. |
+| `ui://widget/health-status-card-v2.html` | none | HTML component template for service health. |
+| `ui://widget/profile-summary-card-v2.html` | `openid profile email` | HTML component template for the signed-in OIDC profile. |
 
 ### Widget Framework Assets
 
 | Asset | Purpose |
 | --- | --- |
-| `/app-ui/mcp-widget-bridge-v1.js` | Shared bridge for initial tool output and later tool-result messages. |
+| `/app-ui/mcp-widget-bridge-v2.js` | Shared bridge for initial tool output, late ChatGPT globals, and later tool-result messages. |
 | `/app-ui/tool-result-card-base-v1.css` | Shared responsive card layout for declarative tool-result widgets. |
 
 Feature widgets add their own versioned `/app-ui/*` JavaScript and CSS assets. The full asset list is documented in [MCP API Reference](docs/api/mcp.md).

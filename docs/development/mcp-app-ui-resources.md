@@ -247,7 +247,7 @@ The default UI visibility for render tools is `["model", "app"]`. Data tools kee
 
 | Asset | Owner | Purpose |
 | --- | --- | --- |
-| `/app-ui/mcp-widget-bridge-v1.js` | `tool-result-card-base.ts` | Reads initial `window.openai` tool output and listens for `ui/notifications/tool-result`. |
+| `/app-ui/mcp-widget-bridge-v2.js` | `tool-result-card-base.ts` | Reads initial `window.openai` tool output, subscribes to `openai:set_globals`, and listens for `ui/notifications/tool-result`. |
 | `/app-ui/tool-result-card-base-v1.css` | `tool-result-card-base.ts` | Provides responsive card layout, typography, spacing, and field styles. |
 | `/app-ui/health-status-card-v1.css` | `health-status-card.ts` | Provides health card theme variables. |
 | `/app-ui/health-status-card-v1.js` | `health-status-card.ts` | Maps health structured content into card fields. |

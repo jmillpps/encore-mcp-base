@@ -3,8 +3,8 @@ import { api } from "encore.dev/api";
 import { writeError } from "../shared/http.ts";
 import { writeWidgetAsset } from "./widgets/asset-response.ts";
 
-export const widgetBridgeScriptAsset = api.raw({ expose: true, method: "GET", path: "/app-ui/mcp-widget-bridge-v1.js" }, async (_req, res) => {
-  writeAsset(res, "/app-ui/mcp-widget-bridge-v1.js");
+export const widgetBridgeScriptAsset = api.raw({ expose: true, method: "GET", path: "/app-ui/mcp-widget-bridge-v2.js" }, async (_req, res) => {
+  writeAsset(res, "/app-ui/mcp-widget-bridge-v2.js");
 });
 
 export const toolResultCardBaseStyleAsset = api.raw({ expose: true, method: "GET", path: "/app-ui/tool-result-card-base-v1.css" }, async (_req, res) => {

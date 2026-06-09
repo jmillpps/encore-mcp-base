@@ -1,6 +1,6 @@
 import { defineWidgetBase, scriptAsset, styleAsset } from "./widget-definition.ts";
 
-export const widgetBridgeScriptPath = "/app-ui/mcp-widget-bridge-v1.js";
+export const widgetBridgeScriptPath = "/app-ui/mcp-widget-bridge-v2.js";
 export const toolResultCardBaseStylePath = "/app-ui/tool-result-card-base-v1.css";
 
 export const toolResultCardBase = defineWidgetBase({

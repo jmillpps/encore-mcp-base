@@ -102,8 +102,8 @@ Current resources:
 
 | Resource URI | MIME type | Scopes | Purpose |
 | --- | --- | --- | --- |
-| `ui://widget/health-status-card-v1.html` | `text/html;profile=mcp-app` | none | ChatGPT-rendered service health card. |
-| `ui://widget/profile-summary-card-v1.html` | `text/html;profile=mcp-app` | `openid profile email` | ChatGPT-rendered authenticated profile card. |
+| `ui://widget/health-status-card-v2.html` | `text/html;profile=mcp-app` | none | ChatGPT-rendered service health card. |
+| `ui://widget/profile-summary-card-v2.html` | `text/html;profile=mcp-app` | `openid profile email` | ChatGPT-rendered authenticated profile card. |
 
 `resources/list` returns descriptors with URI, name, title, description, and MIME type. `resources/templates/list` returns the registered template list. The current implementation has no parameterized resource templates.
 
@@ -128,7 +128,7 @@ Current widget assets:
 | Path | Content type | Purpose |
 | --- | --- | --- |
 | `/app-ui/tool-result-card-base-v1.css` | `text/css` | Shared tool-result card layout and responsive styling. |
-| `/app-ui/mcp-widget-bridge-v1.js` | `application/javascript` | Shared MCP widget bridge for tool result delivery. |
+| `/app-ui/mcp-widget-bridge-v2.js` | `application/javascript` | Shared MCP widget bridge for tool result delivery. |
 | `/app-ui/health-status-card-v1.css` | `text/css` | Health card theme variables. |
 | `/app-ui/health-status-card-v1.js` | `application/javascript` | Health card field renderer. |
 | `/app-ui/profile-summary-card-v1.css` | `text/css` | Profile card theme variables. |
