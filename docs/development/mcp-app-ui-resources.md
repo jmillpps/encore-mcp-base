@@ -59,7 +59,7 @@ The widget framework has three layers.
 
 `defineWidgetBase` creates a reusable bundle of assets and widget metadata. A base can declare shared JavaScript, shared CSS, border preference, standard UI metadata, and CSP. A derived widget inherits the base and adds its own markup, assets, scopes, and metadata.
 
-`defineToolResultCardWidget` inherits `toolResultCardBase`. The base provides `mcpWidget`, a small browser bridge that reads `window.openai.toolOutput`, structured content fallbacks, and `ui/notifications/tool-result` messages. Derived cards provide field mappings, text, theme tokens, scopes, and CSP additions.
+`defineToolResultCardWidget` inherits `toolResultCardBase`. The base provides `mcpWidget`, a small browser bridge that reads `window.openai.toolOutput`, subscribes to `openai:set_globals`, reads structured content fallbacks, and listens for `ui/notifications/tool-result` messages. Derived cards provide field mappings, text, theme tokens, scopes, and CSP additions.
 
 ## Builder Selection
 
@@ -339,6 +339,7 @@ Add live MCP tests for every UI resource feature:
 - `resources/read` returns HTML content with UI metadata.
 - UI HTML references inherited and widget-specific CSS and JavaScript assets with configured-origin URLs.
 - Widget asset endpoints return public CSS and JavaScript with safe response headers.
+- Widget bridge tests execute the browser script and prove late `openai:set_globals` data rerenders the component.
 - Protected resources return scope challenges for missing scopes.
 - Render tools return schema-valid `structuredContent`.
 - Widget framework tests prove base inheritance, CSP merging, asset conflict detection, and declarative validation.

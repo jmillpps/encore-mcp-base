@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import vm from "node:vm";
 import { ServiceError } from "../../shared/errors.ts";
 import { readConfig } from "../../shared/config.ts";
 import { defineToolResultCardWidget, toolResultCardBaseStylePath, widgetBridgeScriptPath } from "../../mcp/widgets/tool-result-card.ts";
+import { widgetAssets } from "../../mcp/widgets/index.ts";
 import { defineWidget, defineWidgetBase, scriptAsset, styleAsset } from "../../mcp/widgets/widget-definition.ts";
 import type { McpResourceDefinition } from "../../mcp/resource-types.ts";
 
@@ -104,6 +106,44 @@ test("tool result card widgets inherit shared bridge and base card assets", asyn
   assert.match(widget.assets.find((asset) => asset.path === "/app-ui/example-tool-card-v1.js")?.body ?? "", /owner\.name/);
 });
 
+test("tool result card bridge rerenders when ChatGPT delivers tool output globals after mount", () => {
+  const calls: unknown[] = [];
+  const listeners = new Map<string, (event: Record<string, unknown>) => void>();
+  const sandbox = {
+    document: { querySelector: () => undefined },
+    parent: {},
+    openai: {},
+    addEventListener: (name: string, listener: (event: Record<string, unknown>) => void) => listeners.set(name, listener),
+  };
+  Object.assign(sandbox, { window: sandbox });
+  vm.runInNewContext(bridgeScriptBody(), sandbox);
+  const widget = (sandbox as unknown as { mcpWidget: { onToolResult: (render: (data: unknown) => void) => void } }).mcpWidget;
+
+  widget.onToolResult((data) => calls.push(data));
+  assert.deepEqual(plain(calls), [{}]);
+  listeners.get("openai:set_globals")?.({ detail: { globals: { toolOutput: { name: "Justin Miller", preferred_username: "jmiller@example.test" } } } });
+  assert.deepEqual(plain(calls.at(-1)), { name: "Justin Miller", preferred_username: "jmiller@example.test" });
+});
+
+test("tool result card bridge rerenders from MCP tool-result notifications", () => {
+  const calls: unknown[] = [];
+  const listeners = new Map<string, (event: Record<string, unknown>) => void>();
+  const parent = {};
+  const sandbox = {
+    document: { querySelector: () => undefined },
+    parent,
+    openai: {},
+    addEventListener: (name: string, listener: (event: Record<string, unknown>) => void) => listeners.set(name, listener),
+  };
+  Object.assign(sandbox, { window: sandbox });
+  vm.runInNewContext(bridgeScriptBody(), sandbox);
+  const widget = (sandbox as unknown as { mcpWidget: { onToolResult: (render: (data: unknown) => void) => void } }).mcpWidget;
+
+  widget.onToolResult((data) => calls.push(data));
+  listeners.get("message")?.({ source: parent, data: { jsonrpc: "2.0", method: "ui/notifications/tool-result", params: { structuredContent: { email: "jmiller@example.test" } } } });
+  assert.deepEqual(plain(calls.at(-1)), { email: "jmiller@example.test" });
+});
+
 test("widget framework rejects unsafe declarations", () => {
   assert.throws(() => defineWidget({
     resourceUri: "ui://widget/unsafe-v1.html",
@@ -152,6 +192,16 @@ function requireRecord(value: unknown): Record<string, unknown> {
   assert.notEqual(value, null);
   assert.equal(Array.isArray(value), false);
   return value as Record<string, unknown>;
+}
+
+function bridgeScriptBody(): string {
+  const asset = widgetAssets.find((candidate) => candidate.path === widgetBridgeScriptPath);
+  assert.ok(asset);
+  return asset.body;
+}
+
+function plain(value: unknown): unknown {
+  return JSON.parse(JSON.stringify(value));
 }
 
 async function firstContent(contents: McpResourceDefinition["contents"]): Promise<Record<string, unknown>> {

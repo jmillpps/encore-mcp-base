@@ -32,17 +32,30 @@ body { margin: 0; background: var(--widget-page-background); color: var(--widget
     if (element) element.textContent = value;
   }
   function initialData() {
-    const bridge = globalThis.openai;
-    return bridge?.toolOutput ?? bridge?.structuredContent ?? bridge?.toolResponseMetadata?.mcp_tool_result?.structuredContent ?? bridge?.toolResponseMetadata?.call_tool_result?.structuredContent ?? {};
+    return dataFromBridge(globalThis.openai) ?? {};
+  }
+  function dataFromBridge(bridge) {
+    if (!bridge || typeof bridge !== "object") return undefined;
+    return objectData(bridge.toolOutput) ?? objectData(bridge.structuredContent) ?? objectData(bridge.toolResponseMetadata?.mcp_tool_result?.structuredContent) ?? objectData(bridge.toolResponseMetadata?.call_tool_result?.structuredContent);
+  }
+  function objectData(value) {
+    return value && typeof value === "object" && !Array.isArray(value) ? value : undefined;
+  }
+  function renderData(render, value) {
+    render(objectData(value) ?? {});
   }
   function onToolResult(render) {
-    render(initialData());
+    renderData(render, initialData());
+    window.addEventListener("openai:set_globals", function (event) {
+      const data = dataFromBridge(event.detail?.globals);
+      if (data) render(data);
+    }, { passive: true });
     window.addEventListener("message", function (event) {
       if (event.source !== window.parent) return;
       const message = event.data;
       if (!message || message.jsonrpc !== "2.0") return;
       if (message.method !== "ui/notifications/tool-result") return;
-      render(message.params?.structuredContent ?? {});
+      renderData(render, message.params?.structuredContent);
     }, { passive: true });
   }
   globalThis.mcpWidget = { onToolResult, setText, valueAt };
