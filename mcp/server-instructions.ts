@@ -1,2 +1,2 @@
 export const serverInstructions =
-  "Use health.check for service reachability. Use auth.session to inspect the current OAuth token session. Use identity.profile when the user needs their authenticated profile. Protected tools require MCP audience tokens with the listed scopes.";
+  "Use health.check for service reachability. Use health.status_card when the user needs an inline health UI card. Use auth.session to inspect the current OAuth token session. Use identity.profile when the user needs their authenticated profile. Use identity.profile_card when the user needs an inline profile UI card. Protected tools require MCP audience tokens with the listed scopes.";
