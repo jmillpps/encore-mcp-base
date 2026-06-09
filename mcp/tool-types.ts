@@ -1,4 +1,5 @@
 import type { ServiceConfig } from "../shared/config.ts";
+import type { ToolUiMetadata } from "./resource-types.ts";
 
 export interface McpTool {
   name: string;
@@ -10,6 +11,7 @@ export interface McpTool {
   annotations: Record<string, unknown>;
   invocation: ToolInvocationStatus;
   requiredScopes: string[];
+  ui?: ToolUiMetadata;
   run: (context: ToolContext, args: Record<string, unknown>) => Promise<Record<string, unknown>>;
 }
 

@@ -2,11 +2,14 @@ import { enforceRateLimit } from "../auth/rate-limit.ts";
 import { ServiceError } from "../shared/errors.ts";
 import { isIconSizes, isIconSource, isOptionalIconMimeType } from "./media-validation.ts";
 import { authChallengeResult } from "./auth-challenge.ts";
+import { assertToolUiMetadata, toolUiDescriptorMeta } from "./app-ui.ts";
 import { McpProtocolError } from "./protocol-error.ts";
 import { assertMatchesSchema, matchesSchema } from "./schema-validation.ts";
 import { authSessionTool } from "./tools/auth-session.ts";
 import { healthCheckTool } from "./tools/health-check.ts";
+import { healthStatusCardTool } from "./tools/health-status-card.ts";
 import { identityProfileTool } from "./tools/identity-profile.ts";
+import { identityProfileCardTool } from "./tools/identity-profile-card.ts";
 import { toolExecution } from "./tool-execution.ts";
 import { assertCallToolResult } from "./tool-result.ts";
 import { toolSecuritySchemes } from "./tool-security.ts";
@@ -14,7 +17,7 @@ import type { McpTool, ToolContext } from "./tool-types.ts";
 
 export type { McpTool, ToolContext } from "./tool-types.ts";
 
-export const tools: McpTool[] = [healthCheckTool, identityProfileTool, authSessionTool];
+export const tools: McpTool[] = [healthCheckTool, healthStatusCardTool, identityProfileTool, identityProfileCardTool, authSessionTool];
 
 const scopePattern = /^[A-Za-z0-9:_./-]+$/;
 
@@ -65,6 +68,11 @@ function assertToolDescriptor(tool: McpTool): void {
   if (!isToolInvocationStatus(tool.invocation)) throw invalidToolDescriptor();
   if (!Array.isArray(tool.requiredScopes) || tool.requiredScopes.some((scope) => typeof scope !== "string" || !scopePattern.test(scope))) throw invalidToolDescriptor();
   if (new Set(tool.requiredScopes).size !== tool.requiredScopes.length) throw invalidToolDescriptor();
+  try {
+    assertToolUiMetadata(tool.ui);
+  } catch {
+    throw invalidToolDescriptor();
+  }
   if (typeof tool.run !== "function") throw invalidToolDescriptor();
 }
 
@@ -81,8 +89,8 @@ function toolDescriptor(tool: McpTool): Record<string, unknown> {
     annotations: tool.annotations,
     securitySchemes,
     _meta: {
+      ...toolUiDescriptorMeta(tool.ui),
       securitySchemes,
-      ui: { visibility: ["model"] },
       "openai/toolInvocation/invoking": tool.invocation.invoking,
       "openai/toolInvocation/invoked": tool.invocation.invoked,
     },

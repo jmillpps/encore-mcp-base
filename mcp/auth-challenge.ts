@@ -1,10 +1,19 @@
 import type { ServiceConfig } from "../shared/config.ts";
-import type { ServiceError } from "../shared/errors.ts";
+import { ServiceError } from "../shared/errors.ts";
 import { protectedResourceMetadataUrl } from "../shared/mcp-resource.ts";
+
+export class McpAuthChallengeError extends ServiceError {
+  readonly scopes: string[];
+
+  constructor(scopes: readonly string[], error: ServiceError) {
+    super(error.code, error.message, error.status);
+    this.scopes = [...scopes];
+  }
+}
 
 export function wwwAuthenticate(config: ServiceConfig, scopes: string[], error?: ServiceError): string {
   const scope = scopes.join(" ");
-  const challenge = challengeError(error);
+  const challenge = challengeParameters(error);
   const parameters = [
     authParameter("error", challenge.error),
     authParameter("error_description", challenge.description),
@@ -31,7 +40,7 @@ export function extractWwwAuthenticate(value: unknown): string[] | undefined {
   return challenges;
 }
 
-function challengeError(error?: ServiceError): { error: string; description: string } {
+function challengeParameters(error?: ServiceError): { error: string; description: string } {
   if (error?.status === 403) return { error: "insufficient_scope", description: "Additional authorization scopes required." };
   return { error: "invalid_token", description: "Authentication required." };
 }

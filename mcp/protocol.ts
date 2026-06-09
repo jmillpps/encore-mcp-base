@@ -1,7 +1,8 @@
 import type { ServiceConfig } from "../shared/config.ts";
 import { ServiceError } from "../shared/errors.ts";
-import { asRecord } from "../shared/json.ts";
-import { extractWwwAuthenticate } from "./auth-challenge.ts";
+import { extractWwwAuthenticate, McpAuthChallengeError, wwwAuthenticate } from "./auth-challenge.ts";
+import { isResourceUri } from "./media-validation.ts";
+import { listResources, listResourceTemplates, readResource } from "./resource-registry.ts";
 import { callTool, listTools } from "./tool-registry.ts";
 import { initializeClientId, initializeResult } from "./lifecycle.ts";
 import { isJsonRpcResponse, jsonRpcError, jsonRpcSuccess, parseJsonRpc, type JsonRpcId, type JsonRpcRequest } from "./json-rpc.ts";
@@ -50,6 +51,13 @@ export async function handleMcpJson(context: McpContext, input: unknown): Promis
     };
   } catch (error) {
     if (error instanceof McpProtocolError) return { status: 200, body: jsonRpcError(request.id, error.rpcCode, error.message) };
+    if (error instanceof McpAuthChallengeError) {
+      return {
+        status: 200,
+        body: jsonRpcError(request.id, -32000, error.message),
+        wwwAuthenticate: [wwwAuthenticate(context.config, error.scopes, error)],
+      };
+    }
     if (error instanceof ServiceError) return { status: error.status, body: jsonRpcError(request.id, -32000, error.message) };
     return { status: 500, body: jsonRpcError(request.id, -32603, "internal error") };
   }
@@ -69,14 +77,26 @@ async function dispatch(context: McpContext, request: JsonRpcRequest): Promise<u
     const { name, args } = toolCallParams(request.params);
     return callTool(context, name, args);
   }
+  if (request.method === "resources/list") {
+    validateListParams(request.params, "resources/list");
+    return listResources();
+  }
+  if (request.method === "resources/templates/list") {
+    validateListParams(request.params, "resources/templates/list");
+    return listResourceTemplates();
+  }
+  if (request.method === "resources/read") {
+    const uri = resourceReadParams(request.params);
+    return readResource(context, uri);
+  }
   throw new McpProtocolError(-32601, "method not found");
 }
 
-function validateListParams(params: unknown): void {
-  const record = optionalMethodParams(params, "tools/list", ["_meta", "cursor"]);
+function validateListParams(params: unknown, method = "tools/list"): void {
+  const record = optionalMethodParams(params, method, ["_meta", "cursor"]);
   if (!record) return;
   if (record.cursor === undefined) return;
-  if (typeof record.cursor !== "string") throw new McpProtocolError(-32602, "tools/list cursor must be a string");
+  if (typeof record.cursor !== "string") throw new McpProtocolError(-32602, `${method} cursor must be a string`);
   throw new McpProtocolError(-32602, "invalid cursor");
 }
 
@@ -87,4 +107,10 @@ function toolCallParams(params: unknown): { name: string; args: Record<string, u
   if (args === undefined) return { name: record.name, args: {} };
   if (typeof args !== "object" || args === null || Array.isArray(args)) throw new McpProtocolError(-32602, "tools/call arguments must be an object");
   return { name: record.name, args: args as Record<string, unknown> };
+}
+
+function resourceReadParams(params: unknown): string {
+  const record = requiredMethodParams(params, "resources/read", ["_meta", "uri"]);
+  if (!isResourceUri(record.uri)) throw new McpProtocolError(-32602, "resources/read uri must be a valid resource URI");
+  return record.uri;
 }

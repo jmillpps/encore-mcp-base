@@ -4,7 +4,7 @@ import { authorizationCredentials } from "./authorization-header.ts";
 import { decodeBasicCredentials } from "./basic-credentials.ts";
 import { DiskRateLimitStore } from "./storage/rate-limit-store.ts";
 
-export type RateLimitBucket = "oauth-authorize" | "oauth-token" | "oauth-userinfo" | "mcp-tool";
+export type RateLimitBucket = "oauth-authorize" | "oauth-token" | "oauth-userinfo" | "mcp-tool" | "mcp-resource";
 
 export async function enforceRateLimit(config: ServiceConfig, bucket: RateLimitBucket, subject: string): Promise<void> {
   const normalized = subject.trim() || "anonymous";

@@ -14,7 +14,7 @@ export function initializeResult(config: ServiceConfig, params: unknown): Record
   const requested = requiredString(record, "protocolVersion");
   return {
     protocolVersion: requested === supportedProtocolVersion ? requested : supportedProtocolVersion,
-    capabilities: { tools: { listChanged: false } },
+    capabilities: { tools: { listChanged: false }, resources: {} },
     serverInfo: serverImplementationInfo(config.issuer),
     instructions: serverInstructions,
   };

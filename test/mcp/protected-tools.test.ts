@@ -28,14 +28,23 @@ test("MCP tools expose metadata and protected tools return auth challenges", asy
     assert.deepEqual(tool.execution, { taskSupport: "forbidden" });
     const meta = requireRecord(tool._meta, "tool metadata");
     assert.deepEqual(meta.securitySchemes, tool.securitySchemes);
-    assert.deepEqual(requireRecord(meta.ui, "tool ui metadata").visibility, ["model"]);
+    const ui = requireRecord(meta.ui, "tool ui metadata");
+    if (meta["openai/outputTemplate"] !== undefined) {
+      assert.equal(typeof ui.resourceUri, "string");
+      assert.equal(meta["openai/outputTemplate"], ui.resourceUri);
+      assert.deepEqual(ui.visibility, ["model", "app"]);
+    } else {
+      assert.deepEqual(ui.visibility, ["model"]);
+    }
     assert.equal(typeof meta["openai/toolInvocation/invoking"], "string");
     assert.equal(typeof meta["openai/toolInvocation/invoked"], "string");
     assert.ok(requireString(meta["openai/toolInvocation/invoking"], "invoking status").length <= 64);
     assert.ok(requireString(meta["openai/toolInvocation/invoked"], "invoked status").length <= 64);
   }
   assert.deepEqual(toolByName(tools, "health.check").securitySchemes, [{ type: "noauth" }]);
+  assert.deepEqual(toolByName(tools, "health.status_card").securitySchemes, [{ type: "noauth" }]);
   assert.deepEqual(toolByName(tools, "identity.profile").securitySchemes, [{ type: "oauth2", scopes: ["openid", "profile", "email"] }]);
+  assert.deepEqual(toolByName(tools, "identity.profile_card").securitySchemes, [{ type: "oauth2", scopes: ["openid", "profile", "email"] }]);
   assert.deepEqual(toolByName(tools, "auth.session").securitySchemes, [{ type: "oauth2", scopes: ["openid"] }]);
   const unauthenticatedList = await postMcp(
     service,
