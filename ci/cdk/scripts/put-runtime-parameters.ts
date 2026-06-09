@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createHash, generateKeyPairSync, randomBytes } from "node:crypto";
-import { awsJson, awsText } from "./aws.ts";
+import { awsJson, awsText, putSecureParameter } from "./aws.ts";
 import { parseRuntimeParameterOptions } from "./runtime-parameter-options.ts";
 import { stackOutputs } from "./stack-outputs.ts";
 
@@ -12,15 +12,14 @@ const actionsAudience = requiredOutput(outputs, "ActionsAudience");
 const mcpResource = requiredOutput(outputs, "McpResourceUrl");
 const identityProviderMode = requiredOutput(outputs, "IdentityProviderMode");
 const upstreamOidcClientId = requiredOutput(outputs, "UpstreamOidcClientId");
-const upstreamOidcSecret = await upstreamOidcClientSecret(outputs, identityProviderMode);
 const actionsSecret = await existingSecure(prefix, "CHATGPT_ACTIONS_CLIENT_SECRET") ?? randomToken(32);
 const mcpSecret = await existingSecure(prefix, "CHATGPT_MCP_CLIENT_SECRET") ?? randomToken(32);
 const privateKeyPem = await existingSecure(prefix, "OAUTH_PRIVATE_KEY_PEM") ?? generatePrivateKeyPem();
 const keyName = sha256(privateKeyPem).slice(0, 24);
 
+await writeExternalUpstreamSecret(prefix, keyId, identityProviderMode);
 await putSecure(prefix, keyId, "OAUTH_PRIVATE_KEY_PEM", privateKeyPem);
 await putString(prefix, "OAUTH_KEY_ID", keyName);
-await putSecure(prefix, keyId, "UPSTREAM_OIDC_CLIENT_SECRET", upstreamOidcSecret);
 await putSecure(prefix, keyId, "CHATGPT_ACTIONS_CLIENT_SECRET", actionsSecret);
 await putSecure(prefix, keyId, "CHATGPT_MCP_CLIENT_SECRET", mcpSecret);
 await putSecure(prefix, keyId, "OAUTH_CLIENTS_JSON", JSON.stringify([
@@ -57,6 +56,7 @@ console.log(JSON.stringify({
   mcpClientSecretParameter: `${prefix}/CHATGPT_MCP_CLIENT_SECRET`,
   identityProviderMode,
   upstreamOidcClientId,
+  upstreamOidcClientSecretSource: identityProviderMode === "cognito" ? "cdk-deploy" : "seed-parameters",
 }, null, 2));
 
 function requiredOutput(outputs: Record<string, string>, name: string): string {
@@ -65,23 +65,15 @@ function requiredOutput(outputs: Record<string, string>, name: string): string {
   return value;
 }
 
-async function cognitoClientSecret(userPoolId: string, clientId: string): Promise<string> {
-  const response = await awsJson(["cognito-idp", "describe-user-pool-client", "--user-pool-id", userPoolId, "--client-id", clientId]);
-  const client = (response as { UserPoolClient?: { ClientSecret?: string } }).UserPoolClient;
-  if (!client?.ClientSecret) throw new Error("Cognito client secret missing");
-  return client.ClientSecret;
-}
-
-async function upstreamOidcClientSecret(outputs: Record<string, string>, mode: string): Promise<string> {
-  if (mode === "cognito") {
-    return cognitoClientSecret(requiredOutput(outputs, "CognitoUserPoolId"), requiredOutput(outputs, "CognitoClientId"));
-  }
+async function writeExternalUpstreamSecret(prefix: string, keyId: string, mode: string): Promise<void> {
   if (mode === "external") {
     const value = process.env.CDK_UPSTREAM_OIDC_CLIENT_SECRET?.trim();
     if (!value) throw new Error("CDK_UPSTREAM_OIDC_CLIENT_SECRET is required for external identity provider mode");
     if (/[\r\n]/.test(value)) throw new Error("CDK_UPSTREAM_OIDC_CLIENT_SECRET cannot include line breaks");
-    return value;
+    await putSecure(prefix, keyId, "UPSTREAM_OIDC_CLIENT_SECRET", value);
+    return;
   }
+  if (mode === "cognito") return;
   throw new Error("IdentityProviderMode output must be external or cognito");
 }
 
@@ -90,7 +82,7 @@ async function putString(prefix: string, name: string, value: string): Promise<v
 }
 
 async function putSecure(prefix: string, keyId: string, name: string, value: string): Promise<void> {
-  await awsText(["ssm", "put-parameter", "--name", `${prefix}/${name}`, "--type", "SecureString", "--key-id", keyId, "--value", value, "--overwrite"]);
+  await putSecureParameter({ name: `${prefix}/${name}`, keyId, value });
 }
 
 async function existingSecure(prefix: string, name: string): Promise<string | undefined> {

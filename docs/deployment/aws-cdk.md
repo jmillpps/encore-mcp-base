@@ -114,7 +114,7 @@ Runtime parameter details are covered in [Runtime Parameters](runtime-parameters
 
 ## Seed Runtime Parameters
 
-After deployment, seed runtime parameters with ChatGPT redirect URIs:
+After deployment, seed ChatGPT OAuth client records with ChatGPT redirect URIs:
 
 ```sh
 npm --prefix ci/cdk run seed:parameters -- \
@@ -127,9 +127,19 @@ npm --prefix ci/cdk run seed:parameters -- \
 
 The command creates GPT Actions and GPT Apps OAuth client secrets. Read those secrets from the printed Parameter Store names when configuring ChatGPT.
 
-In external identity provider mode, set `CDK_UPSTREAM_OIDC_CLIENT_SECRET` in the shell before running the seed command. In Cognito identity provider mode, the seed command reads the generated Cognito app client secret from AWS.
+In Cognito identity provider mode, `npm --prefix ci/cdk run deploy` writes the generated Cognito app client secret to `UPSTREAM_OIDC_CLIENT_SECRET` as a SecureString parameter after CloudFormation completes.
+
+In external identity provider mode, set `CDK_UPSTREAM_OIDC_CLIENT_SECRET` in the shell before running the seed command. The seed command stores that value in `UPSTREAM_OIDC_CLIENT_SECRET` as a SecureString parameter.
 
 ## Build And Run
+
+Deploy or update the stack:
+
+```sh
+npm --prefix ci/cdk run deploy -- "$CDK_STACK_NAME"
+```
+
+The deploy command runs `cdk deploy` and then syncs generated runtime parameters owned by the selected identity provider mode.
 
 Upload source and trigger the container build:
 

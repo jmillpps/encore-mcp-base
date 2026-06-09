@@ -53,7 +53,7 @@ export CDK_IDENTITY_PROVIDER_MODE="cognito"
 export CDK_COGNITO_DOMAIN_PREFIX="example-mcp-service-prod"
 ```
 
-Cognito mode creates the user pool, app client, and hosted UI domain during deployment. The seed command reads the generated app client secret from AWS.
+Cognito mode creates the user pool, app client, and hosted UI domain during deployment. The deploy command writes the generated app client secret to `UPSTREAM_OIDC_CLIENT_SECRET` in Parameter Store after CloudFormation completes.
 
 ## Preflight
 
@@ -101,7 +101,7 @@ Deploy the stack:
 npm --prefix ci/cdk run deploy -- "$CDK_STACK_NAME"
 ```
 
-The stack creates infrastructure and writes non-secret runtime parameters. It creates Cognito resources when `CDK_IDENTITY_PROVIDER_MODE=cognito`.
+The deploy command creates infrastructure, writes stack-owned runtime parameters, and syncs generated runtime secrets for Cognito mode.
 
 Read stack outputs:
 
@@ -116,7 +116,7 @@ Use outputs as operational pointers. Keep concrete output values out of reposito
 
 ## Seed Runtime Parameters
 
-Seed ChatGPT client records and service secrets after the stack exists:
+Seed ChatGPT client records and service-managed secrets after the stack exists:
 
 ```sh
 npm --prefix ci/cdk run seed:parameters -- \
@@ -127,7 +127,7 @@ npm --prefix ci/cdk run seed:parameters -- \
   --mcp-redirect-uri "$MCP_REDIRECT_URI"
 ```
 
-Repeat redirect URI flags for each ChatGPT callback URL. The seed command preserves existing signing keys, upstream client secrets, and ChatGPT client secrets across repeated runs.
+Repeat redirect URI flags for each ChatGPT callback URL. The seed command preserves existing signing keys and ChatGPT client secrets across repeated runs. In external identity provider mode, it also stores `CDK_UPSTREAM_OIDC_CLIENT_SECRET` in `UPSTREAM_OIDC_CLIENT_SECRET`.
 
 Read the generated ChatGPT secrets from Parameter Store when configuring ChatGPT:
 
@@ -209,7 +209,7 @@ Use this order for infrastructure updates:
 2. Run CDK synthesis.
 3. Review CDK diff.
 4. Deploy the stack.
-5. Seed runtime parameters when client or secret shape changed.
+5. Seed runtime parameters when ChatGPT client registration changed.
 6. Build and publish the image when runtime source changed.
 7. Restart the runtime service.
 8. Verify public endpoints and ChatGPT flows.

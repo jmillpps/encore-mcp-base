@@ -39,7 +39,7 @@ The CDK stack writes these String parameters during deployment:
 
 ## Seeded Secure Parameters
 
-Run the seed command after deployment to write secrets and ChatGPT client records:
+Run the seed command after deployment to write ChatGPT client records and service-managed secrets:
 
 ```sh
 npm --prefix ci/cdk run seed:parameters -- \
@@ -55,16 +55,15 @@ The command writes these SecureString parameters:
 | Parameter | Purpose |
 | --- | --- |
 | `OAUTH_PRIVATE_KEY_PEM` | Service RSA signing key. |
-| `UPSTREAM_OIDC_CLIENT_SECRET` | Upstream OAuth client secret. |
 | `CHATGPT_ACTIONS_CLIENT_SECRET` | GPT Actions OAuth client secret. |
 | `CHATGPT_MCP_CLIENT_SECRET` | GPT Apps MCP OAuth client secret. |
 | `OAUTH_CLIENTS_JSON` | Service OAuth client registry with hashed client secrets. |
 
 The command writes `OAUTH_KEY_ID` as a String parameter derived from the signing key hash.
 
-The seed command preserves existing `OAUTH_PRIVATE_KEY_PEM`, ChatGPT client secrets, and upstream client secret values when the parameters already exist. This preserves token signing continuity and configured ChatGPT client secrets across repeated seeding runs.
+The seed command preserves existing `OAUTH_PRIVATE_KEY_PEM` and ChatGPT client secret values when the parameters already exist. This preserves token signing continuity and configured ChatGPT client secrets across repeated seeding runs.
 
-External identity provider mode reads `CDK_UPSTREAM_OIDC_CLIENT_SECRET` from the operator shell and stores it as `UPSTREAM_OIDC_CLIENT_SECRET`. Cognito identity provider mode reads the generated Cognito app client secret from AWS and stores it as `UPSTREAM_OIDC_CLIENT_SECRET`.
+`UPSTREAM_OIDC_CLIENT_SECRET` is stored as a SecureString parameter. Cognito identity provider mode writes it during `npm --prefix ci/cdk run deploy` from the generated Cognito app client secret. External identity provider mode writes it during the seed command from `CDK_UPSTREAM_OIDC_CLIENT_SECRET`.
 
 ## Runtime Load
 

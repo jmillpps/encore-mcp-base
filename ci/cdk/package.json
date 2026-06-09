@@ -6,9 +6,10 @@
   "scripts": {
     "cdk": "cdk",
     "synth": "cdk synth",
-    "deploy": "cdk deploy",
+    "deploy": "node --experimental-strip-types scripts/deploy.ts",
     "destroy": "cdk destroy",
     "seed:parameters": "node --experimental-strip-types scripts/put-runtime-parameters.ts",
+    "sync:generated-parameters": "node --experimental-strip-types scripts/sync-generated-parameters.ts",
     "build:image": "node --experimental-strip-types scripts/upload-source-and-build.ts",
     "test": "node --experimental-strip-types --test ../../test/cdk/*.test.ts",
     "typecheck": "tsc --noEmit"
