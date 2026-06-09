@@ -1,11 +1,11 @@
-import type { ServiceConfig } from "../shared/config.ts";
-import { appUiResourceMimeType, type McpResourceContent } from "./resource-types.ts";
+import type { ServiceConfig } from "../../shared/config.ts";
+import { appUiResourceMimeType, type McpResourceContent } from "../resource-types.ts";
 
-export function applyWidgetDomain(config: ServiceConfig, contents: McpResourceContent[]): McpResourceContent[] {
-  return contents.map((content) => content.mimeType === appUiResourceMimeType ? withWidgetDomain(content, config.widgetDomain) : content);
+export function applyWidgetRuntimeMetadata(config: ServiceConfig, contents: McpResourceContent[]): McpResourceContent[] {
+  return contents.map((content) => content.mimeType === appUiResourceMimeType ? withRuntimeMetadata(content, config.widgetDomain) : content);
 }
 
-function withWidgetDomain(content: McpResourceContent, domain: string): McpResourceContent {
+function withRuntimeMetadata(content: McpResourceContent, domain: string): McpResourceContent {
   const meta = record(content._meta);
   const ui = record(meta.ui);
   const csp = record(ui.csp);

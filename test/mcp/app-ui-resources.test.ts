@@ -6,8 +6,6 @@ import { assertExposesHeader, readJson, requireRecord, requireString } from "../
 import { startService } from "../support/service-process.ts";
 import { testUserProfile } from "../support/user-profile.ts";
 import { appHtmlResource, toolUiResource } from "../../mcp/app-ui.ts";
-import { healthStatusCardUri } from "../../mcp/resources/health-status-card.ts";
-import { profileSummaryCardUri } from "../../mcp/resources/profile-summary-card.ts";
 import { listResources, readResource, resources } from "../../mcp/resource-registry.ts";
 import { appUiResourceMimeType, type McpResourceDefinition } from "../../mcp/resource-types.ts";
 import { listTools, tools, type McpTool } from "../../mcp/tool-registry.ts";
@@ -15,7 +13,7 @@ import { readOnlyToolAnnotations } from "../../mcp/tool-annotations.ts";
 import { emptyInputSchema, objectSchema, stringSchema } from "../../mcp/tool-schemas.ts";
 import { readConfig } from "../../shared/config.ts";
 import { ServiceError } from "../../shared/errors.ts";
-import { healthStatusCardScriptPath, healthStatusCardStylePath, profileSummaryCardScriptPath, profileSummaryCardStylePath } from "../../mcp/widget-assets.ts";
+import { healthStatusCardScriptPath, healthStatusCardStylePath, healthStatusCardUri, profileSummaryCardScriptPath, profileSummaryCardStylePath, profileSummaryCardUri, widgetAssets } from "../../mcp/widgets/index.ts";
 
 test("MCP Apps UI resources expose capabilities, descriptors, contents, and render tool metadata", async (t) => {
   const service = await startService(t);
@@ -107,6 +105,7 @@ test("MCP protected UI resources enforce OAuth scopes on resource reads and tool
 
 test("MCP Apps UI assets are public, versioned, and CSP-addressable", async (t) => {
   const service = await startService(t);
+  assert.equal(widgetAssets.length, 4);
   await assertAsset(service.origin, healthStatusCardStylePath, "text/css", /Health status|\.status/);
   await assertAsset(service.origin, healthStatusCardScriptPath, "application/javascript", /ui\/notifications\/tool-result/);
   await assertAsset(service.origin, profileSummaryCardStylePath, "text/css", /Authenticated user|\.avatar/);

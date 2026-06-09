@@ -12,7 +12,7 @@ Security is part of every service boundary. Public HTTP input, OAuth metadata, t
 | MCP transport | Origin, Authorization header, query parameters, Accept header, Content-Type header, session headers, JSON body. | `mcp/endpoints.*.ts` and `mcp/transport-headers.ts`. |
 | MCP tool call | Tool name, arguments, `_meta`, task metadata, bearer token, tool output. | `mcp/protocol.ts` and `mcp/tool-registry.ts`. |
 | MCP resource read | Resource URI, cursor, `_meta`, bearer token, resource metadata, HTML content. | `mcp/protocol.ts` and `mcp/resource-registry.ts`. |
-| Widget assets | Asset path, browser request headers, cache behavior, CSS content, JavaScript content. | `mcp/endpoints.widget-assets.ts` and `mcp/widget-assets.ts`. |
+| Widget assets | Asset path, browser request headers, cache behavior, CSS content, JavaScript content. | `mcp/endpoints.widget-assets.ts` and `mcp/widgets/`. |
 | Actions REST | Authorization header, query parameters, response contracts, OpenAPI metadata. | `actions/action-bearer.ts` and Actions endpoint modules. |
 | Client metadata | Client ID URL, fetched metadata document, redirect URIs, JWKS URI, private key JWT assertions. | `auth/client-metadata-*` and `auth/client-assertion.ts`. |
 | Storage | Store path, existing file type, file mode, file contents, lock state. | `auth/storage/*`. |

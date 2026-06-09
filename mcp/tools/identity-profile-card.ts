@@ -2,10 +2,10 @@ import { verifyBearer } from "../../auth/bearer.ts";
 import { identityProfileScopes } from "../../auth/scopes.ts";
 import { userProfileFromClaims } from "../../auth/user-profile.ts";
 import { toolUiResource } from "../app-ui.ts";
-import { profileSummaryCardUri } from "../resources/profile-summary-card.ts";
 import { readOnlyToolAnnotations } from "../tool-annotations.ts";
 import { booleanSchema, emptyInputSchema, objectSchema, stringSchema } from "../tool-schemas.ts";
 import type { McpTool, ToolContext } from "../tool-types.ts";
+import { profileSummaryCardUri } from "../widgets/index.ts";
 
 export const identityProfileCardTool: McpTool = {
   name: "identity.profile_card",

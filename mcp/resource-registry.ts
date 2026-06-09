@@ -3,13 +3,12 @@ import { enforceRateLimit } from "../auth/rate-limit.ts";
 import { ServiceError } from "../shared/errors.ts";
 import { McpAuthChallengeError } from "./auth-challenge.ts";
 import { McpProtocolError } from "./protocol-error.ts";
-import { healthStatusCardResource } from "./resources/health-status-card.ts";
-import { profileSummaryCardResource } from "./resources/profile-summary-card.ts";
 import { assertResourceContents, assertResourceDefinitions, resourceDescriptor, resourceTemplateDescriptor } from "./resource-validation.ts";
 import type { McpResourceDefinition, McpResourceTemplate, ResourceContext } from "./resource-types.ts";
-import { applyWidgetDomain } from "./widget-domain.ts";
+import { widgetResources } from "./widgets/index.ts";
+import { applyWidgetRuntimeMetadata } from "./widgets/runtime-metadata.ts";
 
-export const resources: McpResourceDefinition[] = [healthStatusCardResource, profileSummaryCardResource];
+export const resources: McpResourceDefinition[] = [...widgetResources];
 export const resourceTemplates: McpResourceTemplate[] = [];
 
 export function listResources(): Record<string, unknown> {
@@ -29,7 +28,7 @@ export async function readResource(context: ResourceContext, uri: string): Promi
   if (!resource) throw new McpProtocolError(-32002, "Resource not found");
   enforceResourceScopes(context, resource);
   const resourceContents = Array.isArray(resource.contents) ? resource.contents : await resource.contents(context);
-  const contents = applyWidgetDomain(context.config, resourceContents);
+  const contents = applyWidgetRuntimeMetadata(context.config, resourceContents);
   assertResourceContents(contents);
   return { contents };
 }

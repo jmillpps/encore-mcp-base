@@ -1,5 +1,4 @@
-import { serviceName, serviceVersion } from "../../shared/service-info.ts";
-import { isoNow } from "../../shared/time.ts";
+import { serviceHealthSnapshot } from "../../shared/service-health.ts";
 import { readOnlyToolAnnotations } from "../tool-annotations.ts";
 import { emptyInputSchema, objectSchema, stringSchema } from "../tool-schemas.ts";
 import type { McpTool } from "../tool-types.ts";
@@ -21,11 +20,7 @@ export const healthCheckTool: McpTool = {
   invocation: { invoking: "Checking service health", invoked: "Service health ready" },
   requiredScopes: [],
   run: async () => {
-    const structuredContent = {
-      status: "ok",
-      timestamp: isoNow(),
-      service: { name: serviceName, version: serviceVersion },
-    };
+    const structuredContent = serviceHealthSnapshot();
     return { content: [{ type: "text", text: JSON.stringify(structuredContent) }], structuredContent };
   },
 };

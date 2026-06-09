@@ -10,8 +10,8 @@ Use this guide when an MCP tool needs a ChatGPT-rendered HTML and JavaScript com
 | UI resource builders | `mcp/app-ui.ts` |
 | Resource validation | `mcp/resource-validation.ts` |
 | Resource registry | `mcp/resource-registry.ts` |
-| Resource content modules | `mcp/resources/` |
-| Widget assets | `mcp/widget-assets.ts` and `mcp/endpoints.widget-assets.ts` |
+| Widget definitions | `mcp/widgets/` |
+| Widget asset routes | `mcp/endpoints.widget-assets.ts` |
 | Render tools | `mcp/tools/` |
 | Protocol dispatch | `mcp/protocol.ts` |
 
@@ -25,52 +25,60 @@ The service applies the configured widget origin to every MCP Apps HTML resource
 
 HTML templates load JavaScript and CSS through versioned `/app-ui/` asset paths. The service adds the configured widget origin to `_meta.ui.csp.resourceDomains` and `_meta["openai/widgetCSP"].resource_domains` during `resources/read`. ChatGPT can then enforce CSP and load first-party assets from the widget origin.
 
+Each widget module owns its resource URI, markup, assets, metadata, scopes, and exported widget definition. `mcp/widgets/index.ts` collects widget resources and widget assets for the MCP registry and asset endpoint helpers.
+
 ## Developer Flow
 
-1. Create a resource module under `mcp/resources/`.
-2. Export a versioned URI constant.
-3. Build the resource with `appHtmlResource`.
-4. Set widget metadata, CSP domains, domain, border preference, and scopes.
-5. Place component JavaScript and CSS in `mcp/widget-assets.ts`.
+1. Create a widget module under `mcp/widgets/`.
+2. Export a versioned URI constant and versioned asset path constants.
+3. Build the widget with `defineWidget`.
+4. Put markup, JavaScript, CSS, metadata, CSP needs, border preference, and scopes in that widget module.
+5. Register the widget in `mcp/widgets/index.ts`.
 6. Expose each asset through an exact public route in `mcp/endpoints.widget-assets.ts`.
-7. Register the resource in `mcp/resource-registry.ts`.
-8. Create a render tool under `mcp/tools/`.
-9. Attach the resource with `toolUiResource`.
-10. Register the tool in `mcp/tool-registry.ts`.
-11. Add live MCP tests under `test/mcp/`.
-12. Update MCP API docs, GPT Apps setup docs, capability docs, and security docs.
+7. Create a render tool under `mcp/tools/`.
+8. Attach the widget URI with `toolUiResource`.
+9. Register the tool in `mcp/tool-registry.ts`.
+10. Add live MCP tests under `test/mcp/`.
+11. Update MCP API docs, GPT Apps setup docs, capability docs, and security docs.
 
 ## Minimal Resource
 
 ```ts
-import { appHtmlResource } from "../app-ui.ts";
+import { defineWidget, scriptAsset, styleAsset } from "./widget-definition.ts";
 
 export const accountPanelUri = "ui://widget/account-panel-v1.html";
+export const accountPanelStylePath = "/app-ui/account-panel-v1.css";
+export const accountPanelScriptPath = "/app-ui/account-panel-v1.js";
 
-export const accountPanelResource = appHtmlResource({
-  uri: accountPanelUri,
+export const accountPanelWidget = defineWidget({
+  resourceUri: accountPanelUri,
   name: "account-panel",
   title: "Account Panel",
   description: "Renderable UI resource for account details.",
-  html: "<main id=\"root\"></main><link rel=\"stylesheet\" href=\"/app-ui/account-panel-v1.css\"><script src=\"/app-ui/account-panel-v1.js\"></script>",
+  markup: "<main id=\"root\"></main>",
+  assets: [
+    styleAsset(accountPanelStylePath, "body { margin: 0; }"),
+    scriptAsset(accountPanelScriptPath, "console.log('account panel ready');"),
+  ],
   requiredScopes: ["openid", "profile", "email"],
   widget: {
     description: "Shows account details returned by the service.",
     prefersBorder: true,
-    domain: "https://app.example.com",
     csp: {
       connectDomains: ["https://api.example.com"],
-      resourceDomains: ["https://app.example.com"],
+      resourceDomains: [],
     },
   },
 });
 ```
 
+Register the widget in `mcp/widgets/index.ts`. Add exact asset routes in `mcp/endpoints.widget-assets.ts` because Encore requires literal endpoint paths during service graph analysis.
+
 ## Minimal Render Tool
 
 ```ts
 import { toolUiResource } from "../app-ui.ts";
-import { accountPanelUri } from "../resources/account-panel.ts";
+import { accountPanelUri } from "../widgets/account-panel.ts";
 
 export const accountPanelTool = {
   name: "account.panel",
@@ -81,6 +89,22 @@ export const accountPanelTool = {
 ```
 
 The actual tool must also define schemas, annotations, invocation text, scopes, and a `run` handler through `McpTool`.
+
+## Shared Capability Pattern
+
+Use shared modules for capability data that appears through both MCP and Actions surfaces. Place protocol-neutral data builders under `shared/` or an existing domain folder. Let MCP tools, MCP render tools, and Actions endpoints call the same builder.
+
+For a widget-backed capability, keep these pieces separate:
+
+| Piece | Owner |
+| --- | --- |
+| Capability data | `shared/` or the domain module that owns the data. |
+| MCP data tool | `mcp/tools/` |
+| MCP render tool | `mcp/tools/` |
+| Widget template and assets | `mcp/widgets/` |
+| Actions endpoint | `actions/` |
+
+The render tool returns the same schema-valid `structuredContent` that the widget reads through `window.openai.toolOutput` and `ui/notifications/tool-result`. The Actions endpoint returns the protocol shape needed by GPT Actions while using the same underlying capability data.
 
 ## Tool Descriptor Metadata
 
@@ -116,18 +140,18 @@ Developers can extend the resource and descriptor metadata through these fields:
 
 | Field | Use |
 | --- | --- |
-| `meta` on `appHtmlResource` | Add resource content `_meta` fields for new MCP Apps or ChatGPT metadata. |
-| `widget.ui` on `appHtmlResource` | Add future standard `_meta.ui` fields. |
+| `widget` on `defineWidget` | Add resource content metadata, border preference, and CSP values. |
+| `widget.ui` on `defineWidget` | Add future standard `_meta.ui` fields. |
 | `meta` on `toolUiResource` | Add tool descriptor `_meta` fields. |
 | `visibility` on `toolUiResource` | Restrict calls to the model, the component iframe, or both. |
 | `openAiOutputTemplate` on `toolUiResource` | Set a separate ChatGPT template URI or disable the alias with `false`. |
-| `requiredScopes` on `appHtmlResource` | Require scopes before `resources/read` returns content. |
+| `requiredScopes` on `defineWidget` | Require scopes before `resources/read` returns content. |
 
 ## Asset Rules
 
 Widget assets are public read-only files served from exact versioned paths. Use `/app-ui/name-v1.js` for JavaScript and `/app-ui/name-v1.css` for CSS. Register every asset route explicitly in `mcp/endpoints.widget-assets.ts`.
 
-Keep executable widget behavior in external JavaScript files. Keep visual rules in external CSS files. HTML templates should contain markup and asset links. This keeps CSP enforcement simple and makes ChatGPT iframe behavior predictable.
+Keep executable widget behavior in `scriptAsset` entries. Keep visual rules in `styleAsset` entries. `defineWidget` adds asset tags to the HTML template and returns a resource definition for the MCP registry.
 
 Use the configured widget origin as the asset origin. CDK sets the widget origin through `WIDGET_DOMAIN`, and `resources/read` mirrors that origin into the resource CSP metadata.
 

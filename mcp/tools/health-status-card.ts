@@ -1,10 +1,9 @@
-import { serviceName, serviceVersion } from "../../shared/service-info.ts";
-import { isoNow } from "../../shared/time.ts";
+import { serviceHealthSnapshot } from "../../shared/service-health.ts";
 import { toolUiResource } from "../app-ui.ts";
-import { healthStatusCardUri } from "../resources/health-status-card.ts";
 import { readOnlyToolAnnotations } from "../tool-annotations.ts";
 import { emptyInputSchema, objectSchema, stringSchema } from "../tool-schemas.ts";
 import type { McpTool } from "../tool-types.ts";
+import { healthStatusCardUri } from "../widgets/index.ts";
 
 export const healthStatusCardTool: McpTool = {
   name: "health.status_card",
@@ -24,11 +23,7 @@ export const healthStatusCardTool: McpTool = {
   requiredScopes: [],
   ui: toolUiResource(healthStatusCardUri),
   run: async () => {
-    const structuredContent = {
-      status: "ok",
-      timestamp: isoNow(),
-      service: { name: serviceName, version: serviceVersion },
-    };
+    const structuredContent = serviceHealthSnapshot();
     return { content: [{ type: "text", text: "Showing the service health status card." }], structuredContent };
   },
 };

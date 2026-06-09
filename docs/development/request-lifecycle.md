@@ -83,10 +83,10 @@ Shared behavior lives outside protocol adapters when both GPT Apps and GPT Actio
 
 | Capability | Shared source | MCP adapter | Actions adapter |
 | --- | --- | --- | --- |
-| Service health | `shared/service-info.ts`, `shared/time.ts` | `mcp/tools/health-check.ts` | `actions/endpoints.health.ts` |
-| Service health UI | `shared/service-info.ts`, `shared/time.ts` | `mcp/tools/health-status-card.ts`, `mcp/resources/health-status-card.ts`, `mcp/widget-assets.ts` | none |
+| Service health | `shared/service-health.ts` | `mcp/tools/health-check.ts` | `actions/endpoints.health.ts` |
+| Service health UI | `shared/service-health.ts` | `mcp/tools/health-status-card.ts`, `mcp/widgets/health-status-card.ts` | none |
 | Identity profile | `auth/user-profile.ts` | `mcp/tools/identity-profile.ts` | `actions/endpoints.profile.ts` |
-| Identity profile UI | `auth/user-profile.ts` | `mcp/tools/identity-profile-card.ts`, `mcp/resources/profile-summary-card.ts`, `mcp/widget-assets.ts` | none |
+| Identity profile UI | `auth/user-profile.ts` | `mcp/tools/identity-profile-card.ts`, `mcp/widgets/profile-summary-card.ts` | none |
 | OAuth session | token claims from `auth/bearer.ts` | `mcp/tools/auth-session.ts` | `actions/endpoints.session.ts` |
 
 Keep new shared behavior in a focused module. Keep request parsing, protocol envelopes, and protocol metadata inside the adapter.
