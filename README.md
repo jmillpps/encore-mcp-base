@@ -51,18 +51,29 @@ flowchart LR
   OAuth --> Idp["Upstream OIDC provider"]
   Mcp --> Tools["MCP tools"]
   Tools --> Capabilities["Shared capabilities"]
-  Tools --> ToolDescriptor["tools/list descriptor with ui://widget URI"]
-  Tools --> ToolResult["tools/call result with structuredContent"]
-  ToolDescriptor --> UiResources["resources/read UI HTML template"]
-  ToolResult --> Iframe["ChatGPT sandbox iframe"]
-  UiResources --> Iframe
-  Iframe --> WidgetAssets["/app-ui/* JavaScript and CSS"]
-  Sse --> Capabilities
+  Sse --> Tools
   Rest --> Capabilities
   OAuth --> Store["OAuth store and signing keys"]
 ```
 
-The service issues separate audience-bound tokens for MCP and Actions. MCP tools and Actions endpoints use the same capability implementation where behavior overlaps. Render-tool descriptors point ChatGPT to MCP UI resources, tool calls return `structuredContent`, and ChatGPT iframes load versioned widget assets from `/app-ui/*`. The widget framework composes reusable base assets, feature assets, render-tool metadata, scopes, and CSP metadata. Detailed widget implementation guidance lives in [MCP Apps UI Resources](docs/development/mcp-app-ui-resources.md).
+The main service runtime keeps protocol adapters at the edge. ChatGPT Apps reach MCP transports, GPT Actions reach REST endpoints, account linking reaches OAuth routes, and each path uses shared capability modules where behavior overlaps. OAuth uses the configured upstream OIDC provider and the OAuth store for client grants, tokens, and signing keys.
+
+## Widget Framework Runtime Shape
+
+```mermaid
+flowchart LR
+  Apps["ChatGPT Apps"] --> Mcp["/mcp Streamable HTTP"]
+  Mcp --> ToolDescriptor["tools/list descriptor with ui://widget URI"]
+  ToolDescriptor --> UiResource["resources/read UI HTML template"]
+  Mcp --> UiResource
+  Mcp --> ToolResult["tools/call result with structuredContent"]
+  UiResource --> Iframe["ChatGPT sandbox iframe"]
+  ToolResult --> Iframe
+  Iframe --> WidgetAssets["/app-ui/* JavaScript and CSS"]
+  WidgetAssets --> WidgetRuntime["Widget bridge and feature renderer"]
+```
+
+The widget framework runtime starts when ChatGPT reads a tool descriptor that declares a `ui://` widget URI. ChatGPT reads the matching MCP UI resource, calls the render tool, passes `structuredContent` into the sandbox iframe, and the iframe loads the versioned widget assets from `/app-ui/*`. Detailed widget implementation guidance lives in [MCP Apps UI Resources](docs/development/mcp-app-ui-resources.md).
 
 ## Prerequisites
 
