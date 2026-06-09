@@ -9,6 +9,7 @@ Production mode is active when `NODE_ENV=production`.
 | `PUBLIC_ISSUER_URL` | URL | Public issuer origin. HTTPS. Root path. Public hostname. |
 | `MCP_RESOURCE_URL` | URL | Public MCP resource URL. HTTPS. Public hostname. Path ends with `/mcp`. |
 | `ACTIONS_AUDIENCE` | URL | Public Actions audience URL. HTTPS. Public hostname. |
+| `WIDGET_DOMAIN` | URL | ChatGPT Apps widget origin. HTTPS. Root path. Public hostname. Unique per app. |
 | `OAUTH_STORE_PATH` | file path | Durable OAuth store JSON path. |
 | `ALLOWED_ORIGINS` | string list | Space-separated browser origins allowed for ChatGPT. |
 | `OAUTH_CLIENTS_JSON` | JSON array | Configured OAuth clients. |
@@ -48,6 +49,7 @@ Local development supplies defaults for URLs, origins, token lifetimes, rate lim
 | `PUBLIC_ISSUER_URL` | `http://localhost:4000` |
 | `MCP_RESOURCE_URL` | `http://localhost:4000/mcp` |
 | `ACTIONS_AUDIENCE` | `http://localhost:4000/actions` |
+| `WIDGET_DOMAIN` | `http://localhost:4000` |
 | `OAUTH_STORE_PATH` | `var/oauth-store.json` |
 | `ALLOWED_ORIGINS` | `https://chatgpt.com https://chat.openai.com http://localhost:4000` |
 | `ACCESS_TOKEN_TTL_SECONDS` | `900` |
@@ -73,9 +75,11 @@ Automated service tests replace these upstream values with a per-test OIDC serve
 
 Production URLs use HTTPS and public hostnames. URLs must omit credentials, query strings, and fragments.
 
-`PUBLIC_ISSUER_URL` uses the origin root. `MCP_RESOURCE_URL` points to `/mcp`. `ALLOWED_ORIGINS` entries are origins.
+`PUBLIC_ISSUER_URL` and `WIDGET_DOMAIN` use origin roots. `MCP_RESOURCE_URL` points to `/mcp`. `ALLOWED_ORIGINS` entries are origins.
 
 `PUBLIC_ISSUER_URL` also feeds `GET /actions/openapi.json`, OAuth discovery metadata, token issuer claims, and OpenAPI OAuth URLs.
+
+`WIDGET_DOMAIN` feeds MCP Apps UI resource metadata through `_meta.ui.domain` and `_meta["openai/widgetDomain"]`.
 
 ## Integer Rules
 

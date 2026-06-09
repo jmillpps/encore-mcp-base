@@ -8,6 +8,7 @@ test("production config requires explicit secure public URLs and origins", () =>
   assert.equal(config.issuer, "https://issuer.example.test");
   assert.equal(config.mcpResource, "https://mcp.example.test/mcp");
   assert.equal(config.actionsAudience, "https://api.example.test/actions");
+  assert.equal(config.widgetDomain, "https://widgets.example.test");
   assert.deepEqual(config.allowedOrigins, ["https://chatgpt.com"]);
   assert.equal(config.accessTokenTtlSeconds, 900);
   assert.equal(config.idTokenTtlSeconds, 300);
@@ -43,6 +44,9 @@ test("production config rejects insecure or ambiguous deployment inputs", () => 
   assert.throws(() => readConfig(productionEnv({ ACTIONS_AUDIENCE: "ftp://api.example.test/actions" })), /http or https/);
   assert.throws(() => readConfig(productionEnv({ ACTIONS_AUDIENCE: "https://user:pass@api.example.test/actions" })), /unsupported URL parts/);
   assert.throws(() => readConfig(productionEnv({ ACTIONS_AUDIENCE: "https://10.0.0.1/actions" })), /public host/);
+  assert.throws(() => readConfig(productionEnv({ WIDGET_DOMAIN: "" })), /WIDGET_DOMAIN is required/);
+  assert.throws(() => readConfig(productionEnv({ WIDGET_DOMAIN: "https://widgets.example.test/path" })), /WIDGET_DOMAIN must be an origin/);
+  assert.throws(() => readConfig(productionEnv({ WIDGET_DOMAIN: "https://localhost" })), /public host/);
   assert.throws(() => readConfig(productionEnv({ ALLOWED_ORIGINS: "https://*.example.test" })), /wildcards/);
   assert.throws(() => readConfig(productionEnv({ ALLOWED_ORIGINS: "https://chatgpt.com/path" })), /must be origins/);
   assert.throws(() => readConfig(productionEnv({ ALLOWED_ORIGINS: "https://localhost" })), /public hosts/);
@@ -61,6 +65,7 @@ test("local config keeps localhost defaults for development", () => {
   assert.equal(config.issuer, "http://localhost:4000");
   assert.equal(config.mcpResource, "http://localhost:4000/mcp");
   assert.equal(config.actionsAudience, "http://localhost:4000/actions");
+  assert.equal(config.widgetDomain, "http://localhost:4000");
   assert.ok(config.allowedOrigins.includes("http://localhost:4000"));
   assert.equal(config.upstreamOidc.redirectUri, "http://localhost:4000/oauth/callback");
 });
@@ -71,6 +76,7 @@ function productionEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
     PUBLIC_ISSUER_URL: "https://issuer.example.test",
     MCP_RESOURCE_URL: "https://mcp.example.test/mcp",
     ACTIONS_AUDIENCE: "https://api.example.test/actions",
+    WIDGET_DOMAIN: "https://widgets.example.test",
     OAUTH_STORE_PATH: "/tmp/oauth-store.json",
     ALLOWED_ORIGINS: "https://chatgpt.com",
     ACCESS_TOKEN_TTL_SECONDS: "900",

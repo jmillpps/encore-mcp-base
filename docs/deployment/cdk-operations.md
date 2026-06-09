@@ -18,9 +18,12 @@ export CDK_HOSTED_ZONE_ID="$HOSTED_ZONE_ID"
 export CDK_HOSTED_ZONE_NAME="example.com"
 export CDK_PARAMETER_PREFIX="/example-mcp-service/prod/env"
 export CDK_INSTANCE_TYPE="t4g.micro"
+export CDK_WIDGET_DOMAIN="https://service.example.com"
 ```
 
 Keep these values in an ignored operator shell file, CI secret store, or deployment runbook. Keep concrete deployment values out of repository files.
+
+`CDK_WIDGET_DOMAIN` may be omitted. The CDK configuration uses the public service origin when it is omitted.
 
 ## External Identity Provider Inputs
 

@@ -19,6 +19,7 @@ The CDK stack writes these String parameters during deployment:
 | `PUBLIC_ISSUER_URL` | Public service origin. |
 | `MCP_RESOURCE_URL` | Public MCP resource URL. |
 | `ACTIONS_AUDIENCE` | Public Actions audience URL. |
+| `WIDGET_DOMAIN` | ChatGPT Apps widget origin. |
 | `OAUTH_STORE_PATH` | Instance-local durable store path. |
 | `ALLOWED_ORIGINS` | ChatGPT browser origins. |
 | `ACCESS_TOKEN_TTL_SECONDS` | Access token lifetime. |

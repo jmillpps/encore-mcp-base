@@ -11,6 +11,7 @@ export interface DeploymentConfig {
   parameterPrefix: string;
   instanceType: string;
   allowedOrigins: string;
+  widgetDomain: string;
 }
 
 export type IdentityProviderConfig = ExternalIdentityProviderConfig | CognitoIdentityProviderConfig;
@@ -62,6 +63,7 @@ export function deploymentConfig(env: NodeJS.ProcessEnv = process.env): Deployme
     parameterPrefix: parameterPrefix(env),
     instanceType: instanceType(env),
     allowedOrigins: env.CDK_ALLOWED_ORIGINS ?? "https://chatgpt.com https://chat.openai.com",
+    widgetDomain: widgetDomain(env, domainName),
   };
 }
 
@@ -136,6 +138,18 @@ function oidcTokenAuthMethod(value: string): "client_secret_post" | "client_secr
 
 function httpsUrl(env: NodeJS.ProcessEnv, key: string): string {
   const value = requiredEnv(env, key);
+  return httpsUrlValue(value, key);
+}
+
+function widgetDomain(env: NodeJS.ProcessEnv, domainName: string): string {
+  const value = env.CDK_WIDGET_DOMAIN === undefined ? `https://${domainName}` : requiredTextValue(env.CDK_WIDGET_DOMAIN, "CDK_WIDGET_DOMAIN");
+  const origin = httpsUrlValue(value, "CDK_WIDGET_DOMAIN");
+  const url = new URL(origin);
+  if (url.origin !== origin) throw new Error("CDK_WIDGET_DOMAIN must be an origin");
+  return url.origin;
+}
+
+function httpsUrlValue(value: string, key: string): string {
   const url = new URL(value);
   if (url.protocol !== "https:") throw new Error(`${key} must use https`);
   if (url.username || url.password || url.search || url.hash) throw new Error(`${key} contains unsupported URL parts`);

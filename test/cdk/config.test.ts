@@ -25,6 +25,7 @@ type DeploymentConfigReader = (env: NodeJS.ProcessEnv) => {
   };
   parameterPrefix: string;
   instanceType: string;
+  widgetDomain: string;
 };
 
 type DeploymentStackNameReader = (env: NodeJS.ProcessEnv) => string;
@@ -63,6 +64,7 @@ test("deployment config accepts explicit deployment inputs", () => {
   assert.equal(config.identityProvider.upstreamOidc?.tokenAuthMethod, "client_secret_post");
   assert.equal(config.parameterPrefix, "/operator-mcp/sandbox/env");
   assert.equal(config.instanceType, "t4g.micro");
+  assert.equal(config.widgetDomain, "https://widgets.example.test");
   assert.equal(config.stackName, "OperatorMcpSandbox");
 });
 
@@ -86,6 +88,8 @@ test("deployment config rejects ambiguous or unsafe deployment inputs", () => {
   assert.throws(() => cdkConfig.deploymentConfig(baseEnv({ CDK_DOMAIN_NAME: "service.other.example" })), /CDK_DOMAIN_NAME must be within CDK_HOSTED_ZONE_NAME/);
   assert.throws(() => cdkConfig.deploymentConfig(baseEnv({ CDK_PARAMETER_PREFIX: "/aws/operator/env" })), /reserved prefix/);
   assert.throws(() => cdkConfig.deploymentConfig(baseEnv({ CDK_PARAMETER_PREFIX: "/operator/../env" })), /invalid path segments/);
+  assert.throws(() => cdkConfig.deploymentConfig(baseEnv({ CDK_WIDGET_DOMAIN: "https://widgets.example.test/path" })), /CDK_WIDGET_DOMAIN must be an origin/);
+  assert.throws(() => cdkConfig.deploymentConfig(baseEnv({ CDK_WIDGET_DOMAIN: "https://localhost" })), /CDK_WIDGET_DOMAIN must use a public host/);
   assert.throws(() => cdkConfig.deploymentConfig(baseEnv({ CDK_IDENTITY_PROVIDER_MODE: "bad" })), /CDK_IDENTITY_PROVIDER_MODE must be external or cognito/);
   assert.throws(() => cdkConfig.deploymentConfig(baseEnv({ CDK_UPSTREAM_OIDC_TOKEN_URL: "http://login.example.test/oauth2/token" })), /CDK_UPSTREAM_OIDC_TOKEN_URL must use https/);
   assert.throws(() => cdkConfig.deploymentConfig(baseEnv({ CDK_UPSTREAM_OIDC_SCOPES: "profile email" })), /CDK_UPSTREAM_OIDC_SCOPES must include openid/);
@@ -118,6 +122,7 @@ function baseEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
     CDK_UPSTREAM_OIDC_TOKEN_AUTH_METHOD: "client_secret_post",
     CDK_PARAMETER_PREFIX: "/operator-mcp/sandbox/env",
     CDK_INSTANCE_TYPE: "t4g.micro",
+    CDK_WIDGET_DOMAIN: "https://widgets.example.test",
     ...overrides,
   };
 }

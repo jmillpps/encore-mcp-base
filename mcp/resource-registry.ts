@@ -7,6 +7,7 @@ import { healthStatusCardResource } from "./resources/health-status-card.ts";
 import { profileSummaryCardResource } from "./resources/profile-summary-card.ts";
 import { assertResourceContents, assertResourceDefinitions, resourceDescriptor, resourceTemplateDescriptor } from "./resource-validation.ts";
 import type { McpResourceDefinition, McpResourceTemplate, ResourceContext } from "./resource-types.ts";
+import { applyWidgetDomain } from "./widget-domain.ts";
 
 export const resources: McpResourceDefinition[] = [healthStatusCardResource, profileSummaryCardResource];
 export const resourceTemplates: McpResourceTemplate[] = [];
@@ -27,7 +28,8 @@ export async function readResource(context: ResourceContext, uri: string): Promi
   const resource = resources.find((candidate) => candidate.uri === uri);
   if (!resource) throw new McpProtocolError(-32002, "Resource not found");
   enforceResourceScopes(context, resource);
-  const contents = Array.isArray(resource.contents) ? resource.contents : await resource.contents(context);
+  const resourceContents = Array.isArray(resource.contents) ? resource.contents : await resource.contents(context);
+  const contents = applyWidgetDomain(context.config, resourceContents);
   assertResourceContents(contents);
   return { contents };
 }

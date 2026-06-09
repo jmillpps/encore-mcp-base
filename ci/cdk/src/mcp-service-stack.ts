@@ -151,6 +151,7 @@ export class McpServiceStack extends cdk.Stack {
     this.stringParameter("IssuerUrl", config, "PUBLIC_ISSUER_URL", values.publicUrl);
     this.stringParameter("McpResourceUrl", config, "MCP_RESOURCE_URL", values.mcpResource);
     this.stringParameter("ActionsAudience", config, "ACTIONS_AUDIENCE", values.actionsAudience);
+    this.stringParameter("WidgetDomain", config, "WIDGET_DOMAIN", config.widgetDomain);
     this.stringParameter("StorePath", config, "OAUTH_STORE_PATH", oauthStorePath(config.serviceName));
     this.stringParameter("AllowedOrigins", config, "ALLOWED_ORIGINS", config.allowedOrigins);
     this.stringParameter("AccessTokenTtl", config, "ACCESS_TOKEN_TTL_SECONDS", "900");

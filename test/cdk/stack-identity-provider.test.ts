@@ -26,6 +26,7 @@ interface DeploymentConfig {
   parameterPrefix: string;
   instanceType: string;
   allowedOrigins: string;
+  widgetDomain: string;
 }
 
 type TestTemplate = {
@@ -50,6 +51,7 @@ test("CDK external identity provider mode writes generic upstream OIDC parameter
   assert.equal(parameters.get("/operator-mcp/sandbox/env/UPSTREAM_OIDC_CLIENT_ID"), "upstream-client");
   assert.equal(parameters.get("/operator-mcp/sandbox/env/UPSTREAM_OIDC_REDIRECT_URI"), "https://service.example.com/oauth/callback");
   assert.equal(parameters.get("/operator-mcp/sandbox/env/UPSTREAM_OIDC_TOKEN_AUTH_METHOD"), "client_secret_basic");
+  assert.equal(parameters.get("/operator-mcp/sandbox/env/WIDGET_DOMAIN"), "https://widgets.example.test");
   assert.equal([...parameters.keys()].some((name) => name.includes("COGNITO_")), false);
 });
 
@@ -64,6 +66,7 @@ test("CDK Cognito identity provider mode provisions Cognito and still writes ups
   assert.ok(parameters.has("/operator-mcp/sandbox/env/UPSTREAM_OIDC_CLIENT_ID"));
   assert.equal(parameters.get("/operator-mcp/sandbox/env/UPSTREAM_OIDC_REDIRECT_URI"), "https://service.example.com/oauth/callback");
   assert.equal(parameters.get("/operator-mcp/sandbox/env/UPSTREAM_OIDC_TOKEN_AUTH_METHOD"), "client_secret_post");
+  assert.equal(parameters.get("/operator-mcp/sandbox/env/WIDGET_DOMAIN"), "https://widgets.example.test");
   assert.equal([...parameters.keys()].some((name) => name.includes("COGNITO_")), false);
 });
 
@@ -109,6 +112,7 @@ function baseConfig(): Omit<DeploymentConfig, "identityProvider"> {
     parameterPrefix: "/operator-mcp/sandbox/env",
     instanceType: "t4g.micro",
     allowedOrigins: "https://chatgpt.com https://chat.openai.com",
+    widgetDomain: "https://widgets.example.test",
   };
 }
 

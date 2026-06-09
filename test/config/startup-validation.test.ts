@@ -31,6 +31,7 @@ function productionEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
     PUBLIC_ISSUER_URL: "https://issuer.example.test",
     MCP_RESOURCE_URL: "https://mcp.example.test/mcp",
     ACTIONS_AUDIENCE: "https://api.example.test/actions",
+    WIDGET_DOMAIN: "https://widgets.example.test",
     OAUTH_STORE_PATH: "/tmp/oauth-store.json",
     ALLOWED_ORIGINS: "https://chatgpt.com",
     ACCESS_TOKEN_TTL_SECONDS: "900",

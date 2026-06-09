@@ -113,11 +113,11 @@ UI resource metadata includes:
 
 - `_meta.ui.prefersBorder`
 - `_meta.ui.csp`
-- `_meta.ui.domain` when configured
+- `_meta.ui.domain`
 - `_meta["openai/widgetDescription"]`
 - `_meta["openai/widgetPrefersBorder"]`
 - `_meta["openai/widgetCSP"]`
-- `_meta["openai/widgetDomain"]` when configured
+- `_meta["openai/widgetDomain"]`
 
 Render tools include `_meta.ui.resourceUri` and `_meta["openai/outputTemplate"]` in their descriptors.
 

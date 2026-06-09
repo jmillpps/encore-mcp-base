@@ -51,7 +51,7 @@ test("MCP Apps UI resources expose capabilities, descriptors, contents, and rend
   assert.equal(healthContent.uri, healthStatusCardUri);
   assert.equal(healthContent.mimeType, appUiResourceMimeType);
   assert.match(requireString(healthContent.text, "health card html"), /Health status/);
-  assertResourceMeta(requireRecord(healthContent._meta, "health card metadata"));
+  assertResourceMeta(requireRecord(healthContent._meta, "health card metadata"), service.origin);
 
   const healthTool = await callTool(service, sessionId, "health.status_card", authorization);
   assert.equal((requireRecord(healthTool.structuredContent, "health status card output")).status, "ok");
@@ -94,6 +94,7 @@ test("MCP protected UI resources enforce OAuth scopes on resource reads and tool
   assert.equal(profileContent.uri, profileSummaryCardUri);
   assert.equal(profileContent.mimeType, appUiResourceMimeType);
   assert.match(requireString(profileContent.text, "profile card html"), /Authenticated user/);
+  assertResourceMeta(requireRecord(profileContent._meta, "profile card metadata"), service.origin);
 
   const profileCard = await callTool(service, sessionId, "identity.profile_card", bearer(validFlow.tokens.access_token));
   assert.equal(requireRecord(profileCard.structuredContent, "profile card output").email, testUserProfile.email);
@@ -155,11 +156,13 @@ function assertResourceDescriptor(resource: Record<string, unknown>, name: strin
   assert.equal(typeof resource.description, "string");
 }
 
-function assertResourceMeta(meta: Record<string, unknown>): void {
+function assertResourceMeta(meta: Record<string, unknown>, widgetDomain: string): void {
   const ui = requireRecord(meta.ui, "resource ui metadata");
   assert.equal(ui.prefersBorder, true);
+  assert.equal(ui.domain, widgetDomain);
   assert.deepEqual(requireRecord(ui.csp, "standard csp").connectDomains, []);
   assert.equal(meta["openai/widgetPrefersBorder"], true);
+  assert.equal(meta["openai/widgetDomain"], widgetDomain);
   assert.deepEqual(requireRecord(meta["openai/widgetCSP"], "openai csp").connect_domains, []);
 }
 

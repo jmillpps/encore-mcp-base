@@ -161,6 +161,7 @@ function testConfig(oauthStorePath: string): ServiceConfig {
     issuer: "http://localhost:4000",
     mcpResource: "http://localhost:4000/mcp",
     actionsAudience: "http://localhost:4000/actions",
+    widgetDomain: "http://localhost:4000",
     oauthStorePath,
     allowedOrigins: ["https://chatgpt.com"],
     accessTokenTtlSeconds: 900,

@@ -6,6 +6,7 @@ export interface ServiceConfig {
   issuer: string;
   mcpResource: string;
   actionsAudience: string;
+  widgetDomain: string;
   oauthStorePath: string;
   allowedOrigins: string[];
   accessTokenTtlSeconds: number;
@@ -39,12 +40,14 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
   const mcpResource = readHttpUrl(env, "MCP_RESOURCE_URL", `${issuer}${mcpEndpointPath}`, production);
   assertMcpResourceUrl(mcpResource, "MCP_RESOURCE_URL");
   const actionsAudience = readHttpUrl(env, "ACTIONS_AUDIENCE", `${issuer}/actions`, production);
+  const widgetDomain = readOriginUrl(env, "WIDGET_DOMAIN", issuer, production);
   const oauthStorePath = env.OAUTH_STORE_PATH ?? (production ? "" : resolve(process.cwd(), "var/oauth-store.json"));
   if (production && oauthStorePath === "") throw new Error("OAUTH_STORE_PATH is required");
   return {
     issuer,
     mcpResource,
     actionsAudience,
+    widgetDomain,
     oauthStorePath,
     allowedOrigins: readAllowedOrigins(env, production),
     accessTokenTtlSeconds: readNumber(env, "ACCESS_TOKEN_TTL_SECONDS", 900, production),
@@ -79,6 +82,13 @@ function readIssuerUrl(env: NodeJS.ProcessEnv, production: boolean): string {
   const url = new URL(issuer);
   if (url.pathname !== "/") throw new Error("PUBLIC_ISSUER_URL must not include a path");
   return issuer;
+}
+
+function readOriginUrl(env: NodeJS.ProcessEnv, key: string, fallback: string, production: boolean): string {
+  const value = readHttpUrl(env, key, fallback, production);
+  const url = new URL(value);
+  if (url.origin !== value) throw new Error(`${key} must be an origin`);
+  return url.origin;
 }
 
 function readAllowedOrigins(env: NodeJS.ProcessEnv, production: boolean): string[] {

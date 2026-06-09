@@ -20,6 +20,8 @@ Every UI resource has a stable URI, MIME type, HTML content, metadata, and optio
 
 Use `ui://widget/name-v1.html` for service-hosted component templates. Use an `https://` URI for resources fetched directly by the client from that origin.
 
+The service applies the configured widget origin to every MCP Apps HTML resource during `resources/read`. The origin appears as `_meta.ui.domain` and `_meta["openai/widgetDomain"]`.
+
 ## Developer Flow
 
 1. Create a resource module under `mcp/resources/`.
@@ -128,6 +130,7 @@ Treat HTML, JavaScript, CSS, metadata, domains, and resource URIs as security-se
 | Tool auth | Use the same scopes on the render tool that reads or returns protected data. |
 | CSP | Declare every network, asset, and frame origin the component needs. |
 | Domain | Use an origin with no path, query, fragment, username, or password. |
+| Widget origin | Use a unique origin for each submitted ChatGPT app. |
 | Secrets | Keep tokens, session IDs, cookies, client secrets, and private user data out of HTML and metadata. |
 | Output | Return protected data through `structuredContent` and component-only `_meta` after the tool is authorized. |
 

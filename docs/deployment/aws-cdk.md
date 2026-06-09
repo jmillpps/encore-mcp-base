@@ -26,6 +26,7 @@ Optional deployment inputs:
 | Variable | Purpose |
 | --- | --- |
 | `CDK_ALLOWED_ORIGINS` | Browser origins allowed by the service. Default allows ChatGPT origins. |
+| `CDK_WIDGET_DOMAIN` | ChatGPT Apps widget origin. Default is the public service origin. |
 
 `CDK_APP_NAME` and `CDK_ENVIRONMENT_NAME` form AWS resource names. `CDK_SERVICE_NAME` controls the systemd unit name, Docker container name, runtime directories, OAuth store path, and bootstrap logs on the EC2 instance.
 
@@ -76,6 +77,7 @@ CDK inputs are validated before synthesis:
 | Parameter prefix | Absolute Parameter Store path with no reserved prefix. |
 | Instance type | EC2 instance type shape. |
 | External upstream URLs | HTTPS URLs with public hostnames and no credentials, query strings, or fragments. |
+| Widget domain | HTTPS origin with a public hostname and no path. |
 | External upstream scopes | Whitespace-separated scopes containing `openid`. |
 | External token auth method | `client_secret_post` or `client_secret_basic`. |
 
