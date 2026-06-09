@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { ServiceError } from "../../shared/errors.ts";
+import { readConfig } from "../../shared/config.ts";
 import { defineToolResultCardWidget, toolResultCardBaseStylePath, widgetBridgeScriptPath } from "../../mcp/widgets/tool-result-card.ts";
 import { defineWidget, defineWidgetBase, scriptAsset, styleAsset } from "../../mcp/widgets/widget-definition.ts";
+import type { McpResourceDefinition } from "../../mcp/resource-types.ts";
 
-test("widget framework composes base assets, child assets, and CSP metadata", () => {
+test("widget framework composes base assets, child assets, and CSP metadata", async () => {
   const base = defineWidgetBase({
     assets: [styleAsset("/app-ui/framework-base-v1.css", "body { margin: 0; }")],
     widget: {
@@ -37,9 +39,9 @@ test("widget framework composes base assets, child assets, and CSP metadata", ()
   });
 
   assert.deepEqual(widget.assets.map((asset) => asset.path), ["/app-ui/framework-base-v1.css", "/app-ui/framework-card-v1.js"]);
-  const content = firstContent(widget.resource.contents);
-  assert.match(String(content.text), /framework-base-v1\.css/);
-  assert.match(String(content.text), /framework-card-v1\.js/);
+  const content = await firstContent(widget.resource.contents);
+  assert.match(String(content.text), /https:\/\/widgets\.example\.test\/app-ui\/framework-base-v1\.css/);
+  assert.match(String(content.text), /https:\/\/widgets\.example\.test\/app-ui\/framework-card-v1\.js/);
   const meta = requireRecord(content._meta);
   const ui = requireRecord(meta.ui);
   assert.equal(ui.prefersBorder, true);
@@ -58,7 +60,7 @@ test("widget framework composes base assets, child assets, and CSP metadata", ()
   assert.deepEqual(openAiCsp.redirect_domains, ["https://redirect.example.test"]);
 });
 
-test("tool result card widgets inherit shared bridge and base card assets", () => {
+test("tool result card widgets inherit shared bridge and base card assets", async () => {
   const widget = defineToolResultCardWidget({
     resourceUri: "ui://widget/example-tool-card-v1.html",
     name: "example-tool-card",
@@ -94,10 +96,10 @@ test("tool result card widgets inherit shared bridge and base card assets", () =
     "/app-ui/example-tool-card-v1.css",
     "/app-ui/example-tool-card-v1.js",
   ]);
-  const html = String(firstContent(widget.resource.contents).text);
+  const html = String((await firstContent(widget.resource.contents)).text);
   assert.equal(html.includes("<style"), false);
-  assert.match(html, /example-tool-card-v1\.css/);
-  assert.match(html, /example-tool-card-v1\.js/);
+  assert.match(html, /https:\/\/widgets\.example\.test\/app-ui\/example-tool-card-v1\.css/);
+  assert.match(html, /https:\/\/widgets\.example\.test\/app-ui\/example-tool-card-v1\.js/);
   assert.match(widget.assets.find((asset) => asset.path === widgetBridgeScriptPath)?.body ?? "", /globalThis\.mcpWidget/);
   assert.match(widget.assets.find((asset) => asset.path === "/app-ui/example-tool-card-v1.js")?.body ?? "", /owner\.name/);
 });
@@ -152,7 +154,8 @@ function requireRecord(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
-function firstContent(contents: unknown): Record<string, unknown> {
-  assert.ok(Array.isArray(contents));
-  return requireRecord(contents[0]);
+async function firstContent(contents: McpResourceDefinition["contents"]): Promise<Record<string, unknown>> {
+  const resolved = Array.isArray(contents) ? contents : await contents({ config: readConfig({ WIDGET_DOMAIN: "https://widgets.example.test" }), rateLimitSubject: "test" });
+  assert.ok(Array.isArray(resolved));
+  return requireRecord(resolved[0]);
 }

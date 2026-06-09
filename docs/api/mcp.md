@@ -109,7 +109,7 @@ Current resources:
 
 `resources/read` validates the URI, enforces resource scopes, applies the MCP resource read rate limit, and returns one or more content objects. UI resources return HTML text content with `_meta.ui` metadata and ChatGPT compatibility aliases.
 
-UI resources load first-party JavaScript and CSS from versioned `/app-ui/` paths. The configured widget origin appears in both widget-domain metadata fields and CSP resource-domain metadata fields.
+UI resource modules declare first-party JavaScript and CSS with versioned `/app-ui/` paths. `resources/read` returns HTML asset tags with configured-origin URLs. The configured widget origin appears in both widget-domain metadata fields and CSP resource-domain metadata fields.
 
 UI resource metadata includes:
 

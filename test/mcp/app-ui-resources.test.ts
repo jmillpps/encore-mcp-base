@@ -51,7 +51,7 @@ test("MCP Apps UI resources expose capabilities, descriptors, contents, and rend
   assert.equal(healthContent.mimeType, appUiResourceMimeType);
   const healthHtml = requireString(healthContent.text, "health card html");
   assert.match(healthHtml, /Health status/);
-  assertCspSafeHtml(healthHtml, [toolResultCardBaseStylePath, healthStatusCardStylePath], [widgetBridgeScriptPath, healthStatusCardScriptPath]);
+  assertCspSafeHtml(healthHtml, service.origin, [toolResultCardBaseStylePath, healthStatusCardStylePath], [widgetBridgeScriptPath, healthStatusCardScriptPath]);
   assertResourceMeta(requireRecord(healthContent._meta, "health card metadata"), service.origin);
 
   const healthTool = await callTool(service, sessionId, "health.status_card", authorization);
@@ -96,7 +96,7 @@ test("MCP protected UI resources enforce OAuth scopes on resource reads and tool
   assert.equal(profileContent.mimeType, appUiResourceMimeType);
   const profileHtml = requireString(profileContent.text, "profile card html");
   assert.match(profileHtml, /Authenticated user/);
-  assertCspSafeHtml(profileHtml, [toolResultCardBaseStylePath, profileSummaryCardStylePath], [widgetBridgeScriptPath, profileSummaryCardScriptPath]);
+  assertCspSafeHtml(profileHtml, service.origin, [toolResultCardBaseStylePath, profileSummaryCardStylePath], [widgetBridgeScriptPath, profileSummaryCardScriptPath]);
   assertResourceMeta(requireRecord(profileContent._meta, "profile card metadata"), service.origin);
 
   const profileCard = await callTool(service, sessionId, "identity.profile_card", bearer(validFlow.tokens.access_token));
@@ -198,11 +198,11 @@ function assertResourceMeta(meta: Record<string, unknown>, widgetDomain: string)
   assert.deepEqual(openAiCsp.resource_domains, [widgetDomain]);
 }
 
-function assertCspSafeHtml(html: string, stylePaths: readonly string[], scriptPaths: readonly string[]): void {
+function assertCspSafeHtml(html: string, origin: string, stylePaths: readonly string[], scriptPaths: readonly string[]): void {
   assert.equal(html.includes("<style"), false);
   assert.equal(html.includes("type=\"module\""), false);
-  for (const stylePath of stylePaths) assert.match(html, new RegExp(`<link rel="stylesheet" href="${escapeRegExp(stylePath)}">`));
-  for (const scriptPath of scriptPaths) assert.match(html, new RegExp(`<script src="${escapeRegExp(scriptPath)}"></script>`));
+  for (const stylePath of stylePaths) assert.match(html, new RegExp(`<link rel="stylesheet" href="${escapeRegExp(`${origin}${stylePath}`)}">`));
+  for (const scriptPath of scriptPaths) assert.match(html, new RegExp(`<script src="${escapeRegExp(`${origin}${scriptPath}`)}"></script>`));
 }
 
 async function assertAsset(origin: string, path: string, contentType: string, bodyPattern: RegExp): Promise<void> {

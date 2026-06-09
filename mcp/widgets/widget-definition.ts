@@ -52,7 +52,7 @@ export function defineWidget(options: WidgetOptions): WidgetDefinition {
   validateWidgetOptions(options);
   const assets = mergeAssets(options.base?.assets ?? [], options.assets);
   if (assets.length === 0) throw invalidWidget();
-  const html = `${options.markup.trim()}\n${assetTags(assets)}`;
+  const html = (assetOrigin = "") => `${options.markup.trim()}\n${assetTags(assets, assetOrigin)}`;
   return {
     resourceUri: options.resourceUri,
     assets,
@@ -61,7 +61,7 @@ export function defineWidget(options: WidgetOptions): WidgetDefinition {
       name: options.name,
       title: options.title,
       description: options.description,
-      html,
+      html: (context) => html(context.config.widgetDomain),
       requiredScopes: options.requiredScopes,
       widget: mergeWidget(options.base?.widget, options.widget),
     }),
@@ -76,13 +76,14 @@ export function styleAsset(path: string, body: string): WidgetAssetDefinition {
   return { kind: "style", path, contentType: "text/css; charset=utf-8", body };
 }
 
-function assetTags(assets: readonly WidgetAssetDefinition[]): string {
-  return assets.map(assetTag).join("\n");
+function assetTags(assets: readonly WidgetAssetDefinition[], origin: string): string {
+  return assets.map((asset) => assetTag(asset, origin)).join("\n");
 }
 
-function assetTag(asset: WidgetAssetDefinition): string {
-  if (asset.kind === "style") return `<link rel="stylesheet" href="${asset.path}">`;
-  return `<script src="${asset.path}"></script>`;
+function assetTag(asset: WidgetAssetDefinition, origin: string): string {
+  const url = `${origin}${asset.path}`;
+  if (asset.kind === "style") return `<link rel="stylesheet" href="${url}">`;
+  return `<script src="${url}"></script>`;
 }
 
 function validateWidgetOptions(options: WidgetOptions): void {

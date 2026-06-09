@@ -70,7 +70,7 @@ export interface AppHtmlResourceOptions {
   name: string;
   title?: string;
   description?: string;
-  html: string;
+  html: string | ((context: ResourceContext) => string);
   icons?: Record<string, unknown>[];
   annotations?: McpResourceAnnotations;
   size?: number;

@@ -66,7 +66,7 @@ The service exposes ChatGPT-rendered UI templates through MCP resources:
 | `ui://widget/health-status-card-v1.html` | none | Service health card. |
 | `ui://widget/profile-summary-card-v1.html` | `openid profile email` | Authenticated profile card. |
 
-ChatGPT reads these resources through `resources/list` and `resources/read`. UI resources use `text/html;profile=mcp-app` and include CSP metadata. Protected UI resources require the same scopes as the protected render tool. The templates load shared widget framework assets and feature-specific card assets from `/app-ui/`.
+ChatGPT reads these resources through `resources/list` and `resources/read`. UI resources use `text/html;profile=mcp-app` and include CSP metadata. Protected UI resources require the same scopes as the protected render tool. The templates load shared widget framework assets and feature-specific card assets from configured-origin `/app-ui/` URLs.
 
 ## ChatGPT Configuration Steps
 

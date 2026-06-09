@@ -39,6 +39,8 @@ Every UI resource has a stable URI, MIME type, HTML content, metadata, and optio
 
 Use `ui://widget/name-v1.html` for service-hosted component templates. Use versioned `/app-ui/name-v1.js` and `/app-ui/name-v1.css` paths for browser assets.
 
+Widget modules declare service-root asset paths. During `resources/read`, the framework renders each asset tag with the configured widget origin, such as `https://service.example.com/app-ui/name-v1.js`.
+
 The service applies the configured widget origin during `resources/read`. The origin appears as `_meta.ui.domain` and `_meta["openai/widgetDomain"]`.
 
 The service adds the configured widget origin to `_meta.ui.csp.resourceDomains` and `_meta["openai/widgetCSP"].resource_domains` during `resources/read`. ChatGPT can load the first-party JavaScript and CSS assets from that origin.
@@ -77,10 +79,10 @@ Choose the highest-level builder that matches the component. Use `defineToolResu
 3. The builder returns an MCP resource definition and its assets.
 4. `mcp/widgets/index.ts` registers the widget, collects resources, and collects unique assets.
 5. `mcp/resource-registry.ts` exposes the resource through `resources/list` and `resources/read`.
-6. `mcp/widgets/runtime-metadata.ts` adds the configured widget origin during `resources/read`.
+6. The widget resource renderer adds the configured widget origin to HTML asset tags during `resources/read`.
 7. `mcp/endpoints.widget-assets.ts` exposes each asset through an exact public route.
 8. A render tool links the UI resource through `toolUiResource`.
-9. ChatGPT calls the render tool, receives `structuredContent`, reads the UI resource, and loads the asset paths from `/app-ui/*`.
+9. ChatGPT calls the render tool, receives `structuredContent`, reads the UI resource, and loads absolute asset URLs from the configured widget origin.
 
 ## Developer Flow
 
@@ -287,7 +289,7 @@ The runtime adds `WIDGET_DOMAIN` to the resource-domain metadata. Widget modules
 
 Widget assets are public read-only files served from exact versioned paths. Use `/app-ui/name-v1.js` for JavaScript and `/app-ui/name-v1.css` for CSS. Register every asset route explicitly in `mcp/endpoints.widget-assets.ts`.
 
-Keep executable widget behavior in `scriptAsset` entries. Keep visual rules in `styleAsset` entries. `defineWidget` adds asset tags to the HTML template and returns a resource definition for the MCP registry.
+Keep executable widget behavior in `scriptAsset` entries. Keep visual rules in `styleAsset` entries. `defineWidget` adds configured-origin asset tags to the HTML template and returns a resource definition for the MCP registry.
 
 Change the resource URI and asset path version when a template, asset, or data contract changes in a breaking way.
 
@@ -335,7 +337,7 @@ Add live MCP tests for every UI resource feature:
 - Interactive descriptors expose `_meta["openai/widgetAccessible"]` when enabled.
 - `resources/list` exposes descriptors with `text/html;profile=mcp-app`.
 - `resources/read` returns HTML content with UI metadata.
-- UI HTML references inherited and widget-specific CSS and JavaScript assets.
+- UI HTML references inherited and widget-specific CSS and JavaScript assets with configured-origin URLs.
 - Widget asset endpoints return public CSS and JavaScript with safe response headers.
 - Protected resources return scope challenges for missing scopes.
 - Render tools return schema-valid `structuredContent`.
@@ -354,7 +356,7 @@ node --experimental-strip-types --test --test-concurrency=1 test/mcp/app-ui-reso
 | --- | --- |
 | ChatGPT shows structured content with no component | Confirm the render tool descriptor has `_meta.ui.resourceUri` and `_meta["openai/outputTemplate"]`. |
 | ChatGPT reports a missing widget domain | Confirm `WIDGET_DOMAIN` is set to a unique origin and `resources/read` returns `_meta.ui.domain`. |
-| Browser blocks widget assets | Confirm `/app-ui/*` routes return `200`, expected content types, and CSP resource-domain metadata includes the widget origin. |
+| Browser blocks widget assets | Confirm `/app-ui/*` routes return `200`, HTML asset tags use configured-origin URLs, and CSP resource-domain metadata includes the widget origin. |
 | Protected card shows fallback values | Confirm the render tool returns the expected `structuredContent` after scope enforcement succeeds. |
 | Component fetches fail | Confirm the target origin is present in `widget.csp.connectDomains` and the endpoint accepts the component request. |
 | Component tool calls fail | Confirm `_meta.ui.visibility` includes `app`, `widgetAccessible` is enabled when ChatGPT needs the alias, and the target tool enforces scopes. |

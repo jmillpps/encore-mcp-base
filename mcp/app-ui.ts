@@ -1,6 +1,6 @@
 import { ServiceError } from "../shared/errors.ts";
 import { isResourceUri } from "./media-validation.ts";
-import { appUiResourceMimeType, type AppHtmlResourceOptions, type AppUiCsp, type McpResourceDefinition, type ToolUiMetadata, type ToolUiVisibility } from "./resource-types.ts";
+import { appUiResourceMimeType, type AppHtmlResourceOptions, type AppUiCsp, type McpResourceContent, type McpResourceDefinition, type ResourceContext, type ToolUiMetadata, type ToolUiVisibility } from "./resource-types.ts";
 
 const visibilityValues = new Set(["model", "app"]);
 
@@ -32,7 +32,7 @@ export function appHtmlResource(options: AppHtmlResourceOptions): McpResourceDef
     ...(options.size !== undefined ? { size: options.size } : {}),
     mimeType: appUiResourceMimeType,
     requiredScopes: options.requiredScopes ?? [],
-    contents: [{ uri: options.uri, mimeType: appUiResourceMimeType, text: options.html, ...(Object.keys(meta).length > 0 ? { _meta: meta } : {}) }],
+    contents: appHtmlContents(options, meta),
   };
 }
 
@@ -81,11 +81,31 @@ export function toolUiDescriptorMeta(ui: ToolUiMetadata | undefined): Record<str
 function assertAppHtmlResourceOptions(options: AppHtmlResourceOptions): void {
   if (!isResourceUri(options.uri)) throw invalidResourceOptions();
   if (!options.name || typeof options.name !== "string") throw invalidResourceOptions();
-  if (typeof options.html !== "string" || options.html.length === 0) throw invalidResourceOptions();
+  if (!isHtmlContent(options.html)) throw invalidResourceOptions();
   if (options.widget?.domain !== undefined && !isOrigin(options.widget.domain)) throw invalidResourceOptions();
   if (options.widget?.csp !== undefined && !isCsp(options.widget.csp)) throw invalidResourceOptions();
   if (options.meta !== undefined && !isRecord(options.meta)) throw invalidResourceOptions();
   if (options.widget?.ui !== undefined && !isRecord(options.widget.ui)) throw invalidResourceOptions();
+}
+
+function appHtmlContents(options: AppHtmlResourceOptions, meta: Record<string, unknown>): McpResourceDefinition["contents"] {
+  const html = options.html;
+  if (typeof html === "string") return [appHtmlContent(options.uri, html, meta)];
+  return async (context: ResourceContext) => [appHtmlContent(options.uri, html(context), meta)];
+}
+
+function appHtmlContent(uri: string, html: string, meta: Record<string, unknown>): McpResourceContent {
+  if (html.length === 0) throw invalidResourceOptions();
+  return {
+    uri,
+    mimeType: appUiResourceMimeType,
+    text: html,
+    ...(Object.keys(meta).length > 0 ? { _meta: meta } : {}),
+  };
+}
+
+function isHtmlContent(value: unknown): value is AppHtmlResourceOptions["html"] {
+  return (typeof value === "string" && value.length > 0) || typeof value === "function";
 }
 
 function standardCsp(csp: AppUiCsp): Record<string, unknown> {
