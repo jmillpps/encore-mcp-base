@@ -29,7 +29,8 @@ Security is part of every service boundary. Public HTTP input, OAuth metadata, t
 | Rate limits | Durable buckets apply to OAuth endpoints, MCP tools, and MCP resource reads. |
 | Browser origins | MCP transport origins are validated and CORS headers are pinned. |
 | Query tokens | Public endpoints reject `access_token` URI query parameters. |
-| Widget CSP | UI resources pin widget origin and static asset origin through resource metadata. |
+| Widget CSP | UI resources pin widget origin, static asset origin, connection origins, frame origins, and redirect origins through resource metadata. |
+| Widget framework | Widget builders reject inline executable markup, unsafe asset paths, duplicate asset conflicts, unsafe theme values, and malformed field mappings. |
 | OpenAPI schema | `/actions/openapi.json` is public, read-only, and generated from the configured issuer. |
 | Store safety | Store reads reject symlinks, shared file permissions, malformed JSON, and upward path traversal. |
 | Metadata clients | Metadata documents and JWKS locations are treated as untrusted network input. |
@@ -66,7 +67,11 @@ MCP tools validate descriptors at registry creation and validate tool output bef
 
 MCP resources validate descriptor shape, resource URI schemes, MIME types, content shape, metadata objects, CSP origins, and widget domains before exposure. UI resource metadata avoids secrets and pins network access through explicit CSP fields.
 
+Widget definitions compose inherited base assets and feature assets through the widget framework. The registry de-duplicates identical inherited assets and rejects conflicting asset definitions.
+
 Widget asset endpoints are public read-only routes with exact versioned paths. Asset responses set strict content types, `nosniff`, no-referrer policy, cross-origin resource policy, and immutable cache headers. Widget scripts render data from `window.openai.toolOutput` and `ui/notifications/tool-result` without storing tokens or secrets.
+
+Component-callable tools use explicit `_meta.ui.visibility` and optional `_meta["openai/widgetAccessible"]` metadata. Protected component-callable tools keep the same scope checks, bearer validation, input validation, and output validation as model-callable tools.
 
 ## Production Security
 

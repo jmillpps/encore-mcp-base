@@ -54,6 +54,7 @@ export interface ToolUiMetadata {
   resourceUri: string;
   visibility?: ToolUiVisibility[];
   openAiOutputTemplate?: string | false;
+  widgetAccessible?: boolean;
   meta?: Record<string, unknown>;
 }
 

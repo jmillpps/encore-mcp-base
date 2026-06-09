@@ -57,10 +57,12 @@ ChatGPT iframes load UI assets from the configured widget origin after `resource
 Widget asset requests use these steps:
 
 1. The iframe reads versioned CSS and JavaScript paths from the HTML template.
-2. Exact public raw endpoints under `/app-ui/` return the asset content.
-3. Asset responses set content type, immutable cache headers, `x-content-type-options`, `cross-origin-resource-policy`, and `referrer-policy`.
-4. The JavaScript reads initial bridge state from `window.openai`.
-5. The JavaScript listens for `ui/notifications/tool-result` and renders `structuredContent`.
+2. Widget definitions inherit base assets through `defineWidgetBase` and add feature assets through `defineWidget`.
+3. `mcp/widgets/index.ts` collects each unique asset path and rejects conflicting definitions.
+4. Exact public raw endpoints under `/app-ui/` return the asset content.
+5. Asset responses set content type, immutable cache headers, `x-content-type-options`, `cross-origin-resource-policy`, and `referrer-policy`.
+6. The shared bridge JavaScript reads initial state from `window.openai`.
+7. The shared bridge listens for `ui/notifications/tool-result` and derived widgets render `structuredContent`.
 
 ## Actions Requests
 

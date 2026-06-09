@@ -121,16 +121,18 @@ UI resource metadata includes:
 - `_meta["openai/widgetCSP"]`
 - `_meta["openai/widgetDomain"]`
 
-Render tools include `_meta.ui.resourceUri` and `_meta["openai/outputTemplate"]` in their descriptors.
+Render tools include `_meta.ui.resourceUri` and `_meta["openai/outputTemplate"]` in their descriptors. Interactive component tools can include `_meta["openai/widgetAccessible"]`.
 
 Current widget assets:
 
 | Path | Content type | Purpose |
 | --- | --- | --- |
-| `/app-ui/health-status-card-v1.css` | `text/css` | Health card styling. |
-| `/app-ui/health-status-card-v1.js` | `application/javascript` | Health card bridge handling. |
-| `/app-ui/profile-summary-card-v1.css` | `text/css` | Profile card styling. |
-| `/app-ui/profile-summary-card-v1.js` | `application/javascript` | Profile card bridge handling. |
+| `/app-ui/tool-result-card-base-v1.css` | `text/css` | Shared tool-result card layout and responsive styling. |
+| `/app-ui/mcp-widget-bridge-v1.js` | `application/javascript` | Shared MCP widget bridge for tool result delivery. |
+| `/app-ui/health-status-card-v1.css` | `text/css` | Health card theme variables. |
+| `/app-ui/health-status-card-v1.js` | `application/javascript` | Health card field renderer. |
+| `/app-ui/profile-summary-card-v1.css` | `text/css` | Profile card theme variables. |
+| `/app-ui/profile-summary-card-v1.js` | `application/javascript` | Profile card field renderer. |
 
 ## JSON-RPC Behavior
 

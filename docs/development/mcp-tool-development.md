@@ -26,7 +26,7 @@ Every tool implements `McpTool` from `mcp/tool-types.ts`:
 
 The registry validates descriptor shape, name uniqueness, scope syntax, schemas, annotations, icons, and invocation status text at runtime.
 
-Tools that render inline components set `ui` with `toolUiResource`. The descriptor includes `_meta.ui.resourceUri`, `_meta.ui.visibility`, and `_meta["openai/outputTemplate"]`. Use [MCP Apps UI Resources](mcp-app-ui-resources.md) for the resource, metadata, scope, and test contract.
+Tools that render inline components set `ui` with `toolUiResource`. The descriptor includes `_meta.ui.resourceUri`, `_meta.ui.visibility`, and `_meta["openai/outputTemplate"]`. Component-callable tools can set `widgetAccessible: true` to emit `_meta["openai/widgetAccessible"]`. Use [MCP Apps UI Resources](mcp-app-ui-resources.md) for the resource, metadata, scope, and test contract.
 
 ## Input And Output
 

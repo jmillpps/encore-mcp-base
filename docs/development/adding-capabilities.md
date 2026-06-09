@@ -7,9 +7,9 @@ New capabilities should use one implementation with protocol-specific adapters.
 1. Define the capability behavior and output shape.
 2. Add shared code when both Apps and Actions need the behavior.
 3. Add an MCP tool adapter under `mcp/tools/`.
-4. Add an MCP UI resource under `mcp/resources/` when the capability renders an inline ChatGPT component.
+4. Add an MCP UI widget under `mcp/widgets/` when the capability renders an inline ChatGPT component.
 5. Register the MCP tool in `mcp/tool-registry.ts`.
-6. Register the MCP UI resource in `mcp/resource-registry.ts` when a component is added.
+6. Register the MCP UI widget in `mcp/widgets/index.ts` when a component is added.
 7. Add an Actions endpoint under `actions/` when GPT Actions needs the behavior.
 8. Add the OpenAPI operation in `actions/openapi-document.ts`.
 9. Add live tests for each exposed surface.

@@ -55,7 +55,7 @@ Current tools:
 | `identity.profile_card` | `openid profile email` | Render the authenticated OIDC user profile as an inline UI card. |
 | `auth.session` | `openid` | Return token subject, client ID, audience, and scopes. |
 
-Tool descriptors include input schemas, output schemas, annotations, security schemes, invocation status text, and ChatGPT metadata. Render tools also include `_meta.ui.resourceUri` and `_meta["openai/outputTemplate"]`.
+Tool descriptors include input schemas, output schemas, annotations, security schemes, invocation status text, and ChatGPT metadata. Render tools also include `_meta.ui.resourceUri` and `_meta["openai/outputTemplate"]`. Interactive component tools can include `_meta["openai/widgetAccessible"]`.
 
 ## UI Resources
 
@@ -66,7 +66,7 @@ The service exposes ChatGPT-rendered UI templates through MCP resources:
 | `ui://widget/health-status-card-v1.html` | none | Service health card. |
 | `ui://widget/profile-summary-card-v1.html` | `openid profile email` | Authenticated profile card. |
 
-ChatGPT reads these resources through `resources/list` and `resources/read`. UI resources use `text/html;profile=mcp-app` and include CSP metadata. Protected UI resources require the same scopes as the protected render tool.
+ChatGPT reads these resources through `resources/list` and `resources/read`. UI resources use `text/html;profile=mcp-app` and include CSP metadata. Protected UI resources require the same scopes as the protected render tool. The templates load shared widget framework assets and feature-specific card assets from `/app-ui/`.
 
 ## ChatGPT Configuration Steps
 
@@ -80,7 +80,7 @@ Use these values in the GPT Apps MCP setup:
 6. Set scopes to `openid profile email`.
 7. Save the connector and start account linking.
 
-After account linking, ChatGPT initializes the MCP session and requests the tool list. The service returns `health.check`, `identity.profile`, and `auth.session`.
+After account linking, ChatGPT initializes the MCP session and requests the tool list. The service returns `health.check`, `health.status_card`, `identity.profile`, `identity.profile_card`, and `auth.session`.
 
 ## Transport Behavior
 

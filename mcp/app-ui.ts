@@ -36,15 +36,17 @@ export function appHtmlResource(options: AppHtmlResourceOptions): McpResourceDef
   };
 }
 
-export function toolUiResource(resourceUri: string, options: { visibility?: ToolUiVisibility[]; openAiOutputTemplate?: string | false; meta?: Record<string, unknown> } = {}): ToolUiMetadata {
+export function toolUiResource(resourceUri: string, options: { visibility?: ToolUiVisibility[]; openAiOutputTemplate?: string | false; widgetAccessible?: boolean; meta?: Record<string, unknown> } = {}): ToolUiMetadata {
   if (!isResourceUri(resourceUri)) throw invalidUiMetadata();
   if (options.openAiOutputTemplate !== undefined && options.openAiOutputTemplate !== false && !isResourceUri(options.openAiOutputTemplate)) throw invalidUiMetadata();
   if (options.visibility !== undefined && !isVisibility(options.visibility)) throw invalidUiMetadata();
+  if (options.widgetAccessible !== undefined && typeof options.widgetAccessible !== "boolean") throw invalidUiMetadata();
   if (options.meta !== undefined && !isRecord(options.meta)) throw invalidUiMetadata();
   return {
     resourceUri,
     ...(options.visibility ? { visibility: [...options.visibility] } : {}),
     ...(options.openAiOutputTemplate !== undefined ? { openAiOutputTemplate: options.openAiOutputTemplate } : {}),
+    ...(options.widgetAccessible !== undefined ? { widgetAccessible: options.widgetAccessible } : {}),
     ...(options.meta ? { meta: options.meta } : {}),
   };
 }
@@ -56,6 +58,7 @@ export function assertToolUiMetadata(value: unknown): void {
   if (!isResourceUri(ui.resourceUri)) throw invalidUiMetadata();
   if (ui.visibility !== undefined && !isVisibility(ui.visibility)) throw invalidUiMetadata();
   if (ui.openAiOutputTemplate !== undefined && ui.openAiOutputTemplate !== false && !isResourceUri(ui.openAiOutputTemplate)) throw invalidUiMetadata();
+  if (ui.widgetAccessible !== undefined && typeof ui.widgetAccessible !== "boolean") throw invalidUiMetadata();
   if (ui.meta !== undefined && !isRecord(ui.meta)) throw invalidUiMetadata();
 }
 
@@ -71,6 +74,7 @@ export function toolUiDescriptorMeta(ui: ToolUiMetadata | undefined): Record<str
     ...extra,
     ui: uiMeta,
     ...(outputTemplate ? { "openai/outputTemplate": outputTemplate } : {}),
+    ...(ui?.widgetAccessible !== undefined ? { "openai/widgetAccessible": ui.widgetAccessible } : {}),
   };
 }
 

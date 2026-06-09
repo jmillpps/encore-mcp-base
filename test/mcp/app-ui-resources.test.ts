@@ -5,7 +5,7 @@ import { bearer, callTool, initializeMcp, mcpAuthorization, postMcp } from "../s
 import { assertExposesHeader, readJson, requireRecord, requireString } from "../support/http.ts";
 import { startService } from "../support/service-process.ts";
 import { testUserProfile } from "../support/user-profile.ts";
-import { appHtmlResource, toolUiResource } from "../../mcp/app-ui.ts";
+import { appHtmlResource, toolUiDescriptorMeta, toolUiResource } from "../../mcp/app-ui.ts";
 import { listResources, readResource, resources } from "../../mcp/resource-registry.ts";
 import { appUiResourceMimeType, type McpResourceDefinition } from "../../mcp/resource-types.ts";
 import { listTools, tools, type McpTool } from "../../mcp/tool-registry.ts";
@@ -13,7 +13,7 @@ import { readOnlyToolAnnotations } from "../../mcp/tool-annotations.ts";
 import { emptyInputSchema, objectSchema, stringSchema } from "../../mcp/tool-schemas.ts";
 import { readConfig } from "../../shared/config.ts";
 import { ServiceError } from "../../shared/errors.ts";
-import { healthStatusCardScriptPath, healthStatusCardStylePath, healthStatusCardUri, profileSummaryCardScriptPath, profileSummaryCardStylePath, profileSummaryCardUri, widgetAssets } from "../../mcp/widgets/index.ts";
+import { healthStatusCardScriptPath, healthStatusCardStylePath, healthStatusCardUri, profileSummaryCardScriptPath, profileSummaryCardStylePath, profileSummaryCardUri, toolResultCardBaseStylePath, widgetAssets, widgetBridgeScriptPath } from "../../mcp/widgets/index.ts";
 
 test("MCP Apps UI resources expose capabilities, descriptors, contents, and render tool metadata", async (t) => {
   const service = await startService(t);
@@ -51,7 +51,7 @@ test("MCP Apps UI resources expose capabilities, descriptors, contents, and rend
   assert.equal(healthContent.mimeType, appUiResourceMimeType);
   const healthHtml = requireString(healthContent.text, "health card html");
   assert.match(healthHtml, /Health status/);
-  assertCspSafeHtml(healthHtml, healthStatusCardStylePath, healthStatusCardScriptPath);
+  assertCspSafeHtml(healthHtml, [toolResultCardBaseStylePath, healthStatusCardStylePath], [widgetBridgeScriptPath, healthStatusCardScriptPath]);
   assertResourceMeta(requireRecord(healthContent._meta, "health card metadata"), service.origin);
 
   const healthTool = await callTool(service, sessionId, "health.status_card", authorization);
@@ -96,7 +96,7 @@ test("MCP protected UI resources enforce OAuth scopes on resource reads and tool
   assert.equal(profileContent.mimeType, appUiResourceMimeType);
   const profileHtml = requireString(profileContent.text, "profile card html");
   assert.match(profileHtml, /Authenticated user/);
-  assertCspSafeHtml(profileHtml, profileSummaryCardStylePath, profileSummaryCardScriptPath);
+  assertCspSafeHtml(profileHtml, [toolResultCardBaseStylePath, profileSummaryCardStylePath], [widgetBridgeScriptPath, profileSummaryCardScriptPath]);
   assertResourceMeta(requireRecord(profileContent._meta, "profile card metadata"), service.origin);
 
   const profileCard = await callTool(service, sessionId, "identity.profile_card", bearer(validFlow.tokens.access_token));
@@ -105,10 +105,12 @@ test("MCP protected UI resources enforce OAuth scopes on resource reads and tool
 
 test("MCP Apps UI assets are public, versioned, and CSP-addressable", async (t) => {
   const service = await startService(t);
-  assert.equal(widgetAssets.length, 4);
-  await assertAsset(service.origin, healthStatusCardStylePath, "text/css", /Health status|\.status/);
-  await assertAsset(service.origin, healthStatusCardScriptPath, "application/javascript", /ui\/notifications\/tool-result/);
-  await assertAsset(service.origin, profileSummaryCardStylePath, "text/css", /Authenticated user|\.avatar/);
+  assert.equal(widgetAssets.length, 6);
+  await assertAsset(service.origin, toolResultCardBaseStylePath, "text/css", /\.widget-card/);
+  await assertAsset(service.origin, widgetBridgeScriptPath, "application/javascript", /ui\/notifications\/tool-result/);
+  await assertAsset(service.origin, healthStatusCardStylePath, "text/css", /--widget-page-background: #f6f1e8/);
+  await assertAsset(service.origin, healthStatusCardScriptPath, "application/javascript", /service\.name/);
+  await assertAsset(service.origin, profileSummaryCardStylePath, "text/css", /--widget-page-background: #eef4f8/);
   await assertAsset(service.origin, profileSummaryCardScriptPath, "application/javascript", /preferred_username/);
 });
 
@@ -126,6 +128,7 @@ test("MCP Apps UI helper validation rejects unsafe metadata, MIME types, and res
   assert.throws(() => appHtmlResource({ uri: "ui://widget/bad.html", name: "bad", html: "<html></html>", widget: { domain: "https://example.com/path" } }), ServiceError);
   assert.throws(() => appHtmlResource({ uri: "ui://widget/bad.html", name: "bad", html: "<html></html>", widget: { csp: { connectDomains: ["javascript:alert(1)"], resourceDomains: [] } } }), ServiceError);
   assert.throws(() => toolUiResource("javascript:alert(1)"), ServiceError);
+  assert.throws(() => toolUiResource("ui://widget/bad.html", { widgetAccessible: "yes" } as never), ServiceError);
 
   const badMime = { ...baseResource("ui://widget/bad-mime.html"), mimeType: "text/html\nbad" } as McpResourceDefinition;
   resources.push(badMime);
@@ -150,6 +153,19 @@ test("MCP Apps UI helper validation rejects unsafe metadata, MIME types, and res
   } finally {
     tools.splice(tools.indexOf(badTool), 1);
   }
+});
+
+test("MCP Apps UI descriptor helper supports explicit component tool access", () => {
+  const descriptorMeta = toolUiDescriptorMeta(toolUiResource("ui://widget/interactive-v1.html", {
+    visibility: ["app"],
+    openAiOutputTemplate: false,
+    widgetAccessible: true,
+  }));
+  const ui = requireRecord(descriptorMeta.ui, "descriptor ui metadata");
+  assert.equal(ui.resourceUri, "ui://widget/interactive-v1.html");
+  assert.deepEqual(ui.visibility, ["app"]);
+  assert.equal(descriptorMeta["openai/outputTemplate"], undefined);
+  assert.equal(descriptorMeta["openai/widgetAccessible"], true);
 });
 
 function assertToolTemplate(tool: Record<string, unknown>, resourceUri: string, securitySchemes: Record<string, unknown>[]): void {
@@ -182,11 +198,11 @@ function assertResourceMeta(meta: Record<string, unknown>, widgetDomain: string)
   assert.deepEqual(openAiCsp.resource_domains, [widgetDomain]);
 }
 
-function assertCspSafeHtml(html: string, stylePath: string, scriptPath: string): void {
+function assertCspSafeHtml(html: string, stylePaths: readonly string[], scriptPaths: readonly string[]): void {
   assert.equal(html.includes("<style"), false);
   assert.equal(html.includes("type=\"module\""), false);
-  assert.match(html, new RegExp(`<link rel="stylesheet" href="${escapeRegExp(stylePath)}">`));
-  assert.match(html, new RegExp(`<script src="${escapeRegExp(scriptPath)}"></script>`));
+  for (const stylePath of stylePaths) assert.match(html, new RegExp(`<link rel="stylesheet" href="${escapeRegExp(stylePath)}">`));
+  for (const scriptPath of scriptPaths) assert.match(html, new RegExp(`<script src="${escapeRegExp(scriptPath)}"></script>`));
 }
 
 async function assertAsset(origin: string, path: string, contentType: string, bodyPattern: RegExp): Promise<void> {

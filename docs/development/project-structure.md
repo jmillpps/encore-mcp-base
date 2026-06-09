@@ -50,7 +50,7 @@ Use this order before editing:
 | Durable OAuth state | `auth/storage/` |
 | MCP transport behavior | `mcp/endpoints.*.ts` and focused transport modules under `mcp/` |
 | MCP tool adapter | `mcp/tools/` plus `mcp/tool-registry.ts` |
-| MCP UI resource | `mcp/resources/`, `mcp/app-ui.ts`, `mcp/resource-registry.ts`, and `mcp/resource-validation.ts` |
+| MCP UI resource | `mcp/widgets/`, `mcp/app-ui.ts`, `mcp/resource-registry.ts`, and `mcp/resource-validation.ts` |
 | Actions route adapter | `actions/endpoints.*.ts` |
 | Actions bearer validation | `actions/action-bearer.ts` |
 | OpenAPI schema generation | `actions/openapi-document.ts` and `tools/export-openapi.ts` |
