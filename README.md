@@ -36,7 +36,7 @@ Start with the full documentation map at [docs/index.md](docs/index.md).
 | GPT Actions | REST action import and OAuth linking. | OpenAPI URL import, OAuth authorization URL, token URL, scopes, bearer-protected operations, read-only action metadata. |
 | OAuth 2.0 and OIDC | Account linking and identity. | Authorization code flow, PKCE, refresh tokens, resource indicators, authorization server metadata, protected resource metadata, userinfo, ID tokens, JWKS. |
 | OpenAPI 3.1 | Actions schema. | OAuth2 authorization code flow, JSON response schemas, operation IDs, schema descriptions, and compatibility checks. |
-| AWS CDK and Parameter Store | Deployment path. | EC2 runtime, Caddy HTTPS, ECR, CodeBuild, Route53, Systems Manager parameters, SecureString secrets, KMS. |
+| AWS CDK and Parameter Store | Deployment path. | EC2 runtime, Caddy HTTPS, DynamoDB state table, ECR, CodeBuild, Route53, Systems Manager parameters, SecureString secrets, KMS. |
 
 The source map for external specifications and platform documents lives in [External References](docs/reference/external-references.md).
 
@@ -53,10 +53,10 @@ flowchart LR
   Tools --> Capabilities["Shared capabilities"]
   Sse --> Tools
   Rest --> Capabilities
-  OAuth --> Store["OAuth store and signing keys"]
+  OAuth --> Store["DynamoDB or local file store and signing keys"]
 ```
 
-The main service runtime keeps protocol adapters at the edge. ChatGPT Apps reach MCP transports, GPT Actions reach REST endpoints, account linking reaches OAuth routes, and each path uses shared capability modules where behavior overlaps. OAuth uses the configured upstream OIDC provider and the OAuth store for client grants, tokens, and signing keys.
+The main service runtime keeps protocol adapters at the edge. ChatGPT Apps reach MCP transports, GPT Actions reach REST endpoints, account linking reaches OAuth routes, and each path uses shared capability modules where behavior overlaps. OAuth uses the configured upstream OIDC provider and the configured store for client grants, tokens, MCP sessions, rate limits, and production metadata cache entries.
 
 ## Widget Framework Runtime Shape
 
@@ -109,7 +109,7 @@ Export a local Actions schema file:
 npm run openapi -- --base-url http://localhost:4000 --out var/actions.openapi.json
 ```
 
-Local development supplies local URLs, generated signing keys, development OAuth clients, and a durable store at `var/oauth-store.json`. Automated tests start a local upstream OIDC provider for real authorization-code flows.
+Local development supplies local URLs, generated signing keys, development OAuth clients, and a local file store at `var/oauth-store.json`. Automated tests start a local upstream OIDC provider for real authorization-code flows.
 
 ## Local Defaults
 
@@ -119,7 +119,7 @@ Local development supplies local URLs, generated signing keys, development OAuth
 | OAuth callback | `http://localhost:4000/oauth/callback` |
 | Default scopes | `openid profile email` |
 | Development clients | `local-test`, `gpt-actions`, `gpt-apps-mcp` |
-| Durable store | `var/oauth-store.json` |
+| Local file store | `var/oauth-store.json` |
 | Actions schema export | `var/actions.openapi.json` |
 
 ## ChatGPT Setup Values
@@ -179,6 +179,8 @@ Feature widgets add their own versioned `/app-ui/*` JavaScript and CSS assets. T
 
 Current Actions operations are read-only and declare `x-openai-isConsequential: false`.
 
+MCP tools and Actions endpoints are connector adapters. Shared capability modules own reusable behavior such as service health, identity profile shaping, and token session data.
+
 ## OAuth And Identity
 
 The service acts as the OAuth provider that ChatGPT talks to during account linking. The upstream identity provider supplies the actual signed-in user identity through OIDC.
@@ -207,7 +209,7 @@ The service is built as production infrastructure from the first commit.
 - Query-string bearer tokens are rejected.
 - Duplicate authorization headers are rejected.
 - Production DynamoDB stores OAuth state, refresh tokens, rate-limit buckets, MCP sessions, and metadata cache entries. Local development uses the file store for OAuth state, refresh tokens, rate-limit buckets, and MCP sessions.
-- Sensitive tokens and session IDs are stored as hashes.
+- Authorization codes, refresh tokens, session identifiers, rate-limit subjects, and metadata cache keys are stored as hashes.
 - Diagnostics are designed for safe operational signals and secret redaction.
 - CORS origins are explicit and wildcard origins are rejected.
 
@@ -231,15 +233,15 @@ Security details live in [Security Model](docs/architecture/security-model.md), 
 | Path | Purpose |
 | --- | --- |
 | `auth/` | OAuth provider, upstream OIDC bridge, client registry, token issuance, storage, rate limits, discovery. |
-| `mcp/` | MCP transports, JSON-RPC protocol, sessions, tool registry, UI resource registry, widget framework, validation, auth challenges. |
-| `actions/` | GPT Actions endpoints, bearer validation, privacy endpoint, OpenAPI document. |
-| `shared/` | Configuration, HTTP helpers, JSON helpers, diagnostics, crypto, service metadata. |
+| `mcp/` | MCP transports, JSON-RPC protocol, sessions, tool adapters, UI resource registry, widget framework, validation, auth challenges. |
+| `actions/` | GPT Actions REST adapters, bearer validation, privacy endpoint, OpenAPI document. |
+| `shared/` | Configuration, HTTP helpers, JSON helpers, diagnostics, crypto, service metadata, shared service behavior. |
 | `ci/cdk/` | AWS CDK stack, deployment commands, runtime parameter seeding, image build helpers. |
 | `tools/` | Local operator tools and static repository checks. |
 | `test/` | Service behavior tests, protocol tests, security tests, CDK tests, support harnesses. |
 | `docs/` | API references, architecture, deployment, development, maintenance, and user guides. |
 
-The development rule is simple: put shared behavior in one focused module, then expose it through MCP and Actions adapters.
+The development rule is simple: put shared behavior in one focused module, then expose it through MCP tools and Actions REST adapters.
 
 ## Verification
 
@@ -267,13 +269,14 @@ The CDK path provisions:
 
 - EC2 on Amazon Linux 2023 ARM64.
 - Caddy HTTPS termination.
+- DynamoDB state table for OAuth grants, refresh tokens, MCP sessions, rate-limit buckets, and production metadata cache entries.
 - ECR image storage.
 - CodeBuild image builds.
 - Route53 DNS.
-- KMS key for SecureString values.
+- KMS keys for SecureString values and DynamoDB storage.
 - Systems Manager Parameter Store runtime configuration.
 - Optional Cognito upstream OIDC provider.
-- Runtime service container with DynamoDB state in production and local file state during development.
+- Runtime service container that reads the promoted image tag from Parameter Store.
 
 Operator-specific values stay outside tracked source. Use environment variables, CI secrets, ignored local shell files, or a secure operator runbook for account IDs, hosted zone IDs, domains, parameter paths, client secrets, and stack names.
 
@@ -283,6 +286,7 @@ Deployment guides:
 - [AWS CDK Deployment](docs/deployment/aws-cdk.md)
 - [CDK Operations](docs/deployment/cdk-operations.md)
 - [Runtime Parameters](docs/deployment/runtime-parameters.md)
+- [Source Build](docs/deployment/source-build.md)
 - [Identity Provider](docs/deployment/identity-provider.md)
 - [Release Verification](docs/deployment/release-verification.md)
 
