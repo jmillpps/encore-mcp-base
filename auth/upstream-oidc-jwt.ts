@@ -74,8 +74,12 @@ function jwtHeader(value: unknown, allowedAlgorithms: readonly JwsAlgorithm[]): 
   if (record.typ !== undefined && record.typ !== "JWT") throw invalidGrant("upstream token header is invalid");
   if (typeof record.alg !== "string" || !implementedAlgorithms.has(record.alg as JwsAlgorithm)) throw invalidGrant("upstream token algorithm is unsupported");
   if (!allowedAlgorithms.includes(record.alg as JwsAlgorithm)) throw invalidGrant("upstream token algorithm is unsupported");
-  if (typeof record.kid !== "string" || !/^[A-Za-z0-9._-]{1,128}$/.test(record.kid)) throw invalidGrant("upstream token key id is invalid");
+  if (!safeKeyId(record.kid)) throw invalidGrant("upstream token key id is invalid");
   return { alg: record.alg as JwsAlgorithm, kid: record.kid };
+}
+
+function safeKeyId(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0 && value.length <= 256 && !/[\u0000-\u001F\u007F]/.test(value);
 }
 
 function selectKey(jwks: JwksDocument, header: { alg: JwsAlgorithm; kid: string }): KeyObject {
