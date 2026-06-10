@@ -24,9 +24,9 @@ Authorization codes, upstream login states, refresh tokens, and MCP session IDs 
 
 ## Concurrent Updates
 
-Each update runs as a read-modify-write transaction. Updates for the same path use an in-process queue and a filesystem lock. Writes use a temporary file and atomic rename.
+Each update runs as a read-modify-write transaction. Updates for the same path use an in-process queue and a filesystem lock. Writes use a temporary file, fsync the temporary file, rename it into place, and fsync the containing directory.
 
-The lock wait times out after five seconds. Operators may remove a leftover lock file after confirming every writer process is stopped.
+The lock file contains a random owner token, process ID, hostname, creation time, and stale time. The lock wait times out after five seconds. Expired lock metadata is recovered automatically during acquisition.
 
 Safe stale-lock handling:
 

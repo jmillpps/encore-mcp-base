@@ -31,13 +31,16 @@ Raw OAuth client secrets, upstream IdP client secrets, and signing key material 
 | File type | Reads require a regular file. |
 | File permissions | Existing store files must be owner-only. |
 | Write permissions | Temporary store files are written with `0600`. |
+| Write durability | Temporary files are fsynced before rename. The containing directory is fsynced after rename. |
 | Parse errors | Malformed JSON stops the operation. |
 
 ## Update Model
 
 Each write uses a read-modify-write transaction. The service serializes same-process writes through an in-process queue and serializes multi-process writes through a filesystem lock.
 
-The lock file uses exclusive create mode and owner-only permissions. Lock acquisition polls every 10 milliseconds and fails after 5 seconds. Writes use temporary files and atomic rename after the in-memory state mutation succeeds.
+The lock file uses exclusive create mode and owner-only permissions. Lock acquisition polls every 10 milliseconds and fails after 5 seconds. Each lock file contains a random owner token, process ID, hostname, creation time, and stale time. Expired lock metadata is removed before the next acquisition attempt.
+
+Writes use temporary files and atomic rename after the in-memory state mutation succeeds. The runtime fsyncs the temporary file, renames it into place, and fsyncs the containing directory.
 
 ## Expiration And Replay Rules
 

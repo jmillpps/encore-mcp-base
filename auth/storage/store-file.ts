@@ -1,5 +1,5 @@
 import { constants } from "node:fs";
-import { mkdir, open, rename, writeFile, type FileHandle } from "node:fs/promises";
+import { mkdir, open, rename, rm, type FileHandle } from "node:fs/promises";
 import { dirname } from "node:path";
 import { randomToken } from "../../shared/crypto.ts";
 import { emptyStoreState, type OAuthStoreState } from "./store-records.ts";
@@ -61,8 +61,21 @@ export class StoreFile {
 
   private async write(state: OAuthStoreState): Promise<void> {
     const temp = `${this.path}.${randomToken(10)}.tmp`;
-    await writeFile(temp, `${JSON.stringify(serializeStore(state), null, 2)}\n`, { mode: 0o600 });
-    await rename(temp, this.path);
+    const directory = dirname(this.path);
+    try {
+      const handle = await open(temp, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL, 0o600);
+      try {
+        await handle.writeFile(`${JSON.stringify(serializeStore(state), null, 2)}\n`, "utf8");
+        await handle.sync();
+      } finally {
+        await handle.close();
+      }
+      await rename(temp, this.path);
+      await syncDirectory(directory);
+    } catch (error) {
+      await rm(temp, { force: true });
+      throw error;
+    }
   }
 }
 
@@ -75,5 +88,14 @@ function parseStoreJson(text: string): unknown {
     return JSON.parse(text);
   } catch {
     throw new Error("store file is malformed");
+  }
+}
+
+async function syncDirectory(path: string): Promise<void> {
+  const handle = await open(path, constants.O_RDONLY);
+  try {
+    await handle.sync();
+  } finally {
+    await handle.close();
   }
 }
