@@ -84,7 +84,7 @@ External mode creates service infrastructure and writes generic upstream OIDC ru
 
 Set `CDK_IDENTITY_PROVIDER_MODE=cognito` to let CDK create a quick-start upstream provider. The stack creates a Cognito user pool, app client, and hosted UI domain, then writes the generated Cognito endpoints into the same generic upstream OIDC runtime parameters.
 
-Cognito mode uses the service callback URL at `/oauth/callback`. The parameter seed command reads the generated Cognito app client secret and stores it as `UPSTREAM_OIDC_CLIENT_SECRET`.
+Cognito mode uses the service callback URL at `/oauth/callback`. The CDK deploy command reads the generated Cognito app client secret after CloudFormation completes and stores it as `UPSTREAM_OIDC_CLIENT_SECRET`.
 
 Create users in the deployed Cognito user pool through AWS Console, AWS CLI, or an operator workflow. Assign required profile attributes before the first login.
 
