@@ -65,6 +65,7 @@ test("DynamoDB MCP sessions reject duplicate request ids without raw id storage"
     requestIdHashes: [],
   });
   assert.deepEqual(await store.touchMcpSession("session_hash", "2025-11-25", true), { initialized: true });
+  assert.deepEqual(await store.touchMcpSession("session_hash", "2025-11-25"), { initialized: true });
   assert.equal(await store.reserveMcpRequestId("session_hash", sha256Base64Url("request-1")), true);
   assert.equal(await store.reserveMcpRequestId("session_hash", sha256Base64Url("request-1")), false);
   assert.equal(client.snapshotText().includes("request-1"), false);

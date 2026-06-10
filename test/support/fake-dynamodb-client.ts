@@ -15,6 +15,7 @@ export class FakeDynamoDbClient implements DynamoDbClient {
   }
 
   async putItem(input: PutItemInput): Promise<void> {
+    validateExpressionBindings(input);
     const id = keyId(input.Item);
     const existing = this.items.get(id);
     if (!conditionPasses(existing, input)) throw new DynamoDbConditionalCheckFailed();
@@ -22,6 +23,7 @@ export class FakeDynamoDbClient implements DynamoDbClient {
   }
 
   async updateItem(input: UpdateItemInput): Promise<void> {
+    validateExpressionBindings(input);
     const id = keyId(input.Key);
     const existing = this.items.get(id);
     if (!conditionPasses(existing, input)) throw new DynamoDbConditionalCheckFailed();
@@ -29,6 +31,7 @@ export class FakeDynamoDbClient implements DynamoDbClient {
   }
 
   async deleteItem(input: DeleteItemInput): Promise<DynamoDbItem | undefined> {
+    validateExpressionBindings(input);
     const id = keyId(input.Key);
     const existing = this.items.get(id);
     if (!conditionPasses(existing, input)) throw new DynamoDbConditionalCheckFailed();
@@ -46,6 +49,21 @@ export class FakeDynamoDbClient implements DynamoDbClient {
       if (action.Delete) await transactional.deleteItem(action.Delete);
     }
     this.items = copy;
+  }
+}
+
+function validateExpressionBindings(input: {
+  ConditionExpression?: string;
+  UpdateExpression?: string;
+  ExpressionAttributeNames?: Record<string, string>;
+  ExpressionAttributeValues?: Record<string, DynamoDbAttributeValue>;
+}): void {
+  const expression = [input.ConditionExpression, input.UpdateExpression].filter(Boolean).join(" ");
+  for (const name of Object.keys(input.ExpressionAttributeNames ?? {})) {
+    if (!expression.includes(name)) throw new Error(`unused expression attribute name ${name}`);
+  }
+  for (const name of Object.keys(input.ExpressionAttributeValues ?? {})) {
+    if (!expression.includes(name)) throw new Error(`unused expression attribute value ${name}`);
   }
 }
 

@@ -39,13 +39,15 @@ export async function touchMcpSession(
   validateMcpSession(item, protocolVersion, now);
   const initializedAt = readOptionalNumber(item, "initializedAt");
   const shouldInitialize = markInitialized && initializedAt === undefined;
+  const expressionAttributeNames: Record<string, string> = { "#lastSeenAt": "lastSeenAt", "#terminatedAt": "terminatedAt", "#expiresAt": "expiresAt" };
+  if (shouldInitialize) expressionAttributeNames["#initializedAt"] = "initializedAt";
   try {
     await ctx.client.updateItem({
       TableName: ctx.tableName,
       Key: key,
       UpdateExpression: shouldInitialize ? "SET #lastSeenAt = :now, #initializedAt = :now" : "SET #lastSeenAt = :now",
       ConditionExpression: "attribute_not_exists(#terminatedAt) AND #expiresAt > :now",
-      ExpressionAttributeNames: { "#lastSeenAt": "lastSeenAt", "#initializedAt": "initializedAt", "#terminatedAt": "terminatedAt", "#expiresAt": "expiresAt" },
+      ExpressionAttributeNames: expressionAttributeNames,
       ExpressionAttributeValues: { ":now": numberAttr(now) },
     });
   } catch (error) {
