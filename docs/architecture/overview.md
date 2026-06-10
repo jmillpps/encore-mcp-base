@@ -60,13 +60,13 @@ The same OAuth provider issues tokens for both GPT Apps and GPT Actions. Each en
 
 ## Durable State
 
-OAuth state, refresh tokens, rate-limit buckets, and MCP Streamable HTTP sessions are stored in one JSON file. Sensitive tokens, authorization codes, upstream states, and MCP session IDs are stored as SHA-256 base64url hashes.
+OAuth state, refresh tokens, rate-limit buckets, and MCP Streamable HTTP sessions are stored in the configured OAuth store. Production uses one DynamoDB table. Local development uses a JSON file. Sensitive tokens, authorization codes, upstream states, request IDs, and MCP session IDs are stored as SHA-256 base64url hashes.
 
 The store enforces owner-only permissions, rejects symlinks, serializes writes inside the process, serializes writes across processes with a lock file, writes temporary files with `0600`, and commits updates with atomic rename. Storage design is covered in [Storage Model](storage-model.md). Operator handling is covered in [Storage Maintenance](../maintenance/storage.md).
 
 ## Configuration Boundary
 
-Runtime configuration is read from environment variables and generated runtime files. Production startup requires public HTTPS URLs, explicit origins, explicit OAuth clients, upstream OIDC configuration, signing key material, positive token lifetimes, positive rate limits, and a durable store path.
+Runtime configuration is read from environment variables and generated runtime files. Production startup requires public HTTPS URLs, explicit origins, explicit OAuth clients, upstream OIDC configuration, signing key material, positive token lifetimes, positive rate limits, and DynamoDB store configuration.
 
 The AWS CDK path stores runtime parameters in Systems Manager Parameter Store. Secure values use SecureString parameters backed by KMS. Operator-specific account values, hosted zones, domains, parameter prefixes, stack names, client secrets, and resource IDs stay outside tracked source.
 

@@ -1,6 +1,6 @@
 # Storage Model
 
-The service stores OAuth, rate-limit, and MCP session state in one JSON file. The file is durable runtime state, owned by the service user, and protected by strict file-mode and lock rules.
+The service stores OAuth, rate-limit, and MCP session state through one configured store. Production deployments use DynamoDB. Local development uses the file store by default.
 
 ## Record Groups
 
@@ -20,7 +20,17 @@ The store keeps SHA-256 base64url hashes for authorization codes, upstream autho
 
 Raw OAuth client secrets, upstream IdP client secrets, and signing key material live in Parameter Store. The runtime store keeps OAuth state and session state.
 
-## File Rules
+## Production Store
+
+Production deployments use a single DynamoDB table with `pk` and `sk` primary keys, zero secondary indexes, TTL, point-in-time recovery, customer-managed KMS encryption, deletion protection, and retained table data. CDK writes `OAUTH_STORE_BACKEND`, `OAUTH_DYNAMODB_TABLE_NAME`, and `OAUTH_DYNAMODB_REGION` into Parameter Store.
+
+The DynamoDB table serves every runtime access pattern through direct primary-key operations. Refresh token rotation uses transaction writes across token, family, and rotation marker items. Replay detection uses the rotation marker and revokes the family metadata item.
+
+See [DynamoDB Store](dynamodb-store.md) for key names, access patterns, and security controls.
+
+## Local File Rules
+
+The local file store is durable runtime state for development. It is owned by the service user and protected by strict file-mode and lock rules.
 
 | Rule | Runtime behavior |
 | --- | --- |
@@ -34,7 +44,7 @@ Raw OAuth client secrets, upstream IdP client secrets, and signing key material 
 | Write durability | Temporary files are fsynced before rename. The containing directory is fsynced after rename. |
 | Parse errors | Malformed JSON stops the operation. |
 
-## Update Model
+## Local File Update Model
 
 Each write uses a read-modify-write transaction. The service serializes same-process writes through an in-process queue and serializes multi-process writes through a filesystem lock.
 
@@ -53,10 +63,8 @@ Writes use temporary files and atomic rename after the in-memory state mutation 
 | MCP request ID | Stored as a hash per session. Duplicate IDs are rejected. A session accepts up to 4096 request IDs. |
 | Rate-limit bucket | Resets after the configured rate-limit window. |
 
-## Production Path
+## Runtime Secret Placement
 
-The CDK deployment sets `OAUTH_STORE_PATH` to `/var/lib/<service-name>/oauth-store.json`. The container mounts `/var/lib/<service-name>` for durable store access.
-
-The runner writes runtime secrets under `/run/<service-name>` and mounts that directory read-only into the container.
+The runner writes runtime secrets under `/run/<service-name>` and mounts that directory read-only into the container. OAuth client secrets, upstream client secrets, signing keys, and Parameter Store values stay outside the DynamoDB table.
 
 Operator backup and restore rules are covered in [Storage Maintenance](../maintenance/storage.md). Parameter and secret placement are covered in [Runtime Parameters](../deployment/runtime-parameters.md).

@@ -49,7 +49,7 @@ Resource indicators bind access tokens to the intended audience. Resource errors
 | Client authentication | Supports `client_secret_post`, `client_secret_basic`, `private_key_jwt`, and local public clients from metadata documents. |
 | PKCE | Enforced by client policy. Production client records require PKCE unless a confidential GPT Actions client class is explicitly configured. |
 | Upstream OIDC | Uses service-owned PKCE state and validates upstream userinfo before issuing service tokens. |
-| Token storage | Authorization codes, upstream states, refresh tokens, and MCP session IDs are stored as hashes. |
+| Token storage | Authorization codes, upstream states, refresh tokens, MCP session IDs, MCP request IDs, and rate-limit subjects are stored as hashes. |
 
 ## Audience And Scope Failures
 
@@ -75,7 +75,7 @@ Component-callable tools use explicit `_meta.ui.visibility` and optional `_meta[
 
 ## Production Security
 
-Production configuration requires public HTTPS URLs, explicit clients, explicit token lifetimes, explicit rate limits, explicit store path, and signing key material. Startup fails when required security configuration is missing.
+Production configuration requires public HTTPS URLs, explicit clients, explicit token lifetimes, explicit rate limits, DynamoDB store configuration, and signing key material. Startup fails when required security configuration is missing.
 
 Production URL validation rejects private hosts, unsupported URL parts, wildcard origins, and insecure protocols. OAuth clients must provide explicit redirect URIs, allowed resources, allowed scopes, authentication method, PKCE policy, and client class.
 

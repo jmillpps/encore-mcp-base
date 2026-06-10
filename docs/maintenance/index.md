@@ -13,7 +13,7 @@ This section contains operational procedures for a running service. Use these pa
 
 ## Operating Rules
 
-- Treat runtime store files, signing keys, refresh tokens, OAuth client secrets, upstream client secrets, and Parameter Store values as sensitive.
+- Treat DynamoDB state, local runtime store files, signing keys, refresh tokens, OAuth client secrets, upstream client secrets, and Parameter Store values as sensitive.
 - Use production read commands that reveal only the field needed for the operation.
 - Capture verification evidence from public endpoints, CloudFormation outputs, Parameter Store names, service logs, and targeted service tests.
 - Preserve audience separation between MCP and Actions while troubleshooting tokens.

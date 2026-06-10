@@ -63,7 +63,7 @@ export async function expectServiceStartupFailure(t: TestContext, envOverrides: 
   const tempDir = await mkdtemp(join(tmpdir(), "mcp-service-failure-test-"));
   const child = spawn("encore", ["run", "--browser=never", "--port", String(port)], {
     cwd: projectRoot,
-    env: cleanEnv({ ...process.env, OAUTH_STORE_PATH: join(tempDir, "oauth-store.json"), ...envOverrides }),
+    env: cleanEnv({ ...process.env, ...envOverrides }),
     stdio: ["ignore", "pipe", "pipe"],
   });
   let output = "";

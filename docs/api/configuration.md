@@ -10,7 +10,9 @@ Production mode is active when `NODE_ENV=production`.
 | `MCP_RESOURCE_URL` | URL | Public MCP resource URL. HTTPS. Public hostname. Path ends with `/mcp`. |
 | `ACTIONS_AUDIENCE` | URL | Public Actions audience URL. HTTPS. Public hostname. |
 | `WIDGET_DOMAIN` | URL | ChatGPT Apps widget origin. HTTPS. Root path. Public hostname. Unique per app. |
-| `OAUTH_STORE_PATH` | file path | Durable OAuth store JSON path. |
+| `OAUTH_STORE_BACKEND` | enum | Production value is `dynamodb`. |
+| `OAUTH_DYNAMODB_TABLE_NAME` | string | DynamoDB table that stores OAuth, MCP session, and rate-limit state. |
+| `OAUTH_DYNAMODB_REGION` | string | AWS Region for the DynamoDB table. |
 | `ALLOWED_ORIGINS` | string list | Space-separated browser origins allowed for ChatGPT. |
 | `OAUTH_CLIENTS_JSON` | JSON array | Configured OAuth clients. |
 | `OAUTH_PRIVATE_KEY_PEM` or `OAUTH_PRIVATE_KEY_PEM_FILE` | PEM or file path | Active RSA private key source for token signing. |
@@ -50,6 +52,7 @@ Local development supplies defaults for URLs, origins, token lifetimes, rate lim
 | `MCP_RESOURCE_URL` | `http://localhost:4000/mcp` |
 | `ACTIONS_AUDIENCE` | `http://localhost:4000/actions` |
 | `WIDGET_DOMAIN` | `http://localhost:4000` |
+| `OAUTH_STORE_BACKEND` | `file` |
 | `OAUTH_STORE_PATH` | `var/oauth-store.json` |
 | `ALLOWED_ORIGINS` | `https://chatgpt.com https://chat.openai.com http://localhost:4000` |
 | `ACCESS_TOKEN_TTL_SECONDS` | `900` |
@@ -99,12 +102,12 @@ The upstream identity provider must register `UPSTREAM_OIDC_REDIRECT_URI` as an 
 
 ## Startup Validation
 
-Startup validation reads configuration, resolves the store path, loads clients, validates upstream OIDC settings, and loads signing keys. Production startup fails when required security material is missing or unsafe.
+Startup validation reads configuration, validates the configured storage backend, loads clients, validates upstream OIDC settings, and loads signing keys. Production startup fails when required security material is missing or unsafe.
 
 Signing keys must be RSA keys with at least 2048 bits. Key IDs use 1 to 128 safe characters. Previous public keys must have unique key IDs.
 
 ## CDK Runtime Parameters
 
-The CDK deployment writes runtime variables to AWS Systems Manager Parameter Store. The EC2 runner reads the configured parameter path, writes the container environment file, writes the private signing key file, and mounts durable state under `/var/lib/<service-name>`.
+The CDK deployment writes runtime variables to AWS Systems Manager Parameter Store. The EC2 runner reads the configured parameter path, writes the container environment file, writes the private signing key file, and runs the service with DynamoDB state table parameters.
 
 Use [Runtime Parameters](../deployment/runtime-parameters.md) for the Parameter Store values and [AWS CDK Deployment](../deployment/aws-cdk.md) for deployment inputs.

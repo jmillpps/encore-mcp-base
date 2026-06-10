@@ -48,7 +48,7 @@ The harness sets the service callback to:
 <service-origin>/oauth/callback
 ```
 
-Each test service receives a temporary OAuth store path. Each test cleans up its service process, provider server, and temporary store.
+Each local test service receives a temporary OAuth file store path. Each test cleans up its service process, provider server, and temporary store.
 
 ## Flow Harness
 

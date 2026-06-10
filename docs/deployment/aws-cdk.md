@@ -1,6 +1,6 @@
 # AWS CDK Deployment
 
-The CDK deployment provisions the production service on one EC2 instance with Route53 DNS, ECR image storage, CodeBuild image builds, Caddy HTTPS termination, AWS Systems Manager Parameter Store runtime configuration, and a selectable upstream identity provider mode.
+The CDK deployment provisions the production service on one EC2 instance with Route53 DNS, ECR image storage, CodeBuild image builds, Caddy HTTPS termination, AWS Systems Manager Parameter Store runtime configuration, one DynamoDB state table, and a selectable upstream identity provider mode.
 
 ## Required Deployment Inputs
 
@@ -28,9 +28,15 @@ Optional deployment inputs:
 | `CDK_ALLOWED_ORIGINS` | Browser origins allowed by the service. Default allows ChatGPT origins. |
 | `CDK_WIDGET_DOMAIN` | ChatGPT Apps widget origin. Default is the public service origin. |
 
-`CDK_APP_NAME` and `CDK_ENVIRONMENT_NAME` form AWS resource names. `CDK_SERVICE_NAME` controls the systemd unit name, Docker container name, runtime directories, OAuth store path, and bootstrap logs on the EC2 instance.
+`CDK_APP_NAME` and `CDK_ENVIRONMENT_NAME` form AWS resource names. `CDK_SERVICE_NAME` controls the systemd unit name, Docker container name, runtime directories, and bootstrap logs on the EC2 instance.
 
 Store operator-specific values in an ignored local shell file, CI secret store, or secure operator runbook. Keep account IDs, hosted zone IDs, real domains, identity provider tenant IDs, client secrets, stack names, and parameter paths out of tracked source files.
+
+## State Table
+
+The stack creates one DynamoDB table for OAuth grants, refresh tokens, MCP sessions, and rate-limit buckets. The table uses `pk` and `sk` keys, on-demand billing, TTL on `ttl`, point-in-time recovery, customer-managed KMS encryption, deletion protection, retained data, and zero secondary indexes.
+
+The instance role receives `DescribeTable`, `GetItem`, `PutItem`, `UpdateItem`, `DeleteItem`, and `TransactWriteItems` on the table.
 
 ## External Identity Provider Inputs
 

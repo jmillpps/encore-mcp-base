@@ -1,16 +1,20 @@
 # Storage Maintenance
 
-The OAuth store is a security boundary. It contains grant state, upstream login state, refresh token metadata, MCP session metadata, and rate-limit counters.
+The OAuth store is a security boundary. It contains grant state, upstream login state, refresh token metadata, MCP session metadata, and rate-limit counters. Production stores this state in DynamoDB. Local development stores this state in a JSON file.
 
-## File Protection
+## Production Protection
 
-The service creates parent directories with mode `0700` and store files with mode `0600`. Existing store files must be regular owner-only files.
+DynamoDB production state uses one table with TTL, point-in-time recovery, customer-managed KMS encryption, deletion protection, retained data, and primary-key access patterns. The EC2 role receives only direct item and transaction permissions for the table.
 
-The reader rejects symlinks, malformed JSON, unexpected record shapes, and files readable by group or other accounts.
+## Local File Protection
+
+The local file store creates parent directories with mode `0700` and store files with mode `0600`. Existing store files must be regular owner-only files.
+
+The local file reader rejects symlinks, malformed JSON, unexpected record shapes, and files readable by group or other accounts.
 
 ## Secret Handling
 
-Authorization codes, upstream login states, refresh tokens, and MCP session IDs are stored as SHA-256 hashes. Raw client secrets are stored outside the JSON registry. `OAUTH_CLIENTS_JSON` stores only client secret hashes.
+Authorization codes, upstream login states, refresh tokens, MCP session IDs, MCP request IDs, and rate-limit subjects are stored as SHA-256 hashes. Raw client secrets, upstream client secrets, and signing keys are stored outside the OAuth store. `OAUTH_CLIENTS_JSON` stores only client secret hashes.
 
 ## Record Review
 
@@ -22,7 +26,7 @@ Authorization codes, upstream login states, refresh tokens, and MCP session IDs 
 | MCP sessions | Review count, protocol version, created time, last-seen time, initialized time, and terminated time. |
 | Rate-limit buckets | Review count and reset time for the affected endpoint subject. |
 
-## Concurrent Updates
+## Local File Concurrent Updates
 
 Each update runs as a read-modify-write transaction. Updates for the same path use an in-process queue and a filesystem lock. Writes use a temporary file, fsync the temporary file, rename it into place, and fsync the containing directory.
 
@@ -36,9 +40,15 @@ Safe stale-lock handling:
 4. Remove only the lock file for the configured store path.
 5. Start one service process and verify a write path.
 
-## Backup And Restore
+## Production Backup And Restore
 
-Back up the store with file permissions preserved. A backup contains active OAuth grant state, upstream login state, refresh token families, MCP session metadata, and rate-limit counters.
+DynamoDB point-in-time recovery supports recovery of the production state table. Restore the table to a new table name, update `OAUTH_DYNAMODB_TABLE_NAME`, restart the service, and verify OAuth token refresh plus MCP session creation.
+
+Restore a signing key backup with the matching state table when active refresh tokens must remain usable across a recovery event.
+
+## Local Backup And Restore
+
+Back up the local store with file permissions preserved. A backup contains active OAuth grant state, upstream login state, refresh token families, MCP session metadata, and rate-limit counters.
 
 Restore steps:
 
@@ -48,7 +58,7 @@ Restore steps:
 4. Set mode `0700` on the parent directory.
 5. Start one service process and verify OAuth token refresh plus MCP session creation.
 
-Restore a signing key backup with the matching store when active refresh tokens must remain usable across a recovery event.
+Restore a signing key backup with the matching local store when active refresh tokens must remain usable across a recovery event.
 
 ## Verification After Restore
 

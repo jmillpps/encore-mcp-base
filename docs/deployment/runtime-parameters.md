@@ -20,7 +20,9 @@ The CDK stack writes these String parameters during deployment:
 | `MCP_RESOURCE_URL` | Public MCP resource URL. |
 | `ACTIONS_AUDIENCE` | Public Actions audience URL. |
 | `WIDGET_DOMAIN` | ChatGPT Apps widget origin. |
-| `OAUTH_STORE_PATH` | Instance-local durable store path. |
+| `OAUTH_STORE_BACKEND` | Fixed `dynamodb` production value. |
+| `OAUTH_DYNAMODB_TABLE_NAME` | DynamoDB state table name. |
+| `OAUTH_DYNAMODB_REGION` | DynamoDB state table Region. |
 | `ALLOWED_ORIGINS` | ChatGPT browser origins. |
 | `ACCESS_TOKEN_TTL_SECONDS` | Access token lifetime. |
 | `ID_TOKEN_TTL_SECONDS` | ID token lifetime. |
@@ -72,7 +74,7 @@ The EC2 service runner reads every parameter under `CDK_PARAMETER_PREFIX` with d
 
 The runner writes `OAUTH_PRIVATE_KEY_PEM` into `/run/<service-name>/oauth-private-key.pem` with file mode `0400`. The container receives `OAUTH_PRIVATE_KEY_PEM_FILE` and reads the key from that file.
 
-The durable OAuth store lives under `/var/lib/<service-name>/oauth-store.json`. The container mounts `/var/lib/<service-name>` for durable state and `/run/<service-name>` read-only for runtime secrets.
+The durable OAuth store lives in DynamoDB. The container receives table name and Region parameters through the environment file. The runner mounts `/run/<service-name>` read-only for runtime secrets.
 
 ## Secret Retrieval
 

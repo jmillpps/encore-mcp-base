@@ -7,7 +7,9 @@ export interface ServiceConfig {
   mcpResource: string;
   actionsAudience: string;
   widgetDomain: string;
+  oauthStoreBackend: OAuthStoreBackend;
   oauthStorePath: string;
+  oauthDynamoDb: DynamoDbStoreConfig;
   allowedOrigins: string[];
   accessTokenTtlSeconds: number;
   idTokenTtlSeconds: number;
@@ -18,6 +20,14 @@ export interface ServiceConfig {
   mcpSseMaxConnections: number;
   upstreamOidc: UpstreamOidcConfig;
   production: boolean;
+}
+
+export type OAuthStoreBackend = "file" | "dynamodb";
+
+export interface DynamoDbStoreConfig {
+  tableName: string;
+  region: string;
+  endpoint?: string;
 }
 
 export type UpstreamOidcTokenAuthMethod = "client_secret_post" | "client_secret_basic";
@@ -41,14 +51,17 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
   assertMcpResourceUrl(mcpResource, "MCP_RESOURCE_URL");
   const actionsAudience = readHttpUrl(env, "ACTIONS_AUDIENCE", `${issuer}/actions`, production);
   const widgetDomain = readOriginUrl(env, "WIDGET_DOMAIN", issuer, production);
-  const oauthStorePath = env.OAUTH_STORE_PATH ?? (production ? "" : resolve(process.cwd(), "var/oauth-store.json"));
-  if (production && oauthStorePath === "") throw new Error("OAUTH_STORE_PATH is required");
+  const oauthStoreBackend = readOAuthStoreBackend(env, production);
+  const oauthStorePath = readOAuthStorePath(env, oauthStoreBackend, production);
+  const oauthDynamoDb = readDynamoDbStoreConfig(env, oauthStoreBackend, production);
   return {
     issuer,
     mcpResource,
     actionsAudience,
     widgetDomain,
+    oauthStoreBackend,
     oauthStorePath,
+    oauthDynamoDb,
     allowedOrigins: readAllowedOrigins(env, production),
     accessTokenTtlSeconds: readNumber(env, "ACCESS_TOKEN_TTL_SECONDS", 900, production),
     idTokenTtlSeconds: readNumber(env, "ID_TOKEN_TTL_SECONDS", 300, production),
@@ -60,6 +73,49 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
     upstreamOidc: readUpstreamOidcConfig(env, issuer, production),
     production,
   };
+}
+
+function readOAuthStoreBackend(env: NodeJS.ProcessEnv, production: boolean): OAuthStoreBackend {
+  const value = env.OAUTH_STORE_BACKEND ?? (production ? "" : "file");
+  if (value === "file") {
+    if (production) throw new Error("OAUTH_STORE_BACKEND must be dynamodb in production");
+    return value;
+  }
+  if (value === "dynamodb") return value;
+  if (production && value === "") throw new Error("OAUTH_STORE_BACKEND is required");
+  throw new Error("OAUTH_STORE_BACKEND must be file or dynamodb");
+}
+
+function readOAuthStorePath(env: NodeJS.ProcessEnv, backend: OAuthStoreBackend, production: boolean): string {
+  if (backend !== "file") {
+    if (env.OAUTH_STORE_PATH) throw new Error("OAUTH_STORE_PATH requires file store backend");
+    return "";
+  }
+  const value = env.OAUTH_STORE_PATH ?? (backend === "file" ? resolve(process.cwd(), "var/oauth-store.json") : "");
+  if (backend === "file" && !value) throw new Error("OAUTH_STORE_PATH is required");
+  if (production && value) throw new Error("OAUTH_STORE_PATH is local-development only");
+  return value;
+}
+
+function readDynamoDbStoreConfig(env: NodeJS.ProcessEnv, backend: OAuthStoreBackend, production: boolean): DynamoDbStoreConfig {
+  if (backend !== "dynamodb") return { tableName: "", region: "" };
+  const tableName = readDynamoDbName(env, "OAUTH_DYNAMODB_TABLE_NAME", production);
+  const region = readAwsRegion(env, "OAUTH_DYNAMODB_REGION", env.AWS_REGION ?? env.AWS_DEFAULT_REGION ?? "", production);
+  const endpoint = env.OAUTH_DYNAMODB_ENDPOINT?.trim();
+  if (production && endpoint) throw new Error("OAUTH_DYNAMODB_ENDPOINT is local-development only");
+  return endpoint ? { tableName, region, endpoint: readHttpUrl({ OAUTH_DYNAMODB_ENDPOINT: endpoint }, "OAUTH_DYNAMODB_ENDPOINT", endpoint, false) } : { tableName, region };
+}
+
+function readDynamoDbName(env: NodeJS.ProcessEnv, key: string, production: boolean): string {
+  const value = readText(env, key, "", production);
+  if (!/^[A-Za-z0-9_.-]{3,255}$/.test(value)) throw new Error(`${key} contains invalid characters`);
+  return value;
+}
+
+function readAwsRegion(env: NodeJS.ProcessEnv, key: string, fallback: string, production: boolean): string {
+  const value = readText(env, key, fallback, production);
+  if (!/^[a-z]{2}(-[a-z]+)+-[0-9]+$/.test(value)) throw new Error(`${key} contains invalid characters`);
+  return value;
 }
 
 function parseList(value: string): string[] {

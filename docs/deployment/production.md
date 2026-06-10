@@ -8,15 +8,16 @@ Production deployment runs the Encore service with explicit public URLs, registe
 2. Set `PUBLIC_ISSUER_URL` to that origin.
 3. Set `MCP_RESOURCE_URL` to the public `/mcp` URL.
 4. Set `ACTIONS_AUDIENCE` to the public Actions audience URL.
-5. Set `OAUTH_STORE_PATH` to a durable JSON file path.
-6. Register GPT clients in `OAUTH_CLIENTS_JSON`.
-7. Configure `ALLOWED_ORIGINS` for ChatGPT origins.
-8. Configure RSA signing key material.
-9. Configure the upstream OIDC identity provider.
-10. Register `/oauth/callback` as the upstream provider callback URL.
-11. Use the public `/privacy` URL in GPT Action configuration.
-12. Use the public `/actions/openapi.json` URL for GPT Actions schema import.
-13. Set token lifetimes, rate limits, and SSE connection limits.
+5. Set `OAUTH_STORE_BACKEND` to `dynamodb`.
+6. Set `OAUTH_DYNAMODB_TABLE_NAME` and `OAUTH_DYNAMODB_REGION`.
+7. Register GPT clients in `OAUTH_CLIENTS_JSON`.
+8. Configure `ALLOWED_ORIGINS` for ChatGPT origins.
+9. Configure RSA signing key material.
+10. Configure the upstream OIDC identity provider.
+11. Register `/oauth/callback` as the upstream provider callback URL.
+12. Use the public `/privacy` URL in GPT Action configuration.
+13. Use the public `/actions/openapi.json` URL for GPT Actions schema import.
+14. Set token lifetimes, rate limits, and SSE connection limits.
 
 ## Client Registry
 

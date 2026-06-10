@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as codebuild from "aws-cdk-lib/aws-codebuild";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecr from "aws-cdk-lib/aws-ecr";
 import * as iam from "aws-cdk-lib/aws-iam";
@@ -10,7 +11,7 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as ssm from "aws-cdk-lib/aws-ssm";
 import type { Construct } from "constructs";
 import type { DeploymentConfig } from "./config.ts";
-import { oauthStorePath, userDataCommands } from "./user-data.ts";
+import { userDataCommands } from "./user-data.ts";
 
 export interface McpServiceStackProps extends cdk.StackProps {
   config: DeploymentConfig;
@@ -41,6 +42,22 @@ export class McpServiceStack extends cdk.Stack {
       alias: `${props.config.awsResourceName}-parameters`,
       enableKeyRotation: true,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+    const storageKey = new kms.Key(this, "StorageKey", {
+      alias: `${props.config.awsResourceName}-storage`,
+      enableKeyRotation: true,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+    const stateTable = new dynamodb.Table(this, "StateTable", {
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      partitionKey: { name: "pk", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "sk", type: dynamodb.AttributeType.STRING },
+      encryption: dynamodb.TableEncryption.CUSTOMER_MANAGED,
+      encryptionKey: storageKey,
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
+      timeToLiveAttribute: "ttl",
+      deletionProtection: true,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
     const repository = new ecr.Repository(this, "Repository", {
       repositoryName: props.config.awsResourceName,
@@ -81,6 +98,27 @@ export class McpServiceStack extends cdk.Stack {
       ],
     }));
     parameterKey.grantDecrypt(role);
+    role.addToPolicy(new iam.PolicyStatement({
+      actions: [
+        "dynamodb:DescribeTable",
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:TransactWriteItems",
+      ],
+      resources: [stateTable.tableArn],
+    }));
+    role.addToPolicy(new iam.PolicyStatement({
+      actions: ["kms:Decrypt", "kms:Encrypt", "kms:GenerateDataKey", "kms:DescribeKey"],
+      resources: [storageKey.keyArn],
+      conditions: {
+        StringEquals: {
+          "kms:CallerAccount": this.account,
+          "kms:ViaService": `dynamodb.${this.region}.amazonaws.com`,
+        },
+      },
+    }));
     repository.grantPull(role);
     const instance = new ec2.Instance(this, "Instance", {
       vpc,
@@ -89,7 +127,8 @@ export class McpServiceStack extends cdk.Stack {
       machineImage: ec2.MachineImage.latestAmazonLinux2023({ cpuType: ec2.AmazonLinuxCpuType.ARM_64 }),
       securityGroup,
       role,
-      requireImdsv2: true,
+      httpTokens: ec2.HttpTokens.REQUIRED,
+      httpPutResponseHopLimit: 2,
       blockDevices: [{
         deviceName: "/dev/xvda",
         volume: ec2.BlockDeviceVolume.ebs(16, {
@@ -122,6 +161,7 @@ export class McpServiceStack extends cdk.Stack {
       publicUrl,
       mcpResource,
       actionsAudience,
+      stateTableName: stateTable.tableName,
       upstreamOidc: identityProvider.upstreamOidc,
     });
     const buildProject = this.imageBuildProject(sourceBucket, repository);
@@ -131,6 +171,7 @@ export class McpServiceStack extends cdk.Stack {
       ActionsAudience: actionsAudience,
       ParameterPrefix: props.config.parameterPrefix,
       ParameterKeyId: parameterKey.keyId,
+      StateTableName: stateTable.tableName,
       RepositoryUri: repository.repositoryUri,
       SourceBucketName: sourceBucket.bucketName,
       CodeBuildProjectName: buildProject.projectName,
@@ -144,6 +185,7 @@ export class McpServiceStack extends cdk.Stack {
     publicUrl: string;
     mcpResource: string;
     actionsAudience: string;
+    stateTableName: string;
     upstreamOidc: IdentityProviderResources["upstreamOidc"];
   }): void {
     this.stringParameter("NodeEnv", config, "NODE_ENV", "production");
@@ -152,7 +194,9 @@ export class McpServiceStack extends cdk.Stack {
     this.stringParameter("McpResourceUrl", config, "MCP_RESOURCE_URL", values.mcpResource);
     this.stringParameter("ActionsAudience", config, "ACTIONS_AUDIENCE", values.actionsAudience);
     this.stringParameter("WidgetDomain", config, "WIDGET_DOMAIN", config.widgetDomain);
-    this.stringParameter("StorePath", config, "OAUTH_STORE_PATH", oauthStorePath(config.serviceName));
+    this.stringParameter("StoreBackend", config, "OAUTH_STORE_BACKEND", "dynamodb");
+    this.stringParameter("StoreTableName", config, "OAUTH_DYNAMODB_TABLE_NAME", values.stateTableName);
+    this.stringParameter("StoreRegion", config, "OAUTH_DYNAMODB_REGION", this.region);
     this.stringParameter("AllowedOrigins", config, "ALLOWED_ORIGINS", config.allowedOrigins);
     this.stringParameter("AccessTokenTtl", config, "ACCESS_TOKEN_TTL_SECONDS", "900");
     this.stringParameter("IdTokenTtl", config, "ID_TOKEN_TTL_SECONDS", "300");

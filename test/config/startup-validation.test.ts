@@ -13,9 +13,8 @@ test("startup validation rejects incomplete production OAuth configuration", () 
   assert.throws(() => validateStartup(productionEnv({ OAUTH_CLIENTS_JSON: "" })), /OAUTH_CLIENTS_JSON is required/);
   assert.throws(() => validateStartup(productionEnv({ OAUTH_PRIVATE_KEY_PEM: "" })), /OAUTH_PRIVATE_KEY_PEM is required/);
   assert.throws(() => validateStartup(productionEnv({ OAUTH_PRIVATE_KEY_PEM: privateKeyPem(), OAUTH_KEY_ID: "" })), /OAUTH_KEY_ID is required/);
-  assert.throws(() => validateStartup(productionEnv({ OAUTH_STORE_PATH: " oauth-store.json" })), /store path cannot include surrounding whitespace/);
-  assert.throws(() => validateStartup(productionEnv({ OAUTH_STORE_PATH: "oauth-store.txt" })), /store path must end with .json/);
-  assert.throws(() => validateStartup(productionEnv({ OAUTH_STORE_PATH: "../oauth-store.json" })), /store path cannot traverse upward/);
+  assert.throws(() => validateStartup(productionEnv({ OAUTH_STORE_BACKEND: "file" })), /OAUTH_STORE_BACKEND must be dynamodb in production/);
+  assert.throws(() => validateStartup(productionEnv({ OAUTH_DYNAMODB_TABLE_NAME: "" })), /OAUTH_DYNAMODB_TABLE_NAME is required/);
   assert.throws(() => validateStartup(productionEnv({ UPSTREAM_OIDC_CLIENT_SECRET: "" })), /UPSTREAM_OIDC_CLIENT_SECRET is required/);
   assert.throws(() => validateStartup(productionEnv({ UPSTREAM_OIDC_REDIRECT_URI: "" })), /UPSTREAM_OIDC_REDIRECT_URI is required/);
 });
@@ -32,7 +31,9 @@ function productionEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
     MCP_RESOURCE_URL: "https://mcp.example.test/mcp",
     ACTIONS_AUDIENCE: "https://api.example.test/actions",
     WIDGET_DOMAIN: "https://widgets.example.test",
-    OAUTH_STORE_PATH: "/tmp/oauth-store.json",
+    OAUTH_STORE_BACKEND: "dynamodb",
+    OAUTH_DYNAMODB_TABLE_NAME: "operator-mcp-state",
+    OAUTH_DYNAMODB_REGION: "us-east-1",
     ALLOWED_ORIGINS: "https://chatgpt.com",
     ACCESS_TOKEN_TTL_SECONDS: "900",
     ID_TOKEN_TTL_SECONDS: "300",

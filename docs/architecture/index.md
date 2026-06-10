@@ -12,7 +12,8 @@ This section explains stable system design, protocol boundaries, trust boundarie
 | 4 | [MCP Transports](mcp-transports.md) | Understand Streamable HTTP, legacy HTTP/SSE, sessions, connection limits, and protocol-version handling. |
 | 5 | [Actions And OpenAPI](actions-openapi.md) | Understand REST endpoint shape, OpenAPI generation, public schema serving, and Actions audience rules. |
 | 6 | [Capabilities](capabilities.md) | Understand shared behavior ownership and protocol adapter responsibilities. |
-| 7 | [Storage Model](storage-model.md) | Understand the durable JSON store, locking, atomic writes, hashed values, and recovery expectations. |
+| 7 | [Storage Model](storage-model.md) | Understand production DynamoDB state, local file state, hashed values, and recovery expectations. |
+| 8 | [DynamoDB Store](dynamodb-store.md) | Understand single-table keys, access patterns, transactions, TTL, encryption, and least-privilege storage controls. |
 
 ## Design Boundaries
 
@@ -21,7 +22,7 @@ This section explains stable system design, protocol boundaries, trust boundarie
 | Protocol adapters | MCP and Actions adapters translate transport details and call shared behavior. | [Capabilities](capabilities.md), [Request Lifecycle](../development/request-lifecycle.md) |
 | OAuth authority | The service issues downstream OAuth tokens and delegates user authentication to upstream OIDC. | [OAuth Provider](oauth-provider.md), [Identity Provider](../deployment/identity-provider.md) |
 | Audience separation | MCP tokens use the MCP resource audience and Actions tokens use the Actions audience. | [Security Model](security-model.md), [Configuration Reference](../api/configuration.md) |
-| Durable state | OAuth grants, refresh tokens, rate limits, and MCP sessions share one guarded store. | [Storage Model](storage-model.md), [Storage Maintenance](../maintenance/storage.md) |
+| Durable state | OAuth grants, refresh tokens, rate limits, and MCP sessions share one guarded store. | [Storage Model](storage-model.md), [DynamoDB Store](dynamodb-store.md), [Storage Maintenance](../maintenance/storage.md) |
 | External specs | Architecture claims must align with authoritative external specs and official product docs. | [External References](../reference/external-references.md) |
 
 ## Decision Anchors
@@ -33,6 +34,6 @@ This section explains stable system design, protocol boundaries, trust boundarie
 | OAuth flow | [OAuth Provider](oauth-provider.md) | [OAuth API Reference](../api/oauth.md) |
 | MCP transport path | [MCP Transports](mcp-transports.md) | [MCP API Reference](../api/mcp.md) |
 | Actions schema rule | [Actions And OpenAPI](actions-openapi.md) | [OpenAPI Contract](../api/openapi.md) |
-| State record ownership | [Storage Model](storage-model.md) | [Storage Maintenance](../maintenance/storage.md) |
+| State record ownership | [Storage Model](storage-model.md) | [DynamoDB Store](dynamodb-store.md) |
 
 Use [Request Lifecycle](../development/request-lifecycle.md) for a developer trace through the runtime paths.

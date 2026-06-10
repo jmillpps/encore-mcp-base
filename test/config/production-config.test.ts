@@ -9,6 +9,9 @@ test("production config requires explicit secure public URLs and origins", () =>
   assert.equal(config.mcpResource, "https://mcp.example.test/mcp");
   assert.equal(config.actionsAudience, "https://api.example.test/actions");
   assert.equal(config.widgetDomain, "https://widgets.example.test");
+  assert.equal(config.oauthStoreBackend, "dynamodb");
+  assert.equal(config.oauthDynamoDb.tableName, "operator-mcp-state");
+  assert.equal(config.oauthDynamoDb.region, "us-east-1");
   assert.deepEqual(config.allowedOrigins, ["https://chatgpt.com"]);
   assert.equal(config.accessTokenTtlSeconds, 900);
   assert.equal(config.idTokenTtlSeconds, 300);
@@ -50,7 +53,13 @@ test("production config rejects insecure or ambiguous deployment inputs", () => 
   assert.throws(() => readConfig(productionEnv({ ALLOWED_ORIGINS: "https://*.example.test" })), /wildcards/);
   assert.throws(() => readConfig(productionEnv({ ALLOWED_ORIGINS: "https://chatgpt.com/path" })), /must be origins/);
   assert.throws(() => readConfig(productionEnv({ ALLOWED_ORIGINS: "https://localhost" })), /public hosts/);
-  assert.throws(() => readConfig(productionEnv({ OAUTH_STORE_PATH: "" })), /OAUTH_STORE_PATH is required/);
+  assert.throws(() => readConfig(productionEnv({ OAUTH_STORE_BACKEND: "file" })), /OAUTH_STORE_BACKEND must be dynamodb in production/);
+  assert.throws(() => readConfig(productionEnv({ OAUTH_STORE_PATH: "/tmp/oauth-store.json" })), /OAUTH_STORE_PATH requires file store backend/);
+  assert.throws(() => readConfig(productionEnv({ OAUTH_DYNAMODB_TABLE_NAME: "" })), /OAUTH_DYNAMODB_TABLE_NAME is required/);
+  assert.throws(() => readConfig(productionEnv({ OAUTH_DYNAMODB_TABLE_NAME: "bad table" })), /OAUTH_DYNAMODB_TABLE_NAME contains invalid characters/);
+  assert.throws(() => readConfig(productionEnv({ OAUTH_DYNAMODB_REGION: "" })), /OAUTH_DYNAMODB_REGION is required/);
+  assert.throws(() => readConfig(productionEnv({ OAUTH_DYNAMODB_REGION: "bad-region" })), /OAUTH_DYNAMODB_REGION contains invalid characters/);
+  assert.throws(() => readConfig(productionEnv({ OAUTH_DYNAMODB_ENDPOINT: "https://localhost:8000" })), /OAUTH_DYNAMODB_ENDPOINT is local-development only/);
   assert.throws(() => readConfig(productionEnv({ ACCESS_TOKEN_TTL_SECONDS: undefined })), /ACCESS_TOKEN_TTL_SECONDS is required/);
   assert.throws(() => readConfig(productionEnv({ RATE_LIMIT_MAX_REQUESTS: "0" })), /RATE_LIMIT_MAX_REQUESTS must be a positive safe integer/);
   assert.throws(() => readConfig(productionEnv({ MCP_SSE_MAX_CONNECTIONS: undefined })), /MCP_SSE_MAX_CONNECTIONS is required/);
@@ -66,6 +75,7 @@ test("local config keeps localhost defaults for development", () => {
   assert.equal(config.mcpResource, "http://localhost:4000/mcp");
   assert.equal(config.actionsAudience, "http://localhost:4000/actions");
   assert.equal(config.widgetDomain, "http://localhost:4000");
+  assert.equal(config.oauthStoreBackend, "file");
   assert.ok(config.allowedOrigins.includes("http://localhost:4000"));
   assert.equal(config.upstreamOidc.redirectUri, "http://localhost:4000/oauth/callback");
 });
@@ -77,7 +87,9 @@ function productionEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
     MCP_RESOURCE_URL: "https://mcp.example.test/mcp",
     ACTIONS_AUDIENCE: "https://api.example.test/actions",
     WIDGET_DOMAIN: "https://widgets.example.test",
-    OAUTH_STORE_PATH: "/tmp/oauth-store.json",
+    OAUTH_STORE_BACKEND: "dynamodb",
+    OAUTH_DYNAMODB_TABLE_NAME: "operator-mcp-state",
+    OAUTH_DYNAMODB_REGION: "us-east-1",
     ALLOWED_ORIGINS: "https://chatgpt.com",
     ACCESS_TOKEN_TTL_SECONDS: "900",
     ID_TOKEN_TTL_SECONDS: "300",

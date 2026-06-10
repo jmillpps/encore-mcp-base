@@ -33,7 +33,7 @@ Keep operator-specific account IDs, domains, hosted zones, resource IDs, stack n
 | --- | --- | --- |
 | External IdP or CDK Cognito mode | Upstream OIDC issuer, endpoints, client credentials, callback registration, and userinfo claims. | [Identity Provider](identity-provider.md) |
 | Static clients or metadata-document clients | ChatGPT callback URLs, scopes, resources, client auth method, redirect URI policy, and key material. | [Client Registry](client-registry.md) |
-| CDK-managed runtime or alternate hosting | Public HTTPS origin, persistent store path, Parameter Store or equivalent secret source, and reverse proxy behavior. | [Production Deployment](production.md) |
+| CDK-managed runtime or alternate hosting | Public HTTPS origin, durable state backend, Parameter Store or equivalent secret source, and reverse proxy behavior. | [Production Deployment](production.md) |
 | URL import or file upload for Actions schema | Deployed issuer URL, public `/actions/openapi.json`, and OpenAPI compatibility result. | [OpenAPI Export](openapi-export.md) |
 | Release readiness | Infrastructure checks, public endpoint checks, OAuth flow proof, GPT Apps proof, GPT Actions proof, and rollback material. | [Release Verification](release-verification.md) |
 

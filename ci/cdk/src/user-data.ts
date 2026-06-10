@@ -39,10 +39,6 @@ export function userDataCommands(input: UserDataInput): string[] {
   ];
 }
 
-export function oauthStorePath(resourceName: string): string {
-  return `${runtimePaths(resourceName).dataDir}/oauth-store.json`;
-}
-
 function installCaddy(): string {
   return [
     'CADDY_VERSION="2.10.2"',
@@ -81,6 +77,8 @@ function runScript(input: UserDataInput, paths: RuntimePaths): string {
     ': > "$ENV_FILE"',
     "printf 'NODE_ENV=production\\n' >> \"$ENV_FILE\"",
     "printf 'PORT=8080\\n' >> \"$ENV_FILE\"",
+    "printf 'AWS_REGION=%s\\n' \"$AWS_REGION\" >> \"$ENV_FILE\"",
+    "printf 'AWS_DEFAULT_REGION=%s\\n' \"$AWS_REGION\" >> \"$ENV_FILE\"",
     'jq -r \'.Parameters[] | select(.Name | endswith("/OAUTH_PRIVATE_KEY_PEM")) | .Value\' "$PARAMETER_FILE" > "$PRIVATE_KEY_FILE"',
     'chmod 0400 "$PRIVATE_KEY_FILE"',
     "printf 'OAUTH_PRIVATE_KEY_PEM_FILE=%s\\n' \"$PRIVATE_KEY_FILE\" >> \"$ENV_FILE\"",

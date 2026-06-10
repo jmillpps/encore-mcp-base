@@ -121,8 +121,8 @@ test("tool result card bridge rerenders when ChatGPT delivers tool output global
 
   widget.onToolResult((data) => calls.push(data));
   assert.deepEqual(plain(calls), [{}]);
-  listeners.get("openai:set_globals")?.({ detail: { globals: { toolOutput: { name: "Justin Miller", preferred_username: "jmiller@example.test" } } } });
-  assert.deepEqual(plain(calls.at(-1)), { name: "Justin Miller", preferred_username: "jmiller@example.test" });
+  listeners.get("openai:set_globals")?.({ detail: { globals: { toolOutput: { name: "Example User", preferred_username: "casey@example.test" } } } });
+  assert.deepEqual(plain(calls.at(-1)), { name: "Example User", preferred_username: "casey@example.test" });
 });
 
 test("tool result card bridge rerenders from MCP tool-result notifications", () => {
@@ -140,8 +140,8 @@ test("tool result card bridge rerenders from MCP tool-result notifications", () 
   const widget = (sandbox as unknown as { mcpWidget: { onToolResult: (render: (data: unknown) => void) => void } }).mcpWidget;
 
   widget.onToolResult((data) => calls.push(data));
-  listeners.get("message")?.({ source: parent, data: { jsonrpc: "2.0", method: "ui/notifications/tool-result", params: { structuredContent: { email: "jmiller@example.test" } } } });
-  assert.deepEqual(plain(calls.at(-1)), { email: "jmiller@example.test" });
+  listeners.get("message")?.({ source: parent, data: { jsonrpc: "2.0", method: "ui/notifications/tool-result", params: { structuredContent: { email: "casey@example.test" } } } });
+  assert.deepEqual(plain(calls.at(-1)), { email: "casey@example.test" });
 });
 
 test("widget framework rejects unsafe declarations", () => {
