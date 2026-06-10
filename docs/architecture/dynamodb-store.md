@@ -15,6 +15,12 @@ Production deployments use one DynamoDB table for OAuth, MCP session, and rate-l
 
 The table secondary index count is zero. Every runtime access pattern is served by a direct primary-key read, write, update, delete, or transaction.
 
+## Runtime Provider
+
+The service creates one DynamoDB store bundle per table name, Region, and endpoint. The bundle owns one DynamoDB HTTP client, one OAuth store, and one rate-limit store. Reusing the bundle keeps AWS credential caching and HTTP client construction stable across requests.
+
+The cache key uses deployment identifiers only. It excludes secrets, account IDs, tokens, user identifiers, and request data.
+
 ## Access Patterns
 
 | Access pattern | Primary key | Operation |
