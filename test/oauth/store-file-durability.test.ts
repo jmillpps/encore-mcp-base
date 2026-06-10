@@ -15,7 +15,7 @@ test("OAuth store writes owner metadata into active lock files", async (t) => {
   const path = join(dir, "store.json");
   const lockPath = `${path}.lock`;
   await new StoreFile(path).update(async (state) => {
-    state.rateLimits[validHash] = { count: 1, resetAt: 10 };
+    state.rateLimits[validHash] = { windowStart: 0, previousCount: 0, currentCount: 1, expiresAt: 10 };
     const metadata = JSON.parse(await readFile(lockPath, "utf8")) as Record<string, unknown>;
     assert.equal(typeof metadata.token, "string");
     assert.equal(metadata.pid, process.pid);
@@ -42,7 +42,7 @@ test("OAuth store recovers expired lock metadata before updating", async (t) => 
     staleAtMs: Date.now() - 30000,
   }));
   await new StoreFile(path).update((state) => {
-    state.rateLimits[validHash] = { count: 1, resetAt: 10 };
+    state.rateLimits[validHash] = { windowStart: 0, previousCount: 0, currentCount: 1, expiresAt: 10 };
   });
   const state = await new StoreFile(path).read();
   assert.deepEqual(Object.keys(state.rateLimits), [validHash]);
@@ -56,7 +56,7 @@ test("OAuth store cleans temp files after durable replacement", async (t) => {
   });
   const path = join(dir, "store.json");
   await new StoreFile(path).update((state) => {
-    state.rateLimits[validHash] = { count: 1, resetAt: 10 };
+    state.rateLimits[validHash] = { windowStart: 0, previousCount: 0, currentCount: 1, expiresAt: 10 };
   });
   const entries = await readdir(dir);
   assert.deepEqual(entries, ["store.json"]);

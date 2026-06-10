@@ -172,6 +172,13 @@ function testConfig(oauthStorePath: string): ServiceConfig {
     refreshTokenTtlSeconds: 2592000,
     rateLimitWindowSeconds: 60,
     rateLimitMaxRequests: 120,
+    rateLimitPolicies: {
+      "oauth-authorize": { windowSeconds: 60, maxRequests: 120 },
+      "oauth-token": { windowSeconds: 60, maxRequests: 120 },
+      "oauth-userinfo": { windowSeconds: 60, maxRequests: 120 },
+      "mcp-tool": { windowSeconds: 60, maxRequests: 120 },
+      "mcp-resource": { windowSeconds: 60, maxRequests: 120 },
+    },
     mcpListPageSize: 128,
     mcpSseMaxConnections: 1024,
     upstreamOidc: {

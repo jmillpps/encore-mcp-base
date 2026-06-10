@@ -1,5 +1,6 @@
 import type { AuthorizationCodeExpectation, AuthorizationCodeInput, RefreshTokenInput, UpstreamAuthorizationStateInput } from "./store-inputs.ts";
 import type { AuthorizationCodeRecord, McpSessionRecord, RefreshTokenRecord, UpstreamAuthorizationStateRecord } from "./store-records.ts";
+import type { RateLimitPolicy } from "../../shared/config.ts";
 
 export interface OAuthStore {
   createAuthorizationCode(input: AuthorizationCodeInput): Promise<string>;
@@ -21,5 +22,5 @@ export interface OAuthStore {
 }
 
 export interface RateLimitStore {
-  hit(key: string, windowSeconds: number, maxRequests: number): Promise<void>;
+  hit(key: string, policy: RateLimitPolicy): Promise<void>;
 }

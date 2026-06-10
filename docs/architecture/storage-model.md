@@ -10,7 +10,7 @@ The service stores OAuth, rate-limit, MCP session, and remote metadata cache sta
 | Upstream authorization states | State hash, client ID, redirect URI, resource, scopes, original client state, upstream PKCE verifier, nonce, expiration, creation time. | Preserve the validated ChatGPT authorization request while the browser signs in with the upstream IdP. |
 | Refresh tokens | Token hash, family ID, client ID, user profile, resource, scopes, expiration, auth time, rotation parent, revoked time, creation time, last-used time. | Rotate refresh tokens and revoke a token family after replay. |
 | MCP sessions | Session ID hash, client ID, protocol version, creation time, last-seen time, expiration, request ID hashes, initialized time, terminated time. | Maintain Streamable HTTP session state and request replay protection. |
-| Rate-limit buckets | Bucket count and reset time keyed by bucket plus hashed subject. | Enforce durable request limits across OAuth endpoints and MCP tools. |
+| Rate-limit buckets | Sliding counter window start, previous count, current count, expiration time keyed by bucket plus hashed subject. | Enforce durable request limits across OAuth endpoints, MCP tools, and MCP resources. |
 | Metadata cache entries | Cache key hash, JSON response body, expiration time. | Share Client ID Metadata Document and private key JWT JWKS cache results across production instances. |
 
 The top-level store accepts only these record groups. Missing groups are treated as empty maps. Stored map keys use fixed-length base64url hashes.
@@ -62,7 +62,7 @@ Writes use temporary files and atomic rename after the in-memory state mutation 
 | Refresh token | Rotates on use. Reuse of an older token revokes every token with the same family ID. |
 | MCP session | Expires one hour after creation or terminates through `DELETE /mcp`. |
 | MCP request ID | Stored as a hash per session. Duplicate IDs are rejected. A session accepts up to 4096 request IDs. |
-| Rate-limit bucket | Resets after the configured rate-limit window. |
+| Rate-limit bucket | Expires after the current and previous sliding windows age out. |
 | Metadata cache entry | Expires at the remote response cache lifetime, capped by the service maximum. |
 
 ## Runtime Secret Placement

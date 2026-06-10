@@ -20,8 +20,9 @@ Durable rate-limit buckets apply to:
 - OAuth token grants.
 - OAuth userinfo.
 - MCP tool calls.
+- MCP resource reads.
 
-Buckets are keyed by logical subject and stored as hashed durable keys. Expired buckets are pruned before current hits are recorded.
+Buckets are keyed by logical subject and stored as hashed durable keys. Rate limits use sliding counter windows with current and previous window counts.
 
 | Bucket | Subject source |
 | --- | --- |
@@ -29,8 +30,13 @@ Buckets are keyed by logical subject and stored as hashed durable keys. Expired 
 | `oauth-token` | Form client ID, Basic auth client ID, or remote address fallback. |
 | `oauth-userinfo` | Remote address. |
 | `mcp-tool` | Request subject for the MCP tool call. |
+| `mcp-resource` | Request subject for the MCP resource read. |
 
 SSE connection limits use an in-process counter controlled by `MCP_SSE_MAX_CONNECTIONS`. Durable rate limits use the OAuth store.
+
+The default policy comes from `RATE_LIMIT_WINDOW_SECONDS` and `RATE_LIMIT_MAX_REQUESTS`. Per-bucket overrides come from `RATE_LIMIT_POLICIES_JSON`.
+
+When a request is limited, the service emits `rate_limit_exceeded` with `bucket`, `subjectHash`, `windowSeconds`, and `maxRequests`.
 
 ## Operator Response
 
@@ -54,7 +60,7 @@ Use this order for authentication and authorization failures:
 | `unauthenticated` from Actions | Actions bearer validation. | Token audience, issuer, expiration, signing key, and Authorization header. |
 | `permission_denied` from Actions | Actions scope validation. | Granted scopes and endpoint scope list. |
 | `invalid_grant` from OAuth token | Code, verifier, refresh token, redirect URI, resource, or client mismatch. | Token request fields and durable grant state. |
-| `rate_limited` from OAuth or MCP tools | Durable bucket limit. | Bucket subject, reset time, retry behavior, and configured limits. |
+| `rate_limited` from OAuth, MCP tools, or MCP resources | Durable bucket limit. | Bucket, subject hash, retry behavior, and configured limits. |
 
 ## Safe Review Fields
 

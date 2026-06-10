@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
+import { mkdtemp, rm } from "node:fs/promises";
 import type { ServerResponse } from "node:http";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import { writeOAuthError } from "../../auth/oauth-errors.ts";
+import { enforceRateLimit } from "../../auth/rate-limit.ts";
+import { readConfig } from "../../shared/config.ts";
 import { emitDiagnostic, redactFields, setDiagnosticSink, type DiagnosticEvent } from "../../shared/diagnostics.ts";
 import { ServiceError } from "../../shared/errors.ts";
 import { writeError } from "../../shared/http.ts";
@@ -128,6 +133,30 @@ test("diagnostic sink can be replaced and restored", () => {
   restore();
   assert.equal(events.length, 1);
   assert.equal(JSON.stringify(events[0]).includes("refresh-token"), false);
+});
+
+test("rate limit diagnostics expose bucket policy and hashed subject", async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), "mcp-rate-limit-diagnostics-"));
+  t.after(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+  const config = readConfig({ OAUTH_STORE_PATH: join(dir, "store.json"), RATE_LIMIT_WINDOW_SECONDS: "60", RATE_LIMIT_MAX_REQUESTS: "1" });
+  const events: DiagnosticEvent[] = [];
+  const restore = setDiagnosticSink((event) => events.push(event));
+  try {
+    await enforceRateLimit(config, "oauth-token", "client-secret-value");
+    await assert.rejects(() => enforceRateLimit(config, "oauth-token", "client-secret-value"), /rate limit exceeded/);
+    assert.equal(events.length, 1);
+    assert.equal(events[0]?.event, "rate_limit_exceeded");
+    assert.equal(events[0]?.level, "warn");
+    assert.equal(events[0]?.fields.bucket, "oauth-token");
+    assert.equal(events[0]?.fields.windowSeconds, 60);
+    assert.equal(events[0]?.fields.maxRequests, 1);
+    assert.equal(typeof events[0]?.fields.subjectHash, "string");
+    assert.equal(JSON.stringify(events[0]).includes("client-secret-value"), false);
+  } finally {
+    restore();
+  }
 });
 
 function fakeResponse(): ServerResponse & { status?: number; body?: string } {

@@ -17,6 +17,7 @@ export interface ServiceConfig {
   refreshTokenTtlSeconds: number;
   rateLimitWindowSeconds: number;
   rateLimitMaxRequests: number;
+  rateLimitPolicies: Record<RateLimitBucket, RateLimitPolicy>;
   mcpListPageSize: number;
   mcpSseMaxConnections: number;
   upstreamOidc: UpstreamOidcConfig;
@@ -24,6 +25,12 @@ export interface ServiceConfig {
 }
 
 export type OAuthStoreBackend = "file" | "dynamodb";
+export type RateLimitBucket = "oauth-authorize" | "oauth-token" | "oauth-userinfo" | "mcp-tool" | "mcp-resource";
+
+export interface RateLimitPolicy {
+  windowSeconds: number;
+  maxRequests: number;
+}
 
 export interface DynamoDbStoreConfig {
   tableName: string;
@@ -56,6 +63,8 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
   const oauthStoreBackend = readOAuthStoreBackend(env, production);
   const oauthStorePath = readOAuthStorePath(env, oauthStoreBackend, production);
   const oauthDynamoDb = readDynamoDbStoreConfig(env, oauthStoreBackend, production);
+  const rateLimitWindowSeconds = readNumber(env, "RATE_LIMIT_WINDOW_SECONDS", 60, production);
+  const rateLimitMaxRequests = readNumber(env, "RATE_LIMIT_MAX_REQUESTS", 120, production);
   return {
     issuer,
     mcpResource,
@@ -69,14 +78,17 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
     idTokenTtlSeconds: readNumber(env, "ID_TOKEN_TTL_SECONDS", 300, production),
     authorizationCodeTtlSeconds: readNumber(env, "AUTHORIZATION_CODE_TTL_SECONDS", 300, production),
     refreshTokenTtlSeconds: readNumber(env, "REFRESH_TOKEN_TTL_SECONDS", 2592000, production),
-    rateLimitWindowSeconds: readNumber(env, "RATE_LIMIT_WINDOW_SECONDS", 60, production),
-    rateLimitMaxRequests: readNumber(env, "RATE_LIMIT_MAX_REQUESTS", 120, production),
+    rateLimitWindowSeconds,
+    rateLimitMaxRequests,
+    rateLimitPolicies: readRateLimitPolicies(env, { windowSeconds: rateLimitWindowSeconds, maxRequests: rateLimitMaxRequests }),
     mcpListPageSize: readNumber(env, "MCP_LIST_PAGE_SIZE", 128, production, 256),
     mcpSseMaxConnections: readNumber(env, "MCP_SSE_MAX_CONNECTIONS", 1024, production),
     upstreamOidc: readUpstreamOidcConfig(env, issuer, production),
     production,
   };
 }
+
+const rateLimitBuckets = ["oauth-authorize", "oauth-token", "oauth-userinfo", "mcp-tool", "mcp-resource"] as const satisfies readonly RateLimitBucket[];
 
 function readOAuthStoreBackend(env: NodeJS.ProcessEnv, production: boolean): OAuthStoreBackend {
   const value = env.OAUTH_STORE_BACKEND ?? (production ? "" : "file");
@@ -177,6 +189,40 @@ function readNumber(env: NodeJS.ProcessEnv, key: string, fallback: number, produ
   if (!Number.isSafeInteger(parsed) || parsed <= 0) throw new Error(`${key} must be a positive safe integer`);
   if (max !== undefined && parsed > max) throw new Error(`${key} must be at most ${max}`);
   return parsed;
+}
+
+function readRateLimitPolicies(env: NodeJS.ProcessEnv, defaults: RateLimitPolicy): Record<RateLimitBucket, RateLimitPolicy> {
+  const policies = Object.fromEntries(rateLimitBuckets.map((bucket) => [bucket, { ...defaults }])) as Record<RateLimitBucket, RateLimitPolicy>;
+  const value = env.RATE_LIMIT_POLICIES_JSON;
+  if (value === undefined) return policies;
+  const parsed = jsonObject(value, "RATE_LIMIT_POLICIES_JSON");
+  for (const [bucket, policyValue] of Object.entries(parsed)) {
+    if (!rateLimitBuckets.includes(bucket as RateLimitBucket)) throw new Error("RATE_LIMIT_POLICIES_JSON contains unknown bucket");
+    const policy = jsonObject(policyValue, `RATE_LIMIT_POLICIES_JSON.${bucket}`);
+    const windowSeconds = optionalPositiveInteger(policy.windowSeconds, `RATE_LIMIT_POLICIES_JSON.${bucket}.windowSeconds`) ?? defaults.windowSeconds;
+    const maxRequests = optionalPositiveInteger(policy.maxRequests, `RATE_LIMIT_POLICIES_JSON.${bucket}.maxRequests`) ?? defaults.maxRequests;
+    policies[bucket as RateLimitBucket] = { windowSeconds, maxRequests };
+  }
+  return policies;
+}
+
+function jsonObject(value: unknown, name: string): Record<string, unknown> {
+  let parsed = value;
+  if (typeof value === "string") {
+    try {
+      parsed = JSON.parse(value);
+    } catch {
+      throw new Error(`${name} must be valid JSON`);
+    }
+  }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) throw new Error(`${name} must be a JSON object`);
+  return parsed as Record<string, unknown>;
+}
+
+function optionalPositiveInteger(value: unknown, name: string): number | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value <= 0) throw new Error(`${name} must be a positive safe integer`);
+  return value;
 }
 
 function readUpstreamOidcConfig(env: NodeJS.ProcessEnv, serviceIssuer: string, production: boolean): UpstreamOidcConfig {

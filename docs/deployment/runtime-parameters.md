@@ -30,6 +30,7 @@ The CDK stack writes these String parameters during deployment:
 | `REFRESH_TOKEN_TTL_SECONDS` | Refresh token lifetime. |
 | `RATE_LIMIT_WINDOW_SECONDS` | Durable rate-limit window. |
 | `RATE_LIMIT_MAX_REQUESTS` | Durable rate-limit request limit. |
+| `RATE_LIMIT_POLICIES_JSON` | Per-bucket durable rate-limit policy overrides. |
 | `MCP_LIST_PAGE_SIZE` | MCP descriptor list page size. |
 | `MCP_SSE_MAX_CONNECTIONS` | Open SSE receive stream limit. |
 | `UPSTREAM_OIDC_ISSUER_URL` | Upstream issuer URL. |

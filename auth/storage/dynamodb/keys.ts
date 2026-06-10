@@ -26,7 +26,7 @@ export function mcpSessionKey(sessionHash: string): DynamoDbItem {
 }
 
 export function rateLimitKey(bucketHash: string): DynamoDbItem {
-  return key(`RATE#${bucketHash}`, "BUCKET");
+  return key(`RATE2#${bucketHash}`, "BUCKET");
 }
 
 export function metadataCacheKey(namespace: string, cacheKeyHash: string): DynamoDbItem {

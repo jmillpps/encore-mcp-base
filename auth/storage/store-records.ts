@@ -59,12 +59,19 @@ export interface McpSessionRecord {
   terminatedAt?: number;
 }
 
+export interface RateLimitRecord {
+  windowStart: number;
+  previousCount: number;
+  currentCount: number;
+  expiresAt: number;
+}
+
 export interface OAuthStoreState {
   authorizationCodes: Record<string, AuthorizationCodeRecord>;
   refreshTokens: Record<string, RefreshTokenRecord>;
   upstreamAuthorizationStates: Record<string, UpstreamAuthorizationStateRecord>;
   mcpSessions: Record<string, McpSessionRecord>;
-  rateLimits: Record<string, { count: number; resetAt: number }>;
+  rateLimits: Record<string, RateLimitRecord>;
 }
 
 export function emptyStoreState(): OAuthStoreState {

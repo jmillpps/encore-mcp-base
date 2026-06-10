@@ -24,7 +24,7 @@ Authorization codes, upstream login states, refresh tokens, MCP session IDs, MCP
 | Upstream authorization states | Count pending states and expiration times during login-loop investigation. |
 | Refresh tokens | Review family IDs, creation times, expiration times, rotation parents, and revoked times. |
 | MCP sessions | Review count, protocol version, created time, last-seen time, initialized time, and terminated time. |
-| Rate-limit buckets | Review count and reset time for the affected endpoint subject. |
+| Rate-limit buckets | Review window start, previous count, current count, expiration time, and affected endpoint subject. |
 | Metadata cache entries | Review namespace, expiration time, and item count. Avoid copying full response bodies into tickets. |
 
 ## Local File Concurrent Updates
@@ -69,5 +69,5 @@ Restore a signing key backup with the matching local store when active refresh t
 | OAuth discovery | `/.well-known/openid-configuration` returns the current issuer and JWKS URL. |
 | Refresh flow | A valid refresh token from the restored store rotates successfully. |
 | MCP initialize | `POST /mcp` initialize creates a new session and returns `MCP-Session-Id`. |
-| Rate limit state | Existing counters either continue until reset or expire according to their stored reset time. |
+| Rate limit state | Existing sliding counters either continue until the prior window ages out or expire through their stored expiration time. |
 | Metadata cache state | Client metadata and JWKS cache entries either read successfully or expire through TTL. |

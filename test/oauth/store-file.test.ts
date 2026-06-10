@@ -43,14 +43,16 @@ test("OAuth store persists PRD field names and reloads records through the stric
     ttlSeconds: 300,
   });
   await new DiskOAuthStore(path).rotateRefreshToken(refreshToken, "local-test", 300);
-  await new DiskRateLimitStore(path).hit("oauth-token:local-test", 60, 120);
+  await new DiskRateLimitStore(path).hit("oauth-token:local-test", { windowSeconds: 60, maxRequests: 120 });
   const persisted = await readFile(path, "utf8");
   assert.match(persisted, /"code_hash"/);
   assert.match(persisted, /"scopes_json"/);
   assert.match(persisted, /"auth_time"/);
   assert.match(persisted, /"nonce"/);
   assert.match(persisted, /"rotated_from_hash"/);
-  assert.match(persisted, /"reset_at"/);
+  assert.match(persisted, /"window_start"/);
+  assert.match(persisted, /"previous_count"/);
+  assert.match(persisted, /"current_count"/);
   assert.equal(persisted.includes("codeHash"), false);
   assert.equal(persisted.includes("rotatedToHash"), false);
   assert.equal(persisted.includes("resetAt"), false);
@@ -176,13 +178,13 @@ test("OAuth store serializes updates across store instances for the same path", 
   const entered = deferred();
   const release = deferred();
   const firstUpdate = first.update(async (state) => {
-    state.rateLimits[validHash] = { count: 1, resetAt: 10 };
+    state.rateLimits[validHash] = { windowStart: 0, previousCount: 0, currentCount: 1, expiresAt: 10 };
     entered.resolve();
     await release.promise;
   });
   await entered.promise;
   const secondUpdate = second.update((state) => {
-    state.rateLimits[secondValidHash] = { count: 2, resetAt: 20 };
+    state.rateLimits[secondValidHash] = { windowStart: 0, previousCount: 0, currentCount: 2, expiresAt: 20 };
   });
   await delay(25);
   release.resolve();

@@ -33,6 +33,7 @@ Production mode is active when `NODE_ENV=production`.
 | `REFRESH_TOKEN_TTL_SECONDS` | integer | Refresh token lifetime. |
 | `RATE_LIMIT_WINDOW_SECONDS` | integer | Durable rate-limit window length. |
 | `RATE_LIMIT_MAX_REQUESTS` | integer | Request limit per bucket and subject. |
+| `RATE_LIMIT_POLICIES_JSON` | JSON object | Per-bucket sliding rate-limit overrides. Use `{}` for defaults. |
 | `MCP_LIST_PAGE_SIZE` | integer | Maximum MCP list items returned per page. Maximum value is `256`. |
 | `MCP_SSE_MAX_CONNECTIONS` | integer | Maximum open SSE receive streams. |
 
@@ -63,6 +64,7 @@ Local development supplies defaults for URLs, origins, token lifetimes, rate lim
 | `REFRESH_TOKEN_TTL_SECONDS` | `2592000` |
 | `RATE_LIMIT_WINDOW_SECONDS` | `60` |
 | `RATE_LIMIT_MAX_REQUESTS` | `120` |
+| `RATE_LIMIT_POLICIES_JSON` | unset |
 | `MCP_LIST_PAGE_SIZE` | `128` |
 | `MCP_SSE_MAX_CONNECTIONS` | `1024` |
 | `UPSTREAM_OIDC_ISSUER_URL` | `http://127.0.0.1:4100` |
@@ -87,6 +89,27 @@ Production URLs use HTTPS and public hostnames. URLs must omit credentials, quer
 `PUBLIC_ISSUER_URL` also feeds `GET /actions/openapi.json`, OAuth discovery metadata, token issuer claims, and OpenAPI OAuth URLs.
 
 `WIDGET_DOMAIN` feeds MCP Apps UI resource metadata through `_meta.ui.domain` and `_meta["openai/widgetDomain"]`.
+
+## Rate-Limit Policies
+
+`RATE_LIMIT_WINDOW_SECONDS` and `RATE_LIMIT_MAX_REQUESTS` define the default sliding counter policy for every durable bucket.
+
+`RATE_LIMIT_POLICIES_JSON` can override `windowSeconds` and `maxRequests` for these buckets:
+
+- `oauth-authorize`
+- `oauth-token`
+- `oauth-userinfo`
+- `mcp-tool`
+- `mcp-resource`
+
+Example:
+
+```json
+{
+  "oauth-token": { "windowSeconds": 30, "maxRequests": 40 },
+  "mcp-tool": { "maxRequests": 240 }
+}
+```
 
 ## Integer Rules
 

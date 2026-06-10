@@ -36,7 +36,7 @@ The cache key uses deployment identifiers only. It excludes secrets, account IDs
 | Touch MCP session | `MCP_SESSION#<sessionHash>` / `SESSION` | Conditional update. |
 | Reserve MCP request ID | `MCP_SESSION#<sessionHash>` / `SESSION` | Strong read followed by conditional update. |
 | Terminate MCP session | `MCP_SESSION#<sessionHash>` / `SESSION` | Conditional update. |
-| Hit rate-limit bucket | `RATE#<bucketSubjectHash>` / `BUCKET` | Strong read followed by conditional put or update. |
+| Hit rate-limit bucket | `RATE2#<bucketSubjectHash>` / `BUCKET` | Strong read followed by conditional put. |
 | Read Client ID Metadata Document cache | `CACHE#client-metadata#<cacheKeyHash>` / `ENTRY` | Strong read. |
 | Write Client ID Metadata Document cache | `CACHE#client-metadata#<cacheKeyHash>` / `ENTRY` | Put or delete. |
 | Read private key JWT JWKS cache | `CACHE#client-jwks#<cacheKeyHash>` / `ENTRY` | Strong read. |
@@ -49,6 +49,8 @@ The store saves hashes for authorization codes, upstream states, refresh tokens,
 User profile fields are stored with authorization-code and refresh-token records because token issuance needs the authenticated subject, email, display name, and verification status. Profile records use the normalized service profile shape. Profile records are reachable only through direct grant and token keys.
 
 Client ID Metadata Document and private key JWT JWKS cache entries store bounded JSON response bodies. The source URLs are represented in keys only through SHA-256 base64url hashes. Cache entries use the remote response cache lifetime with the service maximum, and DynamoDB TTL removes expired entries.
+
+Rate-limit bucket items store the sliding counter window start, previous window count, current window count, expiration time, and TTL. The durable key uses a hash of the bucket and normalized subject.
 
 ## Refresh Rotation
 

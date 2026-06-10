@@ -74,8 +74,8 @@ test("DynamoDB MCP sessions reject duplicate request ids without raw id storage"
 test("DynamoDB rate limit store hashes bucket subjects and enforces caps", async () => {
   const client = new FakeDynamoDbClient();
   const store = new DynamoDbRateLimitStore(config(), client);
-  await store.hit("oauth-token:client-secret-value", 60, 1);
-  await assert.rejects(() => store.hit("oauth-token:client-secret-value", 60, 1), /rate limit exceeded/);
+  await store.hit("oauth-token:client-secret-value", { windowSeconds: 60, maxRequests: 1 });
+  await assert.rejects(() => store.hit("oauth-token:client-secret-value", { windowSeconds: 60, maxRequests: 1 }), /rate limit exceeded/);
   assert.equal(client.snapshotText().includes("client-secret-value"), false);
   assert.match(client.snapshotText(), new RegExp(escapeRegExp(sha256Base64Url("oauth-token:client-secret-value"))));
 });

@@ -19,6 +19,8 @@ test("production config requires explicit secure public URLs and origins", () =>
   assert.equal(config.refreshTokenTtlSeconds, 2592000);
   assert.equal(config.rateLimitWindowSeconds, 60);
   assert.equal(config.rateLimitMaxRequests, 120);
+  assert.deepEqual(config.rateLimitPolicies["oauth-token"], { windowSeconds: 60, maxRequests: 120 });
+  assert.deepEqual(config.rateLimitPolicies["mcp-tool"], { windowSeconds: 60, maxRequests: 120 });
   assert.equal(config.mcpListPageSize, 128);
   assert.equal(config.mcpSseMaxConnections, 1024);
   assert.equal(config.upstreamOidc.issuer, "https://idp.example.test");
@@ -35,6 +37,18 @@ test("production config accepts explicit upstream OIDC provider settings", () =>
   assert.equal(config.upstreamOidc.redirectUri, "https://issuer.example.test/oauth/callback");
   assert.deepEqual(config.upstreamOidc.scopes, ["openid", "profile", "email", "custom:read"]);
   assert.equal(config.upstreamOidc.tokenEndpointAuthMethod, "client_secret_basic");
+});
+
+test("production config accepts per-bucket rate-limit policies", () => {
+  const config = readConfig(productionEnv({
+    RATE_LIMIT_POLICIES_JSON: JSON.stringify({
+      "oauth-token": { windowSeconds: 30, maxRequests: 40 },
+      "mcp-tool": { maxRequests: 240 },
+    }),
+  }));
+  assert.deepEqual(config.rateLimitPolicies["oauth-token"], { windowSeconds: 30, maxRequests: 40 });
+  assert.deepEqual(config.rateLimitPolicies["mcp-tool"], { windowSeconds: 60, maxRequests: 240 });
+  assert.deepEqual(config.rateLimitPolicies["mcp-resource"], { windowSeconds: 60, maxRequests: 120 });
 });
 
 test("production config rejects insecure or ambiguous deployment inputs", () => {
@@ -63,6 +77,9 @@ test("production config rejects insecure or ambiguous deployment inputs", () => 
   assert.throws(() => readConfig(productionEnv({ OAUTH_DYNAMODB_ENDPOINT: "https://localhost:8000" })), /OAUTH_DYNAMODB_ENDPOINT is local-development only/);
   assert.throws(() => readConfig(productionEnv({ ACCESS_TOKEN_TTL_SECONDS: undefined })), /ACCESS_TOKEN_TTL_SECONDS is required/);
   assert.throws(() => readConfig(productionEnv({ RATE_LIMIT_MAX_REQUESTS: "0" })), /RATE_LIMIT_MAX_REQUESTS must be a positive safe integer/);
+  assert.throws(() => readConfig(productionEnv({ RATE_LIMIT_POLICIES_JSON: "[]" })), /RATE_LIMIT_POLICIES_JSON must be a JSON object/);
+  assert.throws(() => readConfig(productionEnv({ RATE_LIMIT_POLICIES_JSON: "{\"unknown\":{\"maxRequests\":1}}" })), /unknown bucket/);
+  assert.throws(() => readConfig(productionEnv({ RATE_LIMIT_POLICIES_JSON: "{\"oauth-token\":{\"maxRequests\":0}}" })), /positive safe integer/);
   assert.throws(() => readConfig(productionEnv({ MCP_LIST_PAGE_SIZE: undefined })), /MCP_LIST_PAGE_SIZE is required/);
   assert.throws(() => readConfig(productionEnv({ MCP_LIST_PAGE_SIZE: "257" })), /MCP_LIST_PAGE_SIZE must be at most 256/);
   assert.throws(() => readConfig(productionEnv({ MCP_SSE_MAX_CONNECTIONS: undefined })), /MCP_SSE_MAX_CONNECTIONS is required/);

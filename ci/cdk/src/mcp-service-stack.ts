@@ -205,6 +205,7 @@ export class McpServiceStack extends cdk.Stack {
     this.stringParameter("RefreshTokenTtl", config, "REFRESH_TOKEN_TTL_SECONDS", "2592000");
     this.stringParameter("RateLimitWindow", config, "RATE_LIMIT_WINDOW_SECONDS", "60");
     this.stringParameter("RateLimitMaxRequests", config, "RATE_LIMIT_MAX_REQUESTS", "120");
+    this.stringParameter("RateLimitPolicies", config, "RATE_LIMIT_POLICIES_JSON", "{}");
     this.stringParameter("McpListPageSize", config, "MCP_LIST_PAGE_SIZE", "128");
     this.stringParameter("McpSseMaxConnections", config, "MCP_SSE_MAX_CONNECTIONS", "1024");
     this.stringParameter("UpstreamOidcIssuerUrl", config, "UPSTREAM_OIDC_ISSUER_URL", values.upstreamOidc.issuerUrl);

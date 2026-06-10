@@ -6,7 +6,7 @@ const [path, key, countValue, resetValue, delayValue, markerPath] = process.argv
 if (!path || !key || !countValue || !resetValue || !delayValue) throw new Error("missing worker arguments");
 
 await new StoreFile(path).update(async (state) => {
-  state.rateLimits[key] = { count: numberArg(countValue), resetAt: numberArg(resetValue) };
+  state.rateLimits[key] = { windowStart: 0, previousCount: 0, currentCount: numberArg(countValue), expiresAt: numberArg(resetValue) };
   if (markerPath) await writeFile(markerPath, "entered", "utf8");
   await delay(numberArg(delayValue));
 });
