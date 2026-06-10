@@ -1,4 +1,5 @@
 import { api, Header, Query } from "encore.dev/api";
+import { actionScopes } from "./action-contract.ts";
 import { rejectActionAccessTokenQuery, verifyActionBearer } from "./action-bearer.ts";
 
 interface SessionRequest {
@@ -17,7 +18,7 @@ export const session = api<SessionRequest, SessionResponse>(
   { expose: true, auth: true, method: "GET", path: "/actions/session" },
   async (request) => {
     rejectActionAccessTokenQuery(request.access_token);
-    const claims = verifyActionBearer(request.authorization, ["openid"]);
+    const claims = verifyActionBearer(request.authorization, actionScopes.session);
     return {
       subject: claims.sub,
       clientId: claims.client_id,

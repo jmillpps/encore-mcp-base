@@ -11,10 +11,11 @@ New capabilities should use one implementation with protocol-specific adapters.
 5. Register the MCP tool in `mcp/tool-registry.ts`.
 6. Register the MCP UI widget in `mcp/widgets/index.ts` when a component is added.
 7. Add an Actions endpoint under `actions/` when GPT Actions needs the behavior.
-8. Add the OpenAPI operation in `actions/openapi-document.ts`.
-9. Add live tests for each exposed surface.
-10. Run targeted tests for the changed surface.
-11. Run `npm run check` before final release.
+8. Add the OpenAPI operation contract in `actions/action-contract.ts`.
+9. Run `npm run sync:actions-routes` when an Actions route literal changed.
+10. Add live tests for each exposed surface.
+11. Run targeted tests for the changed surface.
+12. Run `npm run check` before final release.
 
 Use [Request Lifecycle](request-lifecycle.md) before changing a path that crosses OAuth, MCP, Actions, or shared capability code.
 

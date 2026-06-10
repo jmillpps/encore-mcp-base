@@ -20,7 +20,11 @@ The public OpenAPI endpoint is read-only. It accepts GET requests and returns th
 
 ## OpenAPI Model
 
-The OpenAPI document builder is shared by the public schema endpoint and `tools/export-openapi.ts`. The document is maintained in code, and the export command reads the Encore route graph before validating ChatGPT Actions compatibility rules and writing JSON.
+The OpenAPI document builder is shared by the public schema endpoint and `tools/export-openapi.ts`.
+
+Route paths, methods, and auth flags come from `actions/action-route-manifest.generated.ts`. The manifest is generated from Encore's compiled route graph by `tools/sync-actions-route-manifest.ts`.
+
+Operation IDs, summaries, descriptions, OAuth scopes, and response schemas live in `actions/action-contract.ts`. The contract registry is keyed by endpoint name.
 
 The document includes:
 
@@ -33,6 +37,14 @@ The document includes:
 - Scope declarations that match endpoint requirements.
 
 The OAuth authorization URL and token URL are derived from the same origin as the first server URL. The public endpoint uses `PUBLIC_ISSUER_URL`. The export command accepts an explicit `--base-url` and validates the generated document before writing the file.
+
+## Drift Controls
+
+`npm run sync:actions-routes` refreshes the checked-in route manifest from Encore output.
+
+`npm run check:actions-openapi` runs `encore check`, compares the generated route manifest with the checked-in manifest, builds the OpenAPI document, and runs the ChatGPT Actions compatibility verifier.
+
+`npm run check` includes the Actions OpenAPI check.
 
 ## Compatibility Rules
 

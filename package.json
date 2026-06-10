@@ -7,13 +7,15 @@
   "scripts": {
     "dev": "encore run --browser=never --port=4000",
     "openapi": "node --experimental-strip-types tools/export-openapi.ts",
+    "sync:actions-routes": "node --experimental-strip-types tools/sync-actions-route-manifest.ts",
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test --test-concurrency=1 \"test/**/*.test.ts\"",
+    "check:actions-openapi": "node --experimental-strip-types tools/sync-actions-route-manifest.ts --check && node --experimental-strip-types tools/export-openapi.ts --base-url https://example.test --no-build > /dev/null",
     "check:architecture": "node --experimental-strip-types tools/check-architecture.ts",
     "check:dependencies": "node --experimental-strip-types tools/check-dependencies.ts",
     "check:file-scope": "node --experimental-strip-types tools/check-file-scope.ts",
     "check:test-placement": "node --experimental-strip-types tools/check-test-placement.ts",
-    "check": "npm run typecheck && npm run check:dependencies && npm run check:architecture && npm run check:file-scope && npm run check:test-placement && npm test"
+    "check": "npm run typecheck && npm run check:dependencies && npm run check:architecture && npm run check:file-scope && npm run check:test-placement && npm run check:actions-openapi && npm test"
   },
   "dependencies": {
     "encore.dev": "1.57.6"

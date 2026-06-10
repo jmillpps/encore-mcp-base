@@ -15,13 +15,13 @@ Shared runtime types belong near the behavior they describe.
 | Access token claims | `auth/tokens/token-claims.ts` |
 | MCP tools | `mcp/tool-types.ts` |
 | MCP schemas | `mcp/tool-schemas.ts` |
-| Actions OpenAPI schemas | `actions/openapi-document.ts` |
+| Actions OpenAPI schemas | `actions/action-contract.ts` |
 
 Place a type in `shared/` when multiple feature roots use it and the type has no dependency on a feature root.
 
 ## Schema Reuse
 
-MCP structured output schemas live with MCP tool descriptors. Actions schemas live in the OpenAPI document builder. Shared capability code should return plain data that both schema systems can validate.
+MCP structured output schemas live with MCP tool descriptors. Actions schemas live in the Actions contract registry. Shared capability code should return plain data that both schema systems can validate.
 
 When changing a shared shape:
 
@@ -40,7 +40,7 @@ When changing a shared shape:
 | Token claims | `auth/tokens/token-claims.ts` | Access tokens, ID tokens, session responses | OAuth token, JWKS, ID token, Actions session, and MCP session tests. |
 | MCP tool descriptor | `mcp/tool-types.ts` | `tools/list` | Descriptor validation and tool listing tests. |
 | MCP structured output | Tool-owned output schemas | `tools/call` | Tool output validation tests. |
-| Actions OpenAPI schema | `actions/openapi-document.ts` | `/actions/openapi.json`, exported schema files | OpenAPI compatibility and endpoint behavior tests. |
+| Actions OpenAPI schema | `actions/action-contract.ts` | `/actions/openapi.json`, exported schema files | OpenAPI compatibility and endpoint behavior tests. |
 
 ## Validation
 

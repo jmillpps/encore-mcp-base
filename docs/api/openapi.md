@@ -9,7 +9,7 @@ The OpenAPI document is the stable GPT Actions contract served by the service an
 | `openapi` | Version `3.1.0`. |
 | `info` | Service title, description, and version. |
 | `servers` | Public service origin. |
-| `x-source` | Fixed value `manual-actions-document`. |
+| `x-source` | Fixed value `actions-contract-registry`. |
 | `x-route-graph-verification` | Fixed value `encore-check`. |
 | `paths` | Health, profile, and session Actions operations. |
 | `components.securitySchemes` | OAuth2 authorization code flow. |
@@ -56,7 +56,21 @@ node --experimental-strip-types tools/export-openapi.ts \
 
 The command validates the route graph and compatibility rules before writing output.
 
-The OpenAPI document is maintained in `actions/openapi-document.ts`. The export command verifies the Encore route graph before writing an artifact. The public endpoint serves the same document builder at runtime.
+The document builder reads `actions/action-route-manifest.generated.ts` for route paths, methods, and auth flags. The manifest is generated from Encore's compiled route graph. Operation IDs, descriptions, scopes, and response schemas live in `actions/action-contract.ts`.
+
+Run this command after changing an Actions route literal:
+
+```sh
+npm run sync:actions-routes
+```
+
+Run this command to verify the checked-in manifest and OpenAPI document:
+
+```sh
+npm run check:actions-openapi
+```
+
+The public endpoint serves the same document builder at runtime.
 
 ## Export Options
 

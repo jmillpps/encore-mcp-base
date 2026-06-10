@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
+import { actionRouteManifest } from "../../actions/action-route-manifest.generated.ts";
 import { openApiDocument } from "../../actions/openapi-document.ts";
+import { actionOperationDefinitions } from "../../actions/action-contract.ts";
 import { assertChatGptActionsOpenApi } from "../../tools/openapi-actions-compatibility.ts";
 import { readJson, requireRecord, requireString } from "../support/http.ts";
 import { startService } from "../support/service-process.ts";
@@ -14,7 +16,7 @@ test("OpenAPI export contains Actions endpoints and OAuth authorization code met
   assert.equal(result.status, 0, result.stderr);
   const document = JSON.parse(result.stdout) as Record<string, unknown>;
   assert.equal(document.openapi, "3.1.0");
-  assert.equal(document["x-source"], "manual-actions-document");
+  assert.equal(document["x-source"], "actions-contract-registry");
   assert.equal(document["x-route-graph-verification"], "encore-check");
   assert.match(requireString(requireRecord(document.info, "info").description, "info description"), /OAuth-protected/);
   const paths = document.paths as Record<string, Record<string, unknown>>;
@@ -55,6 +57,25 @@ test("OpenAPI export contains Actions endpoints and OAuth authorization code met
   assert.deepEqual(errorResponse.required, ["code", "message", "details", "internal_message"]);
   const errorProperties = requireRecord(errorResponse.properties, "ErrorResponse properties");
   assert.match(requireString(requireRecord(errorProperties.internal_message, "ErrorResponse internal_message").description, "ErrorResponse internal_message description"), /live error contract/);
+});
+
+test("OpenAPI paths and security are derived from the Actions contract registry", () => {
+  const document = openApiDocument("https://example.test");
+  const paths = requireRecord(document.paths, "paths");
+  for (const definition of actionOperationDefinitions) {
+    const route = actionRouteManifest.find((entry) => entry.name === definition.name);
+    assert.ok(route);
+    const path = requireRecord(paths[route.path], route.path);
+    const operation = requireRecord(path[route.method.toLowerCase()], `${route.method} ${route.path}`);
+    assert.equal(operation.operationId, definition.operationId);
+    assert.equal(operation.summary, definition.summary);
+    if (definition.scopes.length > 0) {
+      assert.deepEqual(operation.security, [{ OAuth2: [...definition.scopes] }]);
+      continue;
+    }
+    assert.equal(operation.security, undefined);
+  }
+  assert.deepEqual(Object.keys(paths).sort(), actionRouteManifest.map((route) => route.path).sort());
 });
 
 test("OpenAPI endpoint returns the Actions schema for URL import", async (t) => {

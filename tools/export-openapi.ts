@@ -16,8 +16,8 @@ interface ExportOptions {
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 const options = parseArgs(process.argv.slice(2));
-await loadValidatedEncoreGraph(root, options.build);
-const document = openApiDocument(options.baseUrl);
+const routes = await loadValidatedEncoreGraph(root, options.build);
+const document = openApiDocument(options.baseUrl, routes);
 assertChatGptActionsOpenApi(document);
 const output = `${JSON.stringify(document, null, 2)}\n`;
 if (options.out) {

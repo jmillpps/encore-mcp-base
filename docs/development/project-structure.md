@@ -53,7 +53,7 @@ Use this order before editing:
 | MCP UI resource | `mcp/widgets/`, `mcp/app-ui.ts`, `mcp/resource-registry.ts`, and `mcp/resource-validation.ts` |
 | Actions route adapter | `actions/endpoints.*.ts` |
 | Actions bearer validation | `actions/action-bearer.ts` |
-| OpenAPI schema generation | `actions/openapi-document.ts` and `tools/export-openapi.ts` |
+| OpenAPI schema generation | `actions/action-contract.ts`, `actions/action-route-manifest.generated.ts`, `actions/openapi-document.ts`, and `tools/export-openapi.ts` |
 | Cross-surface runtime primitive | `shared/` |
 | Test harness helper | `test/support/` |
 | Surface test | `test/oauth/`, `test/mcp/`, `test/actions/`, `test/security/`, or `test/config/` |

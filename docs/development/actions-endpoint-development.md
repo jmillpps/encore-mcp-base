@@ -29,7 +29,9 @@ Public endpoints stay read-only. The current public endpoints are health, privac
 | Bearer validation | `actions/action-bearer.ts` | Reuse `verifyActionBearer` for every protected Actions endpoint. |
 | Authorization header shape | `actions/authorization-header-middleware.ts` | Keep duplicate header handling aligned with shared auth parsing. |
 | Endpoint adapter | `actions/endpoints.*.ts` | Keep the route small and move shared behavior to the owning domain module. |
-| OpenAPI document | `actions/openapi-document.ts` | Add or update the operation, schema, OAuth security entry, and compatibility metadata. |
+| OpenAPI operation contract | `actions/action-contract.ts` | Add or update operation metadata, schemas, scopes, and compatibility metadata. |
+| OpenAPI route manifest | `actions/action-route-manifest.generated.ts` | Refresh with `npm run sync:actions-routes` after changing an Actions route literal. |
+| OpenAPI document | `actions/openapi-document.ts` | Keep document assembly shared by the public endpoint and export command. |
 | OpenAPI export | `tools/export-openapi.ts` | Verify generated schema output when deployment or URL rules change. |
 | OpenAPI compatibility | `tools/openapi-actions-compatibility.ts` | Add compatibility checks when a new Actions pattern is introduced. |
 
@@ -72,7 +74,9 @@ Actions callers receive Encore-shaped errors. Keep error fields useful to the ca
 
 ## OpenAPI Registration
 
-Update `actions/openapi-document.ts` for every Actions endpoint change.
+Update `actions/action-contract.ts` for every Actions endpoint operation change.
+
+Run `npm run sync:actions-routes` after changing an Actions route literal in an endpoint file.
 
 The OpenAPI operation should include:
 
@@ -84,7 +88,7 @@ The OpenAPI operation should include:
 - JSON response schema.
 - `ErrorResponse` entries for protected endpoints.
 
-Run OpenAPI compatibility tests after changing the document builder.
+Run `npm run check:actions-openapi` after changing an Actions endpoint, route literal, operation contract, schema, or OpenAPI document builder.
 
 ## Test Requirements
 
@@ -106,8 +110,9 @@ Before committing an Actions endpoint change:
 
 1. Confirm the endpoint file owns only transport input, auth, and response mapping.
 2. Confirm shared behavior lives outside `actions/` when MCP also uses it.
-3. Confirm the OpenAPI operation describes the live route and response shape.
+3. Confirm `npm run sync:actions-routes` produces no unstaged route-manifest changes.
 4. Confirm public endpoints return only public data.
 5. Confirm protected endpoints reject missing, malformed, wrong-audience, and under-scoped tokens.
-6. Confirm targeted Actions tests pass.
-7. Confirm affected API, architecture, user-guide, and deployment docs are updated.
+6. Confirm the OpenAPI operation describes the live route and response shape.
+7. Confirm targeted Actions tests pass.
+8. Confirm affected API, architecture, user-guide, and deployment docs are updated.
