@@ -17,6 +17,7 @@ export interface ServiceConfig {
   refreshTokenTtlSeconds: number;
   rateLimitWindowSeconds: number;
   rateLimitMaxRequests: number;
+  mcpListPageSize: number;
   mcpSseMaxConnections: number;
   upstreamOidc: UpstreamOidcConfig;
   production: boolean;
@@ -70,6 +71,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
     refreshTokenTtlSeconds: readNumber(env, "REFRESH_TOKEN_TTL_SECONDS", 2592000, production),
     rateLimitWindowSeconds: readNumber(env, "RATE_LIMIT_WINDOW_SECONDS", 60, production),
     rateLimitMaxRequests: readNumber(env, "RATE_LIMIT_MAX_REQUESTS", 120, production),
+    mcpListPageSize: readNumber(env, "MCP_LIST_PAGE_SIZE", 128, production, 256),
     mcpSseMaxConnections: readNumber(env, "MCP_SSE_MAX_CONNECTIONS", 1024, production),
     upstreamOidc: readUpstreamOidcConfig(env, issuer, production),
     production,
@@ -164,7 +166,7 @@ function normalizeOrigin(value: string, production: boolean): string {
   return url.origin;
 }
 
-function readNumber(env: NodeJS.ProcessEnv, key: string, fallback: number, production: boolean): number {
+function readNumber(env: NodeJS.ProcessEnv, key: string, fallback: number, production: boolean, max?: number): number {
   const value = env[key];
   if (value === undefined) {
     if (production) throw new Error(`${key} is required`);
@@ -173,6 +175,7 @@ function readNumber(env: NodeJS.ProcessEnv, key: string, fallback: number, produ
   const parsed = Number(value);
   if (production && value.trim() === "") throw new Error(`${key} is required`);
   if (!Number.isSafeInteger(parsed) || parsed <= 0) throw new Error(`${key} must be a positive safe integer`);
+  if (max !== undefined && parsed > max) throw new Error(`${key} must be at most ${max}`);
   return parsed;
 }
 

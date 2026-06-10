@@ -19,6 +19,7 @@ test("production config requires explicit secure public URLs and origins", () =>
   assert.equal(config.refreshTokenTtlSeconds, 2592000);
   assert.equal(config.rateLimitWindowSeconds, 60);
   assert.equal(config.rateLimitMaxRequests, 120);
+  assert.equal(config.mcpListPageSize, 128);
   assert.equal(config.mcpSseMaxConnections, 1024);
   assert.equal(config.upstreamOidc.issuer, "https://idp.example.test");
 });
@@ -62,6 +63,8 @@ test("production config rejects insecure or ambiguous deployment inputs", () => 
   assert.throws(() => readConfig(productionEnv({ OAUTH_DYNAMODB_ENDPOINT: "https://localhost:8000" })), /OAUTH_DYNAMODB_ENDPOINT is local-development only/);
   assert.throws(() => readConfig(productionEnv({ ACCESS_TOKEN_TTL_SECONDS: undefined })), /ACCESS_TOKEN_TTL_SECONDS is required/);
   assert.throws(() => readConfig(productionEnv({ RATE_LIMIT_MAX_REQUESTS: "0" })), /RATE_LIMIT_MAX_REQUESTS must be a positive safe integer/);
+  assert.throws(() => readConfig(productionEnv({ MCP_LIST_PAGE_SIZE: undefined })), /MCP_LIST_PAGE_SIZE is required/);
+  assert.throws(() => readConfig(productionEnv({ MCP_LIST_PAGE_SIZE: "257" })), /MCP_LIST_PAGE_SIZE must be at most 256/);
   assert.throws(() => readConfig(productionEnv({ MCP_SSE_MAX_CONNECTIONS: undefined })), /MCP_SSE_MAX_CONNECTIONS is required/);
   assert.throws(() => readConfig(productionEnv({ UPSTREAM_OIDC_TOKEN_URL: "http://auth.example.test/oauth2/token" })), /https/);
   assert.throws(() => readConfig(productionEnv({ UPSTREAM_OIDC_CLIENT_SECRET: "" })), /UPSTREAM_OIDC_CLIENT_SECRET is required/);
@@ -77,6 +80,7 @@ test("local config keeps localhost defaults for development", () => {
   assert.equal(config.widgetDomain, "http://localhost:4000");
   assert.equal(config.oauthStoreBackend, "file");
   assert.ok(config.allowedOrigins.includes("http://localhost:4000"));
+  assert.equal(config.mcpListPageSize, 128);
   assert.equal(config.upstreamOidc.redirectUri, "http://localhost:4000/oauth/callback");
 });
 
@@ -97,6 +101,7 @@ function productionEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
     REFRESH_TOKEN_TTL_SECONDS: "2592000",
     RATE_LIMIT_WINDOW_SECONDS: "60",
     RATE_LIMIT_MAX_REQUESTS: "120",
+    MCP_LIST_PAGE_SIZE: "128",
     MCP_SSE_MAX_CONNECTIONS: "1024",
     ...defaultUpstreamOidcEnv(),
     ...overrides,

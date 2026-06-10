@@ -7,7 +7,7 @@ import { startService, type TestService } from "../support/service-process.ts";
 import { assertSseOpen, SseReader } from "../support/sse.ts";
 
 test("MCP Streamable HTTP validates transport headers and session lifecycle", async (t) => {
-  const service = await startService(t);
+  const service = await startService(t, { MCP_LIST_PAGE_SIZE: "2" });
   const sessionId = await initializeMcp(service, { sendInitialized: false });
   const initializedStore = await readFile(service.storePath, "utf8");
   assert.match(initializedStore, /"mcpSessions"/);
@@ -154,7 +154,14 @@ test("MCP Streamable HTTP validates transport headers and session lifecycle", as
   assert.equal(toolsList.status, 200);
   const toolsListResult = (await readJson(toolsList)).result as Record<string, unknown>;
   assert.equal(Array.isArray(toolsListResult.tools), true);
-  assert.equal(Object.hasOwn(toolsListResult, "nextCursor"), false);
+  assert.equal((toolsListResult.tools as unknown[]).length, 2);
+  const listCursor = requireString(toolsListResult.nextCursor, "tools/list nextCursor");
+  const toolsListNext = await postMcp(service, { jsonrpc: "2.0", id: "tools-list-next", method: "tools/list", params: { cursor: listCursor } }, { sessionId });
+  assert.equal(toolsListNext.status, 200);
+  const toolsListNextResult = (await readJson(toolsListNext)).result as Record<string, unknown>;
+  assert.equal(Array.isArray(toolsListNextResult.tools), true);
+  const wrongMethodCursor = await postMcp(service, { jsonrpc: "2.0", id: "wrong-method-cursor", method: "resources/list", params: { cursor: listCursor } }, { sessionId });
+  assert.equal(((await readJson(wrongMethodCursor)).error as Record<string, unknown>).code, -32602);
   const badListParams = await postMcp(service, { jsonrpc: "2.0", id: "bad-list-params", method: "tools/list", params: [] }, { sessionId });
   assert.equal(badListParams.status, 400);
   assert.equal(((await readJson(badListParams)).error as Record<string, unknown>).code, -32600);

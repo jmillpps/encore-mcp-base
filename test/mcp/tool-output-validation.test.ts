@@ -172,6 +172,7 @@ function testConfig(oauthStorePath: string): ServiceConfig {
     refreshTokenTtlSeconds: 2592000,
     rateLimitWindowSeconds: 60,
     rateLimitMaxRequests: 120,
+    mcpListPageSize: 128,
     mcpSseMaxConnections: 1024,
     upstreamOidc: {
       issuer: "http://127.0.0.1:4100",

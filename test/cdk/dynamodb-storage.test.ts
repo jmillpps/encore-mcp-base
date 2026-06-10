@@ -64,6 +64,7 @@ test("CDK writes DynamoDB runtime parameters and scoped instance permissions", (
   assert.equal(parameters.get("/operator-mcp/sandbox/env/OAUTH_STORE_BACKEND"), "dynamodb");
   assert.ok(parameters.has("/operator-mcp/sandbox/env/OAUTH_DYNAMODB_TABLE_NAME"));
   assert.ok(parameters.has("/operator-mcp/sandbox/env/OAUTH_DYNAMODB_REGION"));
+  assert.equal(parameters.get("/operator-mcp/sandbox/env/MCP_LIST_PAGE_SIZE"), "128");
   assert.equal(parameters.has("/operator-mcp/sandbox/env/OAUTH_STORE_PATH"), false);
   const policyActions = JSON.stringify(synthesized.Resources);
   assert.match(policyActions, /dynamodb:GetItem/);

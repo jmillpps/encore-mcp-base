@@ -80,6 +80,14 @@ Protected tool scope failures return the same challenge in both the HTTP header 
 
 Unsupported methods return JSON-RPC code `-32601`. Invalid params return `-32602`. Calls made before initialization return `-32002` except `initialize`, `ping`, and `notifications/initialized`.
 
+## List Pagination
+
+`tools/list`, `resources/list`, and `resources/templates/list` use opaque cursor paging. A response includes `nextCursor` when more items are available. The next request sends that cursor in `params.cursor`.
+
+Cursors are scoped to the method that issued them. Invalid cursors, malformed cursors, cursors for another method, and cursor fields with a non-string value return JSON-RPC code `-32602`.
+
+The service has no prompts capability. `prompts/list` returns JSON-RPC code `-32601`.
+
 ## Tools
 
 All current tools use an empty input object.

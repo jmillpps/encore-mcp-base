@@ -70,34 +70,23 @@ async function dispatch(context: McpContext, request: JsonRpcRequest): Promise<u
     return {};
   }
   if (request.method === "tools/list") {
-    validateListParams(request.params);
-    return listTools();
+    return listTools(request.params, context.config.mcpListPageSize);
   }
   if (request.method === "tools/call") {
     const { name, args } = toolCallParams(request.params);
     return callTool(context, name, args);
   }
   if (request.method === "resources/list") {
-    validateListParams(request.params, "resources/list");
-    return listResources();
+    return listResources(request.params, context.config.mcpListPageSize);
   }
   if (request.method === "resources/templates/list") {
-    validateListParams(request.params, "resources/templates/list");
-    return listResourceTemplates();
+    return listResourceTemplates(request.params, context.config.mcpListPageSize);
   }
   if (request.method === "resources/read") {
     const uri = resourceReadParams(request.params);
     return readResource(context, uri);
   }
   throw new McpProtocolError(-32601, "method not found");
-}
-
-function validateListParams(params: unknown, method = "tools/list"): void {
-  const record = optionalMethodParams(params, method, ["_meta", "cursor"]);
-  if (!record) return;
-  if (record.cursor === undefined) return;
-  if (typeof record.cursor !== "string") throw new McpProtocolError(-32602, `${method} cursor must be a string`);
-  throw new McpProtocolError(-32602, "invalid cursor");
 }
 
 function toolCallParams(params: unknown): { name: string; args: Record<string, unknown> } {

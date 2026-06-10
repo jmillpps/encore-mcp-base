@@ -4,6 +4,7 @@ import { isIconSizes, isIconSource, isOptionalIconMimeType } from "./media-valid
 import { authChallengeResult } from "./auth-challenge.ts";
 import { assertToolUiMetadata, toolUiDescriptorMeta } from "./app-ui.ts";
 import { McpProtocolError } from "./protocol-error.ts";
+import { paginatedList } from "./pagination.ts";
 import { assertMatchesSchema, matchesSchema } from "./schema-validation.ts";
 import { authSessionTool } from "./tools/auth-session.ts";
 import { healthCheckTool } from "./tools/health-check.ts";
@@ -21,9 +22,9 @@ export const tools: McpTool[] = [healthCheckTool, healthStatusCardTool, identity
 
 const scopePattern = /^[A-Za-z0-9:_./-]+$/;
 
-export function listTools(): Record<string, unknown> {
+export function listTools(params?: unknown, pageSize = Math.max(1, tools.length)): Record<string, unknown> {
   assertToolDefinitions();
-  return { tools: tools.map(toolDescriptor) };
+  return paginatedList(params, "tools/list", "tools", tools.map(toolDescriptor), pageSize);
 }
 
 export async function callTool(context: ToolContext, name: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {

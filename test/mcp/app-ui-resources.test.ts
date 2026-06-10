@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { completeAuthorizationCodeFlow } from "../support/oauth-client.ts";
-import { bearer, callTool, initializeMcp, mcpAuthorization, postMcp } from "../support/mcp.ts";
+import { bearer, callTool, initializeMcp, listMcpItems, mcpAuthorization, postMcp } from "../support/mcp.ts";
 import { assertExposesHeader, readJson, requireRecord, requireString } from "../support/http.ts";
 import { startService } from "../support/service-process.ts";
 import { testUserProfile } from "../support/user-profile.ts";
@@ -31,14 +31,14 @@ test("MCP Apps UI resources expose capabilities, descriptors, contents, and rend
   const initialized = await postMcp(service, { jsonrpc: "2.0", method: "notifications/initialized" }, { sessionId, authorization });
   assert.equal(initialized.status, 202);
 
-  const listedTools = await postMcp(service, { jsonrpc: "2.0", id: "tools", method: "tools/list" }, { sessionId, authorization });
-  const toolList = requireRecord((await readJson(listedTools)).result, "tools result").tools as Record<string, unknown>[];
+  const toolList = await listMcpItems(service, sessionId, "tools/list", "tools", authorization);
   assertToolTemplate(toolByName(toolList, "health.status_card"), healthStatusCardUri, [{ type: "noauth" }]);
   assertToolTemplate(toolByName(toolList, "identity.profile_card"), profileSummaryCardUri, [{ type: "oauth2", scopes: ["openid", "profile", "email"] }]);
 
   const listedResources = await postMcp(service, { jsonrpc: "2.0", id: "resources", method: "resources/list", params: { _meta: { progressToken: "resources" } } }, { sessionId, authorization });
   assert.equal(listedResources.status, 200);
-  const resourceList = requireRecord((await readJson(listedResources)).result, "resources result").resources as Record<string, unknown>[];
+  requireRecord((await readJson(listedResources)).result, "resources result");
+  const resourceList = await listMcpItems(service, sessionId, "resources/list", "resources", authorization);
   assertResourceDescriptor(resourceByUri(resourceList, healthStatusCardUri), "health-status-card");
   assertResourceDescriptor(resourceByUri(resourceList, profileSummaryCardUri), "profile-summary-card");
 

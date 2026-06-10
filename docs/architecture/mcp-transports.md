@@ -59,17 +59,26 @@ Legacy transport requests use the same origin checks, query-token rejection, dup
 
 The transport accepts one JSON-RPC message per HTTP request. Request IDs are strings or safe integers. Params must be objects when present.
 
+JSON-RPC batch arrays are invalid request bodies for the Streamable HTTP endpoint and the legacy message endpoint.
+
 The parser rejects response/request field collisions, unsupported envelope fields, invalid UTF-8, malformed JSON, unsafe numeric IDs, invalid response result shapes, and notification forms for request-only methods.
 
 | Method | Behavior |
 | --- | --- |
 | `initialize` | Returns protocol version, server info, server instructions, and tool capability metadata. |
 | `ping` | Returns an empty JSON-RPC result. |
-| `tools/list` | Returns validated tool descriptors. Cursors are currently rejected. |
+| `tools/list` | Returns validated tool descriptors with opaque cursor paging. |
 | `tools/call` | Validates the tool name, argument object, scope requirements, input schema, output schema, and result envelope. |
+| `resources/list` | Returns resource descriptors with opaque cursor paging. |
+| `resources/templates/list` | Returns resource template descriptors with opaque cursor paging. |
+| `resources/read` | Validates the resource URI, scope requirements, and resource content envelope. |
 | Client response envelopes | Return HTTP `202` without a JSON body. |
 | Notifications | Return protocol-specific accepted responses when the notification is valid. |
 | Unknown request methods | Return a JSON-RPC missing-method error. |
+
+List methods return a server-sized page and include `nextCursor` when more descriptors exist. Clients send that cursor in the next request. Cursors are opaque and scoped to the method that issued them. Invalid cursors return JSON-RPC `-32602`.
+
+The service has no prompt capability. `prompts/list` returns JSON-RPC `-32601`.
 
 ## SSE Lifetime
 

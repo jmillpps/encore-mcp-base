@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import type { TestService } from "./service-process.ts";
-import { readJson, requireString } from "./http.ts";
+import { readJson, requireRecord, requireString } from "./http.ts";
 import { completeAuthorizationCodeFlow } from "./oauth-client.ts";
 
 const serviceAuthorizations = new Map<string, string>();
@@ -62,6 +62,33 @@ export async function callTool(
   assert.equal(typeof result, "object");
   assert.notEqual(result, null);
   return result as Record<string, unknown>;
+}
+
+export async function listMcpItems(
+  service: TestService,
+  sessionId: string,
+  method: string,
+  resultKey: string,
+  authorization?: string,
+): Promise<Record<string, unknown>[]> {
+  const items: Record<string, unknown>[] = [];
+  let cursor: string | undefined;
+  for (let page = 0; page < 16; page += 1) {
+    const response = await postMcp(
+      service,
+      { jsonrpc: "2.0", id: `${method}-${page}`, method, ...(cursor ? { params: { cursor } } : {}) },
+      { sessionId, authorization },
+    );
+    assert.equal(response.status, 200);
+    const result = requireRecord((await readJson(response)).result, `${method} result`);
+    const pageItems = result[resultKey];
+    assert.equal(Array.isArray(pageItems), true);
+    items.push(...pageItems as Record<string, unknown>[]);
+    const nextCursor = result.nextCursor;
+    if (nextCursor === undefined) return items;
+    cursor = requireString(nextCursor, "nextCursor");
+  }
+  throw new Error(`${method} pagination did not terminate`);
 }
 
 export async function deleteSession(service: TestService, sessionId: string): Promise<Response> {

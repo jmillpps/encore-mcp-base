@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import * as oauth from "oauth4webapi";
 import { completeAuthorizationCodeFlow, discover, manualRedirect } from "../support/oauth-client.ts";
-import { callTool, initializeMcp, postMcp, bearer } from "../support/mcp.ts";
+import { callTool, initializeMcp, listMcpItems, postMcp, bearer } from "../support/mcp.ts";
 import { assertExposesHeader, expectOAuthError, readJson, requireRecord, requireString } from "../support/http.ts";
 import { startService, type TestService } from "../support/service-process.ts";
 import { testUserProfile } from "../support/user-profile.ts";
@@ -14,10 +14,7 @@ const gptAppsMcpRedirectUri = "https://chatgpt.com/connector/oauth/local-callbac
 test("MCP tools expose metadata and protected tools return auth challenges", async (t) => {
   const service = await startService(t);
   const sessionId = await initializeMcp(service);
-  const listed = await postMcp(service, { jsonrpc: "2.0", id: "list", method: "tools/list" }, { sessionId });
-  assert.equal(listed.status, 200);
-  const listBody = await readJson(listed);
-  const tools = ((listBody.result as Record<string, unknown>).tools as Record<string, unknown>[]);
+  const tools = await listMcpItems(service, sessionId, "tools/list", "tools");
   assert.ok(tools.some((tool) => tool.name === "identity.profile"));
   for (const tool of tools) {
     assert.match(requireString(tool.name, "tool name"), /^[A-Za-z0-9_.-]{1,128}$/);

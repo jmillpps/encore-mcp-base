@@ -2,6 +2,7 @@ import { verifyBearer } from "../auth/bearer.ts";
 import { enforceRateLimit } from "../auth/rate-limit.ts";
 import { ServiceError } from "../shared/errors.ts";
 import { McpAuthChallengeError } from "./auth-challenge.ts";
+import { paginatedList } from "./pagination.ts";
 import { McpProtocolError } from "./protocol-error.ts";
 import { assertResourceContents, assertResourceDefinitions, resourceDescriptor, resourceTemplateDescriptor } from "./resource-validation.ts";
 import type { McpResourceDefinition, McpResourceTemplate, ResourceContext } from "./resource-types.ts";
@@ -11,14 +12,14 @@ import { applyWidgetRuntimeMetadata } from "./widgets/runtime-metadata.ts";
 export const resources: McpResourceDefinition[] = [...widgetResources];
 export const resourceTemplates: McpResourceTemplate[] = [];
 
-export function listResources(): Record<string, unknown> {
+export function listResources(params?: unknown, pageSize = Math.max(1, resources.length)): Record<string, unknown> {
   assertResourceDefinitions(resources, resourceTemplates);
-  return { resources: resources.map(resourceDescriptor) };
+  return paginatedList(params, "resources/list", "resources", resources.map(resourceDescriptor), pageSize);
 }
 
-export function listResourceTemplates(): Record<string, unknown> {
+export function listResourceTemplates(params?: unknown, pageSize = Math.max(1, resourceTemplates.length)): Record<string, unknown> {
   assertResourceDefinitions(resources, resourceTemplates);
-  return { resourceTemplates: resourceTemplates.map(resourceTemplateDescriptor) };
+  return paginatedList(params, "resources/templates/list", "resourceTemplates", resourceTemplates.map(resourceTemplateDescriptor), pageSize);
 }
 
 export async function readResource(context: ResourceContext, uri: string): Promise<Record<string, unknown>> {

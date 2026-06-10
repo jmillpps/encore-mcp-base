@@ -33,6 +33,7 @@ Production mode is active when `NODE_ENV=production`.
 | `REFRESH_TOKEN_TTL_SECONDS` | integer | Refresh token lifetime. |
 | `RATE_LIMIT_WINDOW_SECONDS` | integer | Durable rate-limit window length. |
 | `RATE_LIMIT_MAX_REQUESTS` | integer | Request limit per bucket and subject. |
+| `MCP_LIST_PAGE_SIZE` | integer | Maximum MCP list items returned per page. Maximum value is `256`. |
 | `MCP_SSE_MAX_CONNECTIONS` | integer | Maximum open SSE receive streams. |
 
 ## Optional Production Variables
@@ -62,6 +63,7 @@ Local development supplies defaults for URLs, origins, token lifetimes, rate lim
 | `REFRESH_TOKEN_TTL_SECONDS` | `2592000` |
 | `RATE_LIMIT_WINDOW_SECONDS` | `60` |
 | `RATE_LIMIT_MAX_REQUESTS` | `120` |
+| `MCP_LIST_PAGE_SIZE` | `128` |
 | `MCP_SSE_MAX_CONNECTIONS` | `1024` |
 | `UPSTREAM_OIDC_ISSUER_URL` | `http://127.0.0.1:4100` |
 | `UPSTREAM_OIDC_DISCOVERY_URL` | `http://127.0.0.1:4100/.well-known/openid-configuration` |
