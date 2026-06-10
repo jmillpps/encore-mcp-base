@@ -5,7 +5,7 @@ import { assertPrivateKeyJwtClientAssertion } from "./client-assertion.ts";
 import { readClientCredentials } from "./client-auth.ts";
 import { resolveClient } from "./client-resolver.ts";
 import { assertAllowedParameters, optionalParameter } from "./oauth-parameters.ts";
-import type { DiskOAuthStore } from "./storage/disk-store.ts";
+import type { OAuthStore } from "./storage/oauth-store.ts";
 import { authorizationCodeGrant } from "./tokens/authorization-code.ts";
 import { refreshTokenGrant } from "./tokens/refresh-token.ts";
 import type { TokenResponse } from "./tokens/token-response.ts";
@@ -14,7 +14,7 @@ export type { TokenResponse } from "./tokens/token-response.ts";
 
 export async function handleTokenGrant(
   config: ServiceConfig,
-  store: DiskOAuthStore,
+  store: OAuthStore,
   clients: readonly OAuthClient[],
   form: URLSearchParams,
   authorization: string | undefined,

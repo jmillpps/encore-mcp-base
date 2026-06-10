@@ -1,7 +1,7 @@
 import type { ServiceConfig } from "../shared/config.ts";
 import { randomToken, s256Challenge } from "../shared/crypto.ts";
 import type { UserProfile } from "./user-profile.ts";
-import type { DiskOAuthStore } from "./storage/disk-store.ts";
+import type { OAuthStore } from "./storage/oauth-store.ts";
 import type { UpstreamAuthorizationStateRecord } from "./storage/store-records.ts";
 
 export interface ValidatedAuthorization {
@@ -15,7 +15,7 @@ export interface ValidatedAuthorization {
   codeChallengeMethod?: "S256";
 }
 
-export async function createLoginRedirect(config: ServiceConfig, store: DiskOAuthStore, request: ValidatedAuthorization): Promise<string> {
+export async function createLoginRedirect(config: ServiceConfig, store: OAuthStore, request: ValidatedAuthorization): Promise<string> {
   const codeVerifier = randomToken(32);
   const state = await store.createUpstreamAuthorizationState({
     ...request,
@@ -35,7 +35,7 @@ export async function createLoginRedirect(config: ServiceConfig, store: DiskOAut
 
 export async function createServiceAuthorizationCode(
   config: ServiceConfig,
-  store: DiskOAuthStore,
+  store: OAuthStore,
   request: ValidatedAuthorization | UpstreamAuthorizationStateRecord,
   user: UserProfile,
 ): Promise<string> {

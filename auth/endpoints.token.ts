@@ -7,7 +7,7 @@ import { validateSingleAuthorizationHeader } from "./authorization-header.ts";
 import { loadClients } from "./clients.ts";
 import { writeOAuthError } from "./oauth-errors.ts";
 import { enforceRateLimit, tokenRateSubject } from "./rate-limit.ts";
-import { DiskOAuthStore } from "./storage/disk-store.ts";
+import { oauthStore } from "./storage/store-provider.ts";
 import { handleTokenGrant } from "./token.ts";
 
 export const token = api.raw({ expose: true, method: "POST", path: "/oauth/token" }, async (req, res) => {
@@ -20,7 +20,7 @@ export const token = api.raw({ expose: true, method: "POST", path: "/oauth/token
     await enforceRateLimit(config, "oauth-token", tokenRateSubject(form, authorization, requestSubject(req)));
     const body = await handleTokenGrant(
       config,
-      new DiskOAuthStore(config.oauthStorePath),
+      oauthStore(config),
       loadClients(config),
       form,
       authorization,

@@ -2,10 +2,10 @@ import type { ServiceConfig } from "../../shared/config.ts";
 import type { OAuthClient } from "../clients.ts";
 import { resolveOAuthGrantResource } from "../oauth-resource.ts";
 import { optionalParameter, requiredParameter } from "../oauth-parameters.ts";
-import type { DiskOAuthStore } from "../storage/disk-store.ts";
+import type { OAuthStore } from "../storage/oauth-store.ts";
 import { issueTokenResponse, type TokenResponse } from "./token-response.ts";
 
-export async function authorizationCodeGrant(config: ServiceConfig, store: DiskOAuthStore, client: OAuthClient, form: URLSearchParams): Promise<TokenResponse> {
+export async function authorizationCodeGrant(config: ServiceConfig, store: OAuthStore, client: OAuthClient, form: URLSearchParams): Promise<TokenResponse> {
   const code = requiredParameter(form, "code");
   const redirectUri = requiredParameter(form, "redirect_uri");
   const requestedResource = resolveOAuthGrantResource(client, optionalParameter(form, "resource"));

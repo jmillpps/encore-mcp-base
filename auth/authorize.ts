@@ -1,7 +1,7 @@
 import type { ServiceConfig } from "../shared/config.ts";
 import { ServiceError } from "../shared/errors.ts";
 import { createLoginRedirect } from "./upstream-authorization.ts";
-import { DiskOAuthStore } from "./storage/disk-store.ts";
+import type { OAuthStore } from "./storage/oauth-store.ts";
 import { assertAllowedScopes, parseScopes } from "./scopes.ts";
 import { assertRedirectUri, type OAuthClient } from "./clients.ts";
 import { resolveClient } from "./client-resolver.ts";
@@ -26,7 +26,7 @@ export interface AuthorizationRequest {
 
 export async function createAuthorizationRedirect(
   config: ServiceConfig,
-  store: DiskOAuthStore,
+  store: OAuthStore,
   clients: readonly OAuthClient[],
   request: AuthorizationRequest,
 ): Promise<string> {

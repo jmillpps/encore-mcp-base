@@ -2,14 +2,14 @@ import type { ServiceConfig } from "../shared/config.ts";
 import { sha256Base64Url } from "../shared/crypto.ts";
 import { authorizationCredentials } from "./authorization-header.ts";
 import { decodeBasicCredentials } from "./basic-credentials.ts";
-import { DiskRateLimitStore } from "./storage/rate-limit-store.ts";
+import { rateLimitStore } from "./storage/store-provider.ts";
 
 export type RateLimitBucket = "oauth-authorize" | "oauth-token" | "oauth-userinfo" | "mcp-tool" | "mcp-resource";
 
 export async function enforceRateLimit(config: ServiceConfig, bucket: RateLimitBucket, subject: string): Promise<void> {
   const normalized = subject.trim() || "anonymous";
   const key = `${bucket}:${sha256Base64Url(normalized)}`;
-  await new DiskRateLimitStore(config.oauthStorePath).hit(key, config.rateLimitWindowSeconds, config.rateLimitMaxRequests);
+  await rateLimitStore(config).hit(key, config.rateLimitWindowSeconds, config.rateLimitMaxRequests);
 }
 
 export function clientRateSubject(clientId: string | null | undefined, fallback: string): string {

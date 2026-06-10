@@ -7,7 +7,7 @@ import { loadClients } from "./clients.ts";
 import { writeOAuthError } from "./oauth-errors.ts";
 import { assertAllowedParameters, optionalParameter, requiredParameter } from "./oauth-parameters.ts";
 import { clientRateSubject, enforceRateLimit } from "./rate-limit.ts";
-import { DiskOAuthStore } from "./storage/disk-store.ts";
+import { oauthStore } from "./storage/store-provider.ts";
 
 export const authorize = api.raw({ expose: true, method: "GET", path: "/oauth/authorize" }, async (req, res) => {
   try {
@@ -40,7 +40,7 @@ export const authorize = api.raw({ expose: true, method: "GET", path: "/oauth/au
       ...(url.searchParams.has("nonce") ? { nonce: optionalParameter(url.searchParams, "nonce") ?? "" } : {}),
       ...(url.searchParams.has("id_token_hint") ? { idTokenHint: optionalParameter(url.searchParams, "id_token_hint") ?? "" } : {}),
     };
-    const redirect = await createAuthorizationRedirect(config, new DiskOAuthStore(config.oauthStorePath), loadClients(config), request);
+    const redirect = await createAuthorizationRedirect(config, oauthStore(config), loadClients(config), request);
     writeRedirect(res, redirect);
   } catch (error) {
     writeOAuthError(res, error, { endpoint: "oauth.authorize", method: "GET", subject: requestSubject(req) });

@@ -7,7 +7,7 @@ import { exchangeUpstreamCode } from "./upstream-oidc-client.ts";
 import { writeOAuthError } from "./oauth-errors.ts";
 import { assertAllowedParameters, optionalParameter, requiredParameter } from "./oauth-parameters.ts";
 import { enforceRateLimit } from "./rate-limit.ts";
-import { DiskOAuthStore } from "./storage/disk-store.ts";
+import { oauthStore } from "./storage/store-provider.ts";
 
 export const upstreamCallback = api.raw({ expose: true, method: "GET", path: "/oauth/callback" }, async (req, res) => {
   try {
@@ -17,7 +17,7 @@ export const upstreamCallback = api.raw({ expose: true, method: "GET", path: "/o
     await enforceRateLimit(config, "oauth-authorize", requestSubject(req));
     assertAllowedParameters(url.searchParams, ["code", "state", "error", "error_description"]);
     const state = requiredParameter(url.searchParams, "state");
-    const store = new DiskOAuthStore(config.oauthStorePath);
+    const store = oauthStore(config);
     const authorization = await store.consumeUpstreamAuthorizationState(state);
     const upstreamError = optionalParameter(url.searchParams, "error");
     if (upstreamError) {
