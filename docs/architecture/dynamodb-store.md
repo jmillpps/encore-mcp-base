@@ -1,6 +1,6 @@
 # DynamoDB Store
 
-Production deployments use one DynamoDB table for OAuth, MCP session, and rate-limit state. The table is an authentication data boundary and uses access-pattern keys, conditional writes, transactions, TTL, point-in-time recovery, and customer-managed KMS encryption.
+Production deployments use one DynamoDB table for OAuth, MCP session, rate-limit, and remote metadata cache state. The table is an authentication data boundary and uses access-pattern keys, conditional writes, transactions, TTL, point-in-time recovery, and customer-managed KMS encryption.
 
 ## Table Shape
 
@@ -17,7 +17,7 @@ The table secondary index count is zero. Every runtime access pattern is served 
 
 ## Runtime Provider
 
-The service creates one DynamoDB store bundle per table name, Region, and endpoint. The bundle owns one DynamoDB HTTP client, one OAuth store, and one rate-limit store. Reusing the bundle keeps AWS credential caching and HTTP client construction stable across requests.
+The service creates one DynamoDB store bundle per table name, Region, and endpoint. The bundle owns one DynamoDB HTTP client, one OAuth store, one rate-limit store, and one metadata cache store. Reusing the bundle keeps AWS credential caching and HTTP client construction stable across requests.
 
 The cache key uses deployment identifiers only. It excludes secrets, account IDs, tokens, user identifiers, and request data.
 
@@ -37,12 +37,18 @@ The cache key uses deployment identifiers only. It excludes secrets, account IDs
 | Reserve MCP request ID | `MCP_SESSION#<sessionHash>` / `SESSION` | Strong read followed by conditional update. |
 | Terminate MCP session | `MCP_SESSION#<sessionHash>` / `SESSION` | Conditional update. |
 | Hit rate-limit bucket | `RATE#<bucketSubjectHash>` / `BUCKET` | Strong read followed by conditional put or update. |
+| Read Client ID Metadata Document cache | `CACHE#client-metadata#<cacheKeyHash>` / `ENTRY` | Strong read. |
+| Write Client ID Metadata Document cache | `CACHE#client-metadata#<cacheKeyHash>` / `ENTRY` | Put or delete. |
+| Read private key JWT JWKS cache | `CACHE#client-jwks#<cacheKeyHash>` / `ENTRY` | Strong read. |
+| Write private key JWT JWKS cache | `CACHE#client-jwks#<cacheKeyHash>` / `ENTRY` | Put or delete. |
 
 ## Stored Data
 
-The store saves hashes for authorization codes, upstream states, refresh tokens, MCP session IDs, MCP request IDs, and rate-limit subjects. Raw bearer tokens, refresh tokens, authorization codes, upstream states, session IDs, request IDs, client secrets, upstream client secrets, and signing keys stay outside the table.
+The store saves hashes for authorization codes, upstream states, refresh tokens, MCP session IDs, MCP request IDs, rate-limit subjects, and metadata cache keys. Raw bearer tokens, refresh tokens, authorization codes, upstream states, session IDs, request IDs, client secrets, upstream client secrets, and signing keys stay outside the table.
 
 User profile fields are stored with authorization-code and refresh-token records because token issuance needs the authenticated subject, email, display name, and verification status. Profile records use the normalized service profile shape. Profile records are reachable only through direct grant and token keys.
+
+Client ID Metadata Document and private key JWT JWKS cache entries store bounded JSON response bodies. The source URLs are represented in keys only through SHA-256 base64url hashes. Cache entries use the remote response cache lifetime with the service maximum, and DynamoDB TTL removes expired entries.
 
 ## Refresh Rotation
 

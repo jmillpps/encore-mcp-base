@@ -29,6 +29,10 @@ export function rateLimitKey(bucketHash: string): DynamoDbItem {
   return key(`RATE#${bucketHash}`, "BUCKET");
 }
 
+export function metadataCacheKey(namespace: string, cacheKeyHash: string): DynamoDbItem {
+  return key(`CACHE#${namespace}#${cacheKeyHash}`, "ENTRY");
+}
+
 export function key(pk: string, sk: string): DynamoDbItem {
   return { pk: stringAttr(pk), sk: stringAttr(sk) };
 }

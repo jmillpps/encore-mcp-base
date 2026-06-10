@@ -25,6 +25,14 @@ Runtime fetch limits:
 | Default cache lifetime | 300 seconds. |
 | Maximum cache lifetime | 3600 seconds. |
 
+## Cache Behavior
+
+Production deployments cache Client ID Metadata Document responses and private key JWT JWKS responses in DynamoDB. Cache records use the configured single table, direct primary-key access, hashed cache keys, and TTL.
+
+Each service process also keeps a bounded in-memory hot cache for parsed metadata clients and parsed JWKS keys. The in-memory cache reduces repeated parsing inside one process. The DynamoDB cache shares fetched JSON response bodies across production instances.
+
+Responses with `Cache-Control: no-store` remove the corresponding DynamoDB cache entry.
+
 ## Metadata Rules
 
 Metadata documents must decode as valid UTF-8 and parse as JSON.

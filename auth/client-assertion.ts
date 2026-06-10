@@ -6,6 +6,8 @@ import { fetchMetadataDocument } from "./client-metadata-fetch.ts";
 import { resolveMetadataNetworkAddress } from "./client-metadata-network.ts";
 import type { OAuthClient } from "./client-types.ts";
 import { readExpiringCache, writeExpiringCache, type ExpiringCacheEntry } from "./expiring-cache.ts";
+import { metadataCacheStore } from "./storage/store-provider.ts";
+import type { MetadataCacheEntry, MetadataCacheStore } from "./storage/metadata-cache-store.ts";
 import { jwtKid, verifyJwt } from "./tokens/jwt.ts";
 
 const maximumAssertionLifetimeSeconds = 300;
@@ -38,11 +40,29 @@ async function clientJwks(config: ServiceConfig, jwksUri: string): Promise<Map<s
   const cacheKey = `${config.production}\0${jwksUri}`;
   const cached = readExpiringCache(jwksCache, cacheKey);
   if (cached) return cached;
+  const durableCache = metadataCacheStore(config);
+  const durableEntry = await durableCache?.read("client-jwks", cacheKey);
+  if (durableEntry) return cachedJwks(cacheKey, durableEntry);
   const url = new URL(jwksUri);
   const fetched = await fetchMetadataDocument(url, await resolveMetadataNetworkAddress(url, config.production));
   const keys = parseJwks(fetched.body);
   writeExpiringCache(jwksCache, cacheKey, keys, fetched.cacheSeconds, maximumClientJwksCacheEntries);
+  await writeDurableCache(durableCache, "client-jwks", cacheKey, fetched.body, fetched.cacheSeconds);
   return keys;
+}
+
+function cachedJwks(cacheKey: string, entry: MetadataCacheEntry): Map<string, KeyObject> {
+  const keys = parseJwks(entry.body);
+  writeExpiringCache(jwksCache, cacheKey, keys, cacheSecondsRemaining(entry.expiresAt), maximumClientJwksCacheEntries);
+  return keys;
+}
+
+async function writeDurableCache(store: MetadataCacheStore | undefined, namespace: "client-jwks", key: string, body: unknown, cacheSeconds: number): Promise<void> {
+  if (store) await store.write(namespace, key, body, cacheSeconds);
+}
+
+function cacheSecondsRemaining(expiresAt: number): number {
+  return Math.max(0, expiresAt - Math.floor(Date.now() / 1000));
 }
 
 function parseJwks(body: unknown): Map<string, KeyObject> {

@@ -1,6 +1,6 @@
 # Storage Maintenance
 
-The OAuth store is a security boundary. It contains grant state, upstream login state, refresh token metadata, MCP session metadata, and rate-limit counters. Production stores this state in DynamoDB. Local development stores this state in a JSON file.
+The OAuth store is a security boundary. It contains grant state, upstream login state, refresh token metadata, MCP session metadata, rate-limit counters, and production metadata cache entries. Production stores this state in DynamoDB. Local development stores this state in a JSON file.
 
 ## Production Protection
 
@@ -14,7 +14,7 @@ The local file reader rejects symlinks, malformed JSON, unexpected record shapes
 
 ## Secret Handling
 
-Authorization codes, upstream login states, refresh tokens, MCP session IDs, MCP request IDs, and rate-limit subjects are stored as SHA-256 hashes. Raw client secrets, upstream client secrets, and signing keys are stored outside the OAuth store. `OAUTH_CLIENTS_JSON` stores only client secret hashes.
+Authorization codes, upstream login states, refresh tokens, MCP session IDs, MCP request IDs, rate-limit subjects, and metadata cache keys are stored as SHA-256 hashes. Raw client secrets, upstream client secrets, signing keys, and raw bearer material are stored outside the OAuth store. `OAUTH_CLIENTS_JSON` stores only client secret hashes.
 
 ## Record Review
 
@@ -25,6 +25,7 @@ Authorization codes, upstream login states, refresh tokens, MCP session IDs, MCP
 | Refresh tokens | Review family IDs, creation times, expiration times, rotation parents, and revoked times. |
 | MCP sessions | Review count, protocol version, created time, last-seen time, initialized time, and terminated time. |
 | Rate-limit buckets | Review count and reset time for the affected endpoint subject. |
+| Metadata cache entries | Review namespace, expiration time, and item count. Avoid copying full response bodies into tickets. |
 
 ## Local File Concurrent Updates
 
@@ -69,3 +70,4 @@ Restore a signing key backup with the matching local store when active refresh t
 | Refresh flow | A valid refresh token from the restored store rotates successfully. |
 | MCP initialize | `POST /mcp` initialize creates a new session and returns `MCP-Session-Id`. |
 | Rate limit state | Existing counters either continue until reset or expire according to their stored reset time. |
+| Metadata cache state | Client metadata and JWKS cache entries either read successfully or expire through TTL. |
