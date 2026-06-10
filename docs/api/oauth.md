@@ -53,7 +53,7 @@ Optional parameters:
 
 The endpoint rejects duplicate parameters, unsupported parameters, query access tokens, unregistered redirect URIs, unknown clients, unsupported scopes, and unapproved resources.
 
-Successful authorization validates the ChatGPT client request, stores upstream authorization state, and redirects the browser to the configured upstream identity provider. The upstream provider redirects to `/oauth/callback`. The service consumes the upstream state once, exchanges the upstream code, reads userinfo, and redirects to the registered ChatGPT `redirect_uri` with the service authorization code and optional `state`.
+Successful authorization validates the ChatGPT client request, stores upstream authorization state, and redirects the browser to the configured upstream identity provider. The upstream provider redirects to `/oauth/callback`. The service consumes the upstream state once, validates upstream discovery metadata, JWKS, ID token claims, and userinfo subject binding, then redirects to the registered ChatGPT `redirect_uri` with the service authorization code and optional `state`.
 
 Authorization requests are rate-limited through the durable `oauth-authorize` bucket.
 

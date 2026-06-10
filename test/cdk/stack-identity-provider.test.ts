@@ -15,6 +15,7 @@ interface DeploymentConfig {
     cognitoDomainPrefix?: string;
     upstreamOidc?: {
       issuerUrl: string;
+      discoveryUrl: string;
       authorizationUrl: string;
       tokenUrl: string;
       userinfoUrl: string;
@@ -48,6 +49,7 @@ test("CDK external identity provider mode writes generic upstream OIDC parameter
   template.resourceCountIs("AWS::Cognito::UserPool", 0);
   const parameters = parameterMap(template);
   assert.equal(parameters.get("/operator-mcp/sandbox/env/UPSTREAM_OIDC_ISSUER_URL"), "https://idp.example.test");
+  assert.equal(parameters.get("/operator-mcp/sandbox/env/UPSTREAM_OIDC_DISCOVERY_URL"), "https://idp.example.test/.well-known/openid-configuration");
   assert.equal(parameters.get("/operator-mcp/sandbox/env/UPSTREAM_OIDC_CLIENT_ID"), "upstream-client");
   assert.equal(parameters.get("/operator-mcp/sandbox/env/UPSTREAM_OIDC_REDIRECT_URI"), "https://service.example.com/oauth/callback");
   assert.equal(parameters.get("/operator-mcp/sandbox/env/UPSTREAM_OIDC_TOKEN_AUTH_METHOD"), "client_secret_basic");
@@ -63,6 +65,7 @@ test("CDK Cognito identity provider mode provisions Cognito and still writes ups
   });
   const parameters = parameterMap(template);
   assert.ok(parameters.has("/operator-mcp/sandbox/env/UPSTREAM_OIDC_ISSUER_URL"));
+  assert.ok(parameters.has("/operator-mcp/sandbox/env/UPSTREAM_OIDC_DISCOVERY_URL"));
   assert.ok(parameters.has("/operator-mcp/sandbox/env/UPSTREAM_OIDC_CLIENT_ID"));
   assert.equal(parameters.get("/operator-mcp/sandbox/env/UPSTREAM_OIDC_REDIRECT_URI"), "https://service.example.com/oauth/callback");
   assert.equal(parameters.get("/operator-mcp/sandbox/env/UPSTREAM_OIDC_TOKEN_AUTH_METHOD"), "client_secret_post");
@@ -81,6 +84,7 @@ function externalConfig(): DeploymentConfig {
       mode: "external",
       upstreamOidc: {
         issuerUrl: "https://idp.example.test",
+        discoveryUrl: "https://idp.example.test/.well-known/openid-configuration",
         authorizationUrl: "https://login.example.test/oauth2/authorize",
         tokenUrl: "https://login.example.test/oauth2/token",
         userinfoUrl: "https://login.example.test/oauth2/userInfo",

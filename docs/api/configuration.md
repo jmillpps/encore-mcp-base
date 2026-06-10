@@ -18,6 +18,7 @@ Production mode is active when `NODE_ENV=production`.
 | `OAUTH_PRIVATE_KEY_PEM` or `OAUTH_PRIVATE_KEY_PEM_FILE` | PEM or file path | Active RSA private key source for token signing. |
 | `OAUTH_KEY_ID` | string | Active signing key ID. |
 | `UPSTREAM_OIDC_ISSUER_URL` | URL | Upstream identity provider issuer URL. |
+| `UPSTREAM_OIDC_DISCOVERY_URL` | URL | Upstream discovery document URL. Default is the issuer plus `/.well-known/openid-configuration`. |
 | `UPSTREAM_OIDC_AUTHORIZATION_URL` | URL | Upstream authorization endpoint. |
 | `UPSTREAM_OIDC_TOKEN_URL` | URL | Upstream token endpoint. |
 | `UPSTREAM_OIDC_USERINFO_URL` | URL | Upstream userinfo endpoint. |
@@ -63,6 +64,7 @@ Local development supplies defaults for URLs, origins, token lifetimes, rate lim
 | `RATE_LIMIT_MAX_REQUESTS` | `120` |
 | `MCP_SSE_MAX_CONNECTIONS` | `1024` |
 | `UPSTREAM_OIDC_ISSUER_URL` | `http://127.0.0.1:4100` |
+| `UPSTREAM_OIDC_DISCOVERY_URL` | `http://127.0.0.1:4100/.well-known/openid-configuration` |
 | `UPSTREAM_OIDC_AUTHORIZATION_URL` | `http://127.0.0.1:4100/oauth2/authorize` |
 | `UPSTREAM_OIDC_TOKEN_URL` | `http://127.0.0.1:4100/oauth2/token` |
 | `UPSTREAM_OIDC_USERINFO_URL` | `http://127.0.0.1:4100/oauth2/userInfo` |
@@ -90,13 +92,15 @@ Integer environment variables use positive safe integers. Production startup fai
 
 ## Upstream Identity Rules
 
-Production identity comes from upstream OIDC userinfo. Userinfo must return `sub`, `email`, and `email_verified`. Optional display claims include `given_name`, `family_name`, `name`, and `preferred_username`.
+Production identity comes from upstream OIDC ID token validation and userinfo. Userinfo must return `sub`, `email`, and `email_verified`. Optional display claims include `given_name`, `family_name`, `name`, and `preferred_username`.
 
 Profile string values must be present when required, must be at most 256 characters, and must omit line breaks. `email` must be an email address. `email_verified` must be a boolean value or a string boolean accepted by normalization.
 
 ## Upstream OIDC Rules
 
-Upstream endpoint URLs use HTTPS and public hostnames in production. `UPSTREAM_OIDC_SCOPES` must include `openid`. The service uses PKCE for upstream authorization and exchanges upstream authorization codes through the configured token endpoint.
+Upstream endpoint URLs use HTTPS and public hostnames in production. `UPSTREAM_OIDC_SCOPES` must include `openid`. The service uses PKCE and a service-generated nonce for upstream authorization and exchanges upstream authorization codes through the configured token endpoint.
+
+The upstream discovery document must return the configured issuer, authorization endpoint, token endpoint, userinfo endpoint, JWKS URI, and ID token signing algorithms. The service validates upstream ID token signature, issuer, audience, expiration, issued-at time, nonce, and access-token hash when present. Signed userinfo responses must validate against the upstream JWKS, issuer, audience, and ID token subject.
 
 The upstream identity provider must register `UPSTREAM_OIDC_REDIRECT_URI` as an allowed callback URL. The service callback route is `/oauth/callback`.
 

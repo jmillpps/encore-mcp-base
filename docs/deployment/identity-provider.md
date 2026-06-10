@@ -12,8 +12,9 @@ Register one confidential authorization-code client with the upstream provider.
 | Scopes | `openid profile email` |
 | Client authentication | `client_secret_post` or `client_secret_basic` |
 | PKCE | Supported for authorization requests |
+| Discovery | OIDC discovery document with `jwks_uri` and ID token signing algorithms |
 
-The upstream provider must expose issuer, authorization, token, and userinfo endpoints over public HTTPS URLs.
+The upstream provider must expose issuer, discovery, authorization, token, userinfo, and JWKS endpoints over public HTTPS URLs.
 
 ## Runtime Parameters
 
@@ -22,6 +23,7 @@ Runtime configuration uses generic upstream OIDC parameter names:
 | Parameter | Meaning |
 | --- | --- |
 | `UPSTREAM_OIDC_ISSUER_URL` | Upstream issuer URL. |
+| `UPSTREAM_OIDC_DISCOVERY_URL` | Upstream discovery document URL. |
 | `UPSTREAM_OIDC_AUTHORIZATION_URL` | Upstream authorization endpoint. |
 | `UPSTREAM_OIDC_TOKEN_URL` | Upstream token endpoint. |
 | `UPSTREAM_OIDC_USERINFO_URL` | Upstream userinfo endpoint. |
@@ -39,15 +41,17 @@ The production flow has these steps:
 1. ChatGPT opens `/oauth/authorize` with its client ID, redirect URI, scopes, state, nonce, resource, and PKCE values.
 2. The service validates the ChatGPT authorization request.
 3. The service stores an upstream authorization state record.
-4. The service redirects the browser to the upstream provider with PKCE.
+4. The service redirects the browser to the upstream provider with PKCE and a service-generated nonce.
 5. The user signs in through the upstream provider.
 6. The upstream provider redirects to `/oauth/callback`.
 7. The service consumes the upstream state once.
-8. The service exchanges the upstream authorization code at the upstream token endpoint.
-9. The service reads upstream userinfo.
-10. The service creates its own authorization code for the original ChatGPT redirect URI.
-11. ChatGPT exchanges the service authorization code at `/oauth/token`.
-12. The service returns signed access, ID, and refresh tokens with the service issuer.
+8. The service reads upstream discovery metadata and JWKS.
+9. The service exchanges the upstream authorization code at the upstream token endpoint.
+10. The service validates the upstream ID token signature, issuer, audience, expiration, issued-at time, nonce, and access-token hash when present.
+11. The service reads upstream userinfo and verifies its subject against the ID token subject.
+12. The service creates its own authorization code for the original ChatGPT redirect URI.
+13. ChatGPT exchanges the service authorization code at `/oauth/token`.
+14. The service returns signed access, ID, and refresh tokens with the service issuer.
 
 The service tokens use the service issuer and the requested service resource audience.
 

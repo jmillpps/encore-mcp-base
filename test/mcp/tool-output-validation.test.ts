@@ -175,6 +175,7 @@ function testConfig(oauthStorePath: string): ServiceConfig {
     mcpSseMaxConnections: 1024,
     upstreamOidc: {
       issuer: "http://127.0.0.1:4100",
+      discoveryUrl: "http://127.0.0.1:4100/.well-known/openid-configuration",
       authorizationUrl: "http://127.0.0.1:4100/oauth2/authorize",
       tokenUrl: "http://127.0.0.1:4100/oauth2/token",
       userinfoUrl: "http://127.0.0.1:4100/oauth2/userInfo",

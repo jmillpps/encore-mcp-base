@@ -45,6 +45,7 @@ Use `CDK_IDENTITY_PROVIDER_MODE=external` when an upstream provider already exis
 | Variable | Purpose |
 | --- | --- |
 | `CDK_UPSTREAM_OIDC_ISSUER_URL` | Upstream issuer URL. |
+| `CDK_UPSTREAM_OIDC_DISCOVERY_URL` | Upstream discovery document URL. Default is the issuer plus `/.well-known/openid-configuration`. |
 | `CDK_UPSTREAM_OIDC_AUTHORIZATION_URL` | Upstream authorization endpoint. |
 | `CDK_UPSTREAM_OIDC_TOKEN_URL` | Upstream token endpoint. |
 | `CDK_UPSTREAM_OIDC_USERINFO_URL` | Upstream userinfo endpoint. |

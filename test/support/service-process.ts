@@ -100,9 +100,10 @@ function envOverridesFor(origin: string, storePath: string, envOverrides: Servic
   return typeof envOverrides === "function" ? envOverrides(origin, storePath) : envOverrides;
 }
 
-function upstreamEnv(origin: string, upstream: { issuer: string; authorizationUrl: string; tokenUrl: string; userinfoUrl: string; clientId: string; clientSecret: string }): NodeJS.ProcessEnv {
+function upstreamEnv(origin: string, upstream: { issuer: string; discoveryUrl: string; authorizationUrl: string; tokenUrl: string; userinfoUrl: string; clientId: string; clientSecret: string }): NodeJS.ProcessEnv {
   return {
     UPSTREAM_OIDC_ISSUER_URL: upstream.issuer,
+    UPSTREAM_OIDC_DISCOVERY_URL: upstream.discoveryUrl,
     UPSTREAM_OIDC_AUTHORIZATION_URL: upstream.authorizationUrl,
     UPSTREAM_OIDC_TOKEN_URL: upstream.tokenUrl,
     UPSTREAM_OIDC_USERINFO_URL: upstream.userinfoUrl,

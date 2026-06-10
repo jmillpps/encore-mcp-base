@@ -1,16 +1,19 @@
 import assert from "node:assert/strict";
+import { createHash, generateKeyPairSync, type KeyObject } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import { once } from "node:events";
 import { randomToken, s256Challenge } from "../../shared/crypto.ts";
 import { readBody } from "../../shared/http.ts";
 import type { UserProfile } from "../../auth/user-profile.ts";
+import { signJwt } from "../../auth/tokens/jwt.ts";
 import type { TestContext } from "node:test";
 
 export interface UpstreamOidcServer {
   issuer: string;
   clientId: string;
   clientSecret: string;
+  discoveryUrl: string;
   authorizationUrl: string;
   tokenUrl: string;
   userinfoUrl: string;
@@ -21,26 +24,44 @@ export interface UpstreamOidcServer {
 interface AuthorizationRecord {
   redirectUri: string;
   codeChallenge: string;
+  nonce: string;
 }
 
-export async function startUpstreamOidcServer(t: TestContext, profile: UserProfile): Promise<UpstreamOidcServer> {
+interface UpstreamOidcOptions {
+  omitIdToken?: boolean;
+  idTokenClaims?: Record<string, unknown>;
+  userinfoClaims?: Record<string, unknown>;
+  metadataClaims?: Record<string, unknown>;
+  signedUserinfo?: boolean;
+}
+
+export async function startUpstreamOidcServer(t: TestContext, profile: UserProfile, options: UpstreamOidcOptions = {}): Promise<UpstreamOidcServer> {
   const clientId = "upstream-client";
   const clientSecret = "upstream-secret";
+  const key = upstreamSigningKey();
   const codes = new Map<string, AuthorizationRecord>();
   const accessTokens = new Set<string>();
   const server = createServer(async (req, res) => {
     try {
       const origin = serverOrigin(server);
+      if (req.method === "GET" && req.url === "/.well-known/openid-configuration") {
+        discovery(res, origin, clientId, options);
+        return;
+      }
+      if (req.method === "GET" && req.url === "/jwks.json") {
+        jwks(res, key.publicKey);
+        return;
+      }
       if (req.method === "GET" && req.url?.startsWith("/oauth2/authorize")) {
         authorize(req, res, origin, clientId, codes);
         return;
       }
       if (req.method === "POST" && req.url === "/oauth2/token") {
-        await token(req, res, clientId, clientSecret, codes, accessTokens);
+        await token(req, res, origin, clientId, clientSecret, key.privateKey, codes, accessTokens, profile, options);
         return;
       }
       if (req.method === "GET" && req.url === "/oauth2/userInfo") {
-        userinfo(req, res, accessTokens, profile);
+        userinfo(req, res, origin, clientId, key.privateKey, accessTokens, profile, options);
         return;
       }
       writeJson(res, 404, { error: "not_found" });
@@ -57,6 +78,7 @@ export async function startUpstreamOidcServer(t: TestContext, profile: UserProfi
     issuer,
     clientId,
     clientSecret,
+    discoveryUrl: `${issuer}/.well-known/openid-configuration`,
     authorizationUrl: `${issuer}/oauth2/authorize`,
     tokenUrl: `${issuer}/oauth2/token`,
     userinfoUrl: `${issuer}/oauth2/userInfo`,
@@ -75,8 +97,9 @@ function authorize(req: IncomingMessage, res: ServerResponse, origin: string, cl
   const redirectUri = requiredParam(url.searchParams, "redirect_uri");
   const state = requiredParam(url.searchParams, "state");
   const codeChallenge = requiredParam(url.searchParams, "code_challenge");
+  const nonce = requiredParam(url.searchParams, "nonce");
   const code = randomToken(18);
-  codes.set(code, { redirectUri, codeChallenge });
+  codes.set(code, { redirectUri, codeChallenge, nonce });
   const redirect = new URL(redirectUri);
   redirect.searchParams.set("code", code);
   redirect.searchParams.set("state", state);
@@ -87,10 +110,14 @@ function authorize(req: IncomingMessage, res: ServerResponse, origin: string, cl
 async function token(
   req: IncomingMessage,
   res: ServerResponse,
+  origin: string,
   clientId: string,
   clientSecret: string,
+  privateKey: KeyObject,
   codes: Map<string, AuthorizationRecord>,
   accessTokens: Set<string>,
+  profile: UserProfile,
+  options: UpstreamOidcOptions,
 ): Promise<void> {
   const form = new URLSearchParams(await readBody(req));
   const code = requiredParam(form, "code");
@@ -113,7 +140,9 @@ async function token(
   codes.delete(code);
   const accessToken = randomToken(24);
   accessTokens.add(accessToken);
-  writeJson(res, 200, { access_token: accessToken, token_type: "Bearer", expires_in: 300 });
+  const body: Record<string, unknown> = { access_token: accessToken, token_type: "Bearer", expires_in: 300 };
+  if (!options.omitIdToken) body.id_token = idToken(origin, clientId, privateKey, profile, record.nonce, accessToken, options.idTokenClaims);
+  writeJson(res, 200, body);
 }
 
 function upstreamCredentials(req: IncomingMessage, form: URLSearchParams): { clientId: string | null; clientSecret: string | null } {
@@ -126,14 +155,83 @@ function upstreamCredentials(req: IncomingMessage, form: URLSearchParams): { cli
   return { clientId: decoded.slice(0, separator), clientSecret: decoded.slice(separator + 1) };
 }
 
-function userinfo(req: IncomingMessage, res: ServerResponse, accessTokens: Set<string>, profile: UserProfile): void {
+function userinfo(
+  req: IncomingMessage,
+  res: ServerResponse,
+  origin: string,
+  clientId: string,
+  privateKey: KeyObject,
+  accessTokens: Set<string>,
+  profile: UserProfile,
+  options: UpstreamOidcOptions,
+): void {
   const authorization = req.headers.authorization ?? "";
   const token = authorization.startsWith("Bearer ") ? authorization.slice("Bearer ".length) : "";
   if (!accessTokens.has(token)) {
     writeJson(res, 401, { error: "invalid_token" });
     return;
   }
-  writeJson(res, 200, profile);
+  const claims = { ...profile, ...(options.userinfoClaims ?? {}) };
+  if (options.signedUserinfo) {
+    writeJwt(res, signJwt({ iss: origin, aud: clientId, ...claims }, "upstream-test-key", privateKey));
+    return;
+  }
+  writeJson(res, 200, claims);
+}
+
+function discovery(res: ServerResponse, origin: string, clientId: string, options: UpstreamOidcOptions): void {
+  writeJson(res, 200, {
+    issuer: origin,
+    authorization_endpoint: `${origin}/oauth2/authorize`,
+    token_endpoint: `${origin}/oauth2/token`,
+    userinfo_endpoint: `${origin}/oauth2/userInfo`,
+    jwks_uri: `${origin}/jwks.json`,
+    response_types_supported: ["code"],
+    subject_types_supported: ["public"],
+    id_token_signing_alg_values_supported: ["RS256"],
+    userinfo_signing_alg_values_supported: ["RS256"],
+    scopes_supported: ["openid", "profile", "email"],
+    token_endpoint_auth_methods_supported: ["client_secret_post", "client_secret_basic"],
+    claims_supported: ["sub", "name", "given_name", "family_name", "preferred_username", "email", "email_verified"],
+    client_id: clientId,
+    ...(options.metadataClaims ?? {}),
+  });
+}
+
+function jwks(res: ServerResponse, publicKey: KeyObject): void {
+  writeJson(res, 200, { keys: [{ ...publicKey.export({ format: "jwk" }), kid: "upstream-test-key", alg: "RS256", use: "sig", key_ops: ["verify"] }] });
+}
+
+function idToken(
+  origin: string,
+  clientId: string,
+  privateKey: KeyObject,
+  profile: UserProfile,
+  nonce: string,
+  accessToken: string,
+  overrides: Record<string, unknown> = {},
+): string {
+  const now = Math.floor(Date.now() / 1000);
+  return signJwt({
+    iss: origin,
+    sub: profile.sub,
+    aud: clientId,
+    exp: now + 300,
+    iat: now,
+    nonce,
+    at_hash: accessTokenHash(accessToken),
+    ...overrides,
+  }, "upstream-test-key", privateKey);
+}
+
+function upstreamSigningKey(): { privateKey: KeyObject; publicKey: KeyObject } {
+  const pair = generateKeyPairSync("rsa", { modulusLength: 2048 });
+  return { privateKey: pair.privateKey, publicKey: pair.publicKey };
+}
+
+function accessTokenHash(accessToken: string): string {
+  const digest = createHash("sha256").update(accessToken, "ascii").digest();
+  return digest.subarray(0, digest.length / 2).toString("base64url");
 }
 
 function requiredParam(params: URLSearchParams, key: string): string {
@@ -145,6 +243,11 @@ function requiredParam(params: URLSearchParams, key: string): string {
 function writeJson(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, { "content-type": "application/json" });
   res.end(JSON.stringify(body));
+}
+
+function writeJwt(res: ServerResponse, body: string): void {
+  res.writeHead(200, { "content-type": "application/jwt" });
+  res.end(body);
 }
 
 async function stopServer(server: Server): Promise<void> {

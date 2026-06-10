@@ -17,9 +17,11 @@ export interface ValidatedAuthorization {
 
 export async function createLoginRedirect(config: ServiceConfig, store: OAuthStore, request: ValidatedAuthorization): Promise<string> {
   const codeVerifier = randomToken(32);
+  const upstreamNonce = randomToken(32);
   const state = await store.createUpstreamAuthorizationState({
     ...request,
     codeVerifier,
+    upstreamNonce,
     ttlSeconds: config.authorizationCodeTtlSeconds,
   });
   const url = new URL(config.upstreamOidc.authorizationUrl);
@@ -28,6 +30,7 @@ export async function createLoginRedirect(config: ServiceConfig, store: OAuthSto
   url.searchParams.set("redirect_uri", config.upstreamOidc.redirectUri);
   url.searchParams.set("scope", config.upstreamOidc.scopes.join(" "));
   url.searchParams.set("state", state);
+  url.searchParams.set("nonce", upstreamNonce);
   url.searchParams.set("code_challenge", s256Challenge(codeVerifier));
   url.searchParams.set("code_challenge_method", "S256");
   return url.toString();

@@ -28,7 +28,7 @@ export const upstreamCallback = api.raw({ expose: true, method: "GET", path: "/o
       return;
     }
     const code = requiredParameter(url.searchParams, "code");
-    const user = await exchangeUpstreamCode(config.upstreamOidc, code, authorization.codeVerifier);
+    const user = await exchangeUpstreamCode(config, code, authorization.codeVerifier, authorization.upstreamNonce);
     writeRedirect(res, await createServiceAuthorizationCode(config, store, authorization, user));
   } catch (error) {
     writeOAuthError(res, error, { endpoint: "oauth.upstream.callback", method: "GET", subject: requestSubject(req) });

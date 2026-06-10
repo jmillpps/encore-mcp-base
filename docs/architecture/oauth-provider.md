@@ -75,13 +75,13 @@ Access token claims include issuer, subject, audience, expiration, issued-at tim
 
 ## Upstream OIDC Login
 
-`/oauth/authorize` validates the GPT client request and stores an upstream login state. The service redirects the browser to the configured upstream identity provider with PKCE. `/oauth/callback` consumes the upstream state once, exchanges the upstream authorization code, reads upstream userinfo, then issues the service authorization code to the original GPT redirect URI.
+`/oauth/authorize` validates the GPT client request and stores an upstream login state. The service redirects the browser to the configured upstream identity provider with PKCE and a service-generated nonce. `/oauth/callback` consumes the upstream state once, reads upstream discovery metadata and JWKS, exchanges the upstream authorization code, validates the upstream ID token, validates userinfo against the ID token subject, then issues the service authorization code to the original GPT redirect URI.
 
 The callback is owned by the service origin. Users authenticate against the configured upstream identity provider. The service uses upstream userinfo claims for the issued ID token, userinfo response, MCP profile tool, and Actions profile endpoint.
 
-Required upstream userinfo claims are `sub`, `email`, and `email_verified`. Optional display claims are normalized into the service identity profile.
+The upstream ID token must validate signature, issuer, audience, expiration, issued-at time, nonce, and access-token hash when present. Required upstream userinfo claims are `sub`, `email`, and `email_verified`. Optional display claims are normalized into the service identity profile. Signed userinfo responses must validate against the upstream JWKS, issuer, audience, and ID token subject.
 
-The upstream provider is generic OIDC. Cognito is optional in the CDK deployment path. Any provider can be used when it supplies authorization, token, and userinfo endpoints, supports the configured scopes, accepts the service callback URL, and returns the required userinfo claims.
+The upstream provider is generic OIDC. Cognito is optional in the CDK deployment path. Any provider can be used when it supplies discovery, JWKS, authorization, token, and userinfo endpoints, supports the configured scopes, accepts the service callback URL, returns ID tokens signed with a supported algorithm, and returns the required userinfo claims.
 
 ```mermaid
 sequenceDiagram
@@ -90,12 +90,14 @@ sequenceDiagram
   participant IdP as Upstream OIDC
   ChatGPT->>Service: GET /oauth/authorize
   Service->>Service: Validate client, redirect URI, scopes, resource, PKCE, nonce
-  Service->>IdP: Redirect with upstream authorization request and PKCE
+  Service->>IdP: Redirect with upstream authorization request, PKCE, nonce
   IdP->>Service: GET /oauth/callback with code and state
   Service->>Service: Consume upstream state
+  Service->>IdP: Read discovery metadata and JWKS
   Service->>IdP: Exchange code at token endpoint
+  Service->>Service: Validate upstream ID token
   Service->>IdP: Read userinfo with upstream access token
-  Service->>Service: Normalize profile and create service authorization code
+  Service->>Service: Bind subject, normalize profile, create service authorization code
   Service->>ChatGPT: Redirect to registered ChatGPT callback with code and state
   ChatGPT->>Service: POST /oauth/token
   Service->>ChatGPT: Access token, ID token, refresh token

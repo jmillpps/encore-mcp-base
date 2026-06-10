@@ -20,6 +20,7 @@ export interface McpServiceStackProps extends cdk.StackProps {
 interface IdentityProviderResources {
   upstreamOidc: {
     issuerUrl: string;
+    discoveryUrl: string;
     authorizationUrl: string;
     tokenUrl: string;
     userinfoUrl: string;
@@ -206,6 +207,7 @@ export class McpServiceStack extends cdk.Stack {
     this.stringParameter("RateLimitMaxRequests", config, "RATE_LIMIT_MAX_REQUESTS", "120");
     this.stringParameter("McpSseMaxConnections", config, "MCP_SSE_MAX_CONNECTIONS", "1024");
     this.stringParameter("UpstreamOidcIssuerUrl", config, "UPSTREAM_OIDC_ISSUER_URL", values.upstreamOidc.issuerUrl);
+    this.stringParameter("UpstreamOidcDiscoveryUrl", config, "UPSTREAM_OIDC_DISCOVERY_URL", values.upstreamOidc.discoveryUrl);
     this.stringParameter("UpstreamOidcAuthorizationUrl", config, "UPSTREAM_OIDC_AUTHORIZATION_URL", values.upstreamOidc.authorizationUrl);
     this.stringParameter("UpstreamOidcTokenUrl", config, "UPSTREAM_OIDC_TOKEN_URL", values.upstreamOidc.tokenUrl);
     this.stringParameter("UpstreamOidcUserinfoUrl", config, "UPSTREAM_OIDC_USERINFO_URL", values.upstreamOidc.userinfoUrl);
@@ -267,9 +269,11 @@ export class McpServiceStack extends cdk.Stack {
       cognitoDomain: { domainPrefix },
     });
     const hostedUiBaseUrl = `https://${domainPrefix}.auth.${this.region}.amazoncognito.com`;
+    const issuerUrl = `https://cognito-idp.${this.region}.amazonaws.com/${userPool.userPoolId}`;
     return {
       upstreamOidc: {
-        issuerUrl: `https://cognito-idp.${this.region}.amazonaws.com/${userPool.userPoolId}`,
+        issuerUrl,
+        discoveryUrl: `${issuerUrl}/.well-known/openid-configuration`,
         authorizationUrl: `${hostedUiBaseUrl}/oauth2/authorize`,
         tokenUrl: `${hostedUiBaseUrl}/oauth2/token`,
         userinfoUrl: `${hostedUiBaseUrl}/oauth2/userInfo`,

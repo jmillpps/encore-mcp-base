@@ -20,6 +20,7 @@ export async function createUpstreamAuthorizationState(ctx: DynamoDbStoreContext
     scopes: input.scopes,
     clientState: input.clientState,
     codeVerifier: input.codeVerifier,
+    upstreamNonce: input.upstreamNonce,
     expiresAt: createdAt + input.ttlSeconds,
     createdAt,
     ...(input.nonce ? { nonce: input.nonce } : {}),

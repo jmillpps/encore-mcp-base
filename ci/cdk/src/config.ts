@@ -28,6 +28,7 @@ export interface CognitoIdentityProviderConfig {
 
 export interface UpstreamOidcDeploymentConfig {
   issuerUrl: string;
+  discoveryUrl: string;
   authorizationUrl: string;
   tokenUrl: string;
   userinfoUrl: string;
@@ -113,8 +114,10 @@ function cognitoDomainPrefix(env: NodeJS.ProcessEnv): string {
 
 function upstreamOidc(env: NodeJS.ProcessEnv): UpstreamOidcDeploymentConfig {
   const scopes = oidcScopes(env.CDK_UPSTREAM_OIDC_SCOPES ?? "openid profile email");
+  const issuerUrl = httpsUrl(env, "CDK_UPSTREAM_OIDC_ISSUER_URL");
   return {
-    issuerUrl: httpsUrl(env, "CDK_UPSTREAM_OIDC_ISSUER_URL"),
+    issuerUrl,
+    discoveryUrl: httpsUrlValue(env.CDK_UPSTREAM_OIDC_DISCOVERY_URL ?? `${issuerUrl}/.well-known/openid-configuration`, "CDK_UPSTREAM_OIDC_DISCOVERY_URL"),
     authorizationUrl: httpsUrl(env, "CDK_UPSTREAM_OIDC_AUTHORIZATION_URL"),
     tokenUrl: httpsUrl(env, "CDK_UPSTREAM_OIDC_TOKEN_URL"),
     userinfoUrl: httpsUrl(env, "CDK_UPSTREAM_OIDC_USERINFO_URL"),

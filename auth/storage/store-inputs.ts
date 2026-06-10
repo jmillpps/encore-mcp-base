@@ -36,6 +36,7 @@ export interface UpstreamAuthorizationStateInput {
   scopes: string[];
   clientState: string;
   codeVerifier: string;
+  upstreamNonce: string;
   nonce?: string;
   codeChallenge?: string;
   codeChallengeMethod?: "S256";

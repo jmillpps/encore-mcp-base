@@ -25,10 +25,12 @@ The OAuth flow uses these steps:
 5. The browser redirects to the configured upstream OIDC authorization endpoint.
 6. The upstream provider sends the browser back to `/oauth/callback`.
 7. `auth/endpoints.upstream-callback.ts` consumes the upstream state once.
-8. `auth/upstream-oidc-client.ts` exchanges the upstream code and reads userinfo.
-9. The service creates its own authorization code for the original ChatGPT redirect URI.
-10. ChatGPT exchanges that code at `/oauth/token`.
-11. `auth/token.ts` issues access, ID, and refresh tokens with the service issuer.
+8. `auth/upstream-oidc-client.ts` reads upstream discovery metadata and JWKS.
+9. The service exchanges the upstream code and validates the upstream ID token.
+10. The service reads userinfo and binds its subject to the ID token subject.
+11. The service creates its own authorization code for the original ChatGPT redirect URI.
+12. ChatGPT exchanges that code at `/oauth/token`.
+13. `auth/token.ts` issues access, ID, and refresh tokens with the service issuer.
 
 Refresh grants rotate refresh tokens. Reuse of an older refresh token revokes the token family.
 

@@ -14,6 +14,7 @@ interface DeploymentConfig {
     mode: "external";
     upstreamOidc: {
       issuerUrl: string;
+      discoveryUrl: string;
       authorizationUrl: string;
       tokenUrl: string;
       userinfoUrl: string;
@@ -111,6 +112,7 @@ function config(): DeploymentConfig {
       mode: "external",
       upstreamOidc: {
         issuerUrl: "https://idp.example.test",
+        discoveryUrl: "https://idp.example.test/.well-known/openid-configuration",
         authorizationUrl: "https://login.example.test/oauth2/authorize",
         tokenUrl: "https://login.example.test/oauth2/token",
         userinfoUrl: "https://login.example.test/oauth2/userInfo",

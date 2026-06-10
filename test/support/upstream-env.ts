@@ -1,6 +1,7 @@
 export function productionUpstreamOidcEnv(): NodeJS.ProcessEnv {
   return {
     UPSTREAM_OIDC_ISSUER_URL: "https://idp.example.test",
+    UPSTREAM_OIDC_DISCOVERY_URL: "https://idp.example.test/.well-known/openid-configuration",
     UPSTREAM_OIDC_AUTHORIZATION_URL: "https://login.example.test/oauth2/authorize",
     UPSTREAM_OIDC_TOKEN_URL: "https://login.example.test/oauth2/token",
     UPSTREAM_OIDC_USERINFO_URL: "https://login.example.test/oauth2/userInfo",

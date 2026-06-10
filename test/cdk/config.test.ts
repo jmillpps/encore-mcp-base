@@ -15,6 +15,7 @@ type DeploymentConfigReader = (env: NodeJS.ProcessEnv) => {
     cognitoDomainPrefix?: string;
     upstreamOidc?: {
       issuerUrl: string;
+      discoveryUrl: string;
       authorizationUrl: string;
       tokenUrl: string;
       userinfoUrl: string;
@@ -60,6 +61,7 @@ test("deployment config accepts explicit deployment inputs", () => {
   assert.equal(config.hostedZoneName, "example.com");
   assert.equal(config.identityProvider.mode, "external");
   assert.equal(config.identityProvider.upstreamOidc?.issuerUrl, "https://idp.example.test");
+  assert.equal(config.identityProvider.upstreamOidc?.discoveryUrl, "https://idp.example.test/.well-known/openid-configuration");
   assert.equal(config.identityProvider.upstreamOidc?.authorizationUrl, "https://login.example.test/oauth2/authorize");
   assert.equal(config.identityProvider.upstreamOidc?.tokenAuthMethod, "client_secret_post");
   assert.equal(config.parameterPrefix, "/operator-mcp/sandbox/env");
@@ -73,6 +75,7 @@ test("deployment config accepts optional Cognito provider provisioning", () => {
     CDK_IDENTITY_PROVIDER_MODE: "cognito",
     CDK_COGNITO_DOMAIN_PREFIX: "operator-mcp-sandbox",
     CDK_UPSTREAM_OIDC_ISSUER_URL: undefined,
+    CDK_UPSTREAM_OIDC_DISCOVERY_URL: undefined,
     CDK_UPSTREAM_OIDC_AUTHORIZATION_URL: undefined,
     CDK_UPSTREAM_OIDC_TOKEN_URL: undefined,
     CDK_UPSTREAM_OIDC_USERINFO_URL: undefined,
@@ -92,6 +95,7 @@ test("deployment config rejects ambiguous or unsafe deployment inputs", () => {
   assert.throws(() => cdkConfig.deploymentConfig(baseEnv({ CDK_WIDGET_DOMAIN: "https://localhost" })), /CDK_WIDGET_DOMAIN must use a public host/);
   assert.throws(() => cdkConfig.deploymentConfig(baseEnv({ CDK_IDENTITY_PROVIDER_MODE: "bad" })), /CDK_IDENTITY_PROVIDER_MODE must be external or cognito/);
   assert.throws(() => cdkConfig.deploymentConfig(baseEnv({ CDK_UPSTREAM_OIDC_TOKEN_URL: "http://login.example.test/oauth2/token" })), /CDK_UPSTREAM_OIDC_TOKEN_URL must use https/);
+  assert.throws(() => cdkConfig.deploymentConfig(baseEnv({ CDK_UPSTREAM_OIDC_DISCOVERY_URL: "http://idp.example.test/.well-known/openid-configuration" })), /CDK_UPSTREAM_OIDC_DISCOVERY_URL must use https/);
   assert.throws(() => cdkConfig.deploymentConfig(baseEnv({ CDK_UPSTREAM_OIDC_SCOPES: "profile email" })), /CDK_UPSTREAM_OIDC_SCOPES must include openid/);
   assert.throws(() => cdkConfig.deploymentConfig(baseEnv({ CDK_UPSTREAM_OIDC_TOKEN_AUTH_METHOD: "none" })), /CDK_UPSTREAM_OIDC_TOKEN_AUTH_METHOD/);
   assert.throws(() => cdkConfig.deploymentConfig(baseEnv({ CDK_IDENTITY_PROVIDER_MODE: "cognito", CDK_COGNITO_DOMAIN_PREFIX: "operator_mcp" })), /CDK_COGNITO_DOMAIN_PREFIX contains invalid characters/);
@@ -114,6 +118,7 @@ function baseEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
     CDK_HOSTED_ZONE_NAME: "example.com",
     CDK_IDENTITY_PROVIDER_MODE: "external",
     CDK_UPSTREAM_OIDC_ISSUER_URL: "https://idp.example.test",
+    CDK_UPSTREAM_OIDC_DISCOVERY_URL: undefined,
     CDK_UPSTREAM_OIDC_AUTHORIZATION_URL: "https://login.example.test/oauth2/authorize",
     CDK_UPSTREAM_OIDC_TOKEN_URL: "https://login.example.test/oauth2/token",
     CDK_UPSTREAM_OIDC_USERINFO_URL: "https://login.example.test/oauth2/userInfo",

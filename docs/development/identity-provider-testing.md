@@ -10,9 +10,11 @@ The provider exposes these endpoints:
 
 | Endpoint | Behavior |
 | --- | --- |
+| `/.well-known/openid-configuration` | Returns issuer, endpoint, JWKS, scope, claim, and signing algorithm metadata. |
+| `/jwks.json` | Returns the upstream public signing key used by ID token and signed userinfo tests. |
 | `/oauth2/authorize` | Validates the authorization request, stores the PKCE challenge, and redirects to the service callback with an upstream code. |
-| `/oauth2/token` | Validates the upstream code, client credentials, redirect URI, and PKCE verifier, then returns a bearer access token. |
-| `/oauth2/userInfo` | Validates the bearer token and returns the configured user profile. |
+| `/oauth2/token` | Validates the upstream code, client credentials, redirect URI, PKCE verifier, and nonce, then returns a bearer access token and signed ID token. |
+| `/oauth2/userInfo` | Validates the bearer token and returns the configured user profile as JSON or signed userinfo. |
 
 The provider uses these local credentials:
 
@@ -30,8 +32,10 @@ The test provider proves the service contract for any upstream OIDC provider tha
 | Contract item | Test harness behavior |
 | --- | --- |
 | Authorization endpoint | Receives the service-generated request and redirects to `/oauth/callback` with an upstream code. |
-| Token endpoint | Requires the upstream client credentials, redirect URI, code, and PKCE verifier. |
-| Userinfo endpoint | Requires the upstream bearer token and returns profile claims used by the service. |
+| Discovery endpoint | Supplies the issuer, configured endpoints, JWKS URI, and signing algorithms used by the service. |
+| JWKS endpoint | Supplies the upstream public key selected by `kid`. |
+| Token endpoint | Requires the upstream client credentials, redirect URI, code, and PKCE verifier, then returns an ID token with the service-generated nonce. |
+| Userinfo endpoint | Requires the upstream bearer token and returns profile claims bound to the ID token subject. |
 | Subject | Supplies the upstream `sub` that becomes the service subject. |
 | Email | Supplies the upstream `email` used by Actions, MCP, and userinfo responses. |
 | Email verification | Supplies `email_verified` as the source value for service profile normalization. |
@@ -73,6 +77,11 @@ The tests verify:
 - `/oauth/userinfo` returns the upstream user profile.
 - `GET /actions/profile` returns the upstream user profile.
 - `client_secret_basic` works for upstream token exchange.
+- Signed userinfo validates against upstream JWKS and subject binding.
+- Discovery issuer mismatch is rejected.
+- Missing ID token is rejected.
+- ID token nonce mismatch is rejected.
+- Userinfo subject mismatch is rejected.
 - The default service test identity comes from the local upstream provider.
 
 ## Maintainer Rules
@@ -84,6 +93,10 @@ Add or update runtime tests when changing:
 - Upstream authorization request parameters.
 - `/oauth/callback` behavior.
 - Upstream token request authentication.
+- Upstream discovery metadata validation.
+- Upstream JWKS key selection.
+- Upstream ID token validation.
+- Signed userinfo validation.
 - PKCE validation.
 - Userinfo parsing.
 - Required profile claims.
@@ -102,6 +115,11 @@ Add or update tests for these upstream failure paths when the behavior changes:
 | --- | --- |
 | Upstream state mismatch | Service rejects the callback and leaves the original authorization request unredeemed. |
 | Upstream token rejection | Service returns a safe OAuth error and records safe diagnostics. |
+| Discovery issuer mismatch | Service rejects the callback before token issuance. |
+| Missing ID token | Service rejects the callback before token issuance. |
+| ID token nonce mismatch | Service rejects the callback before token issuance. |
+| Signed userinfo signature failure | Service rejects the callback before token issuance. |
+| Userinfo subject mismatch | Service rejects the callback before token issuance. |
 | Missing userinfo subject | Service rejects the profile before issuing service tokens. |
 | Missing userinfo email | Service rejects the profile before Actions or MCP receive identity data. |
 | Unsupported `email_verified` value | Profile normalization rejects the claim. |

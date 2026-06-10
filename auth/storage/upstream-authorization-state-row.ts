@@ -12,6 +12,7 @@ export function upstreamAuthorizationStateFromDisk(value: unknown): UpstreamAuth
     "scopes_json",
     "client_state",
     "code_verifier",
+    "upstream_nonce",
     "nonce",
     "code_challenge",
     "code_challenge_method",
@@ -27,6 +28,7 @@ export function upstreamAuthorizationStateFromDisk(value: unknown): UpstreamAuth
     scopes: scopes(record),
     clientState: text(record, "client_state"),
     codeVerifier: text(record, "code_verifier"),
+    upstreamNonce: nonce(record, "upstream_nonce"),
     nonce: optionalNonce(record, "nonce"),
     codeChallenge: optionalHash(record, "code_challenge"),
     codeChallengeMethod: methodS256(record, "code_challenge_method"),
@@ -44,12 +46,19 @@ export function upstreamAuthorizationStateToDisk(record: UpstreamAuthorizationSt
     scopes_json: scopesJson(record.scopes),
     client_state: record.clientState,
     code_verifier: record.codeVerifier,
+    upstream_nonce: record.upstreamNonce,
     nonce: record.nonce,
     code_challenge: record.codeChallenge,
     code_challenge_method: record.codeChallengeMethod,
     expires_at: record.expiresAt,
     created_at: record.createdAt,
   });
+}
+
+function nonce(record: DiskRow, key: string): string {
+  const value = text(record, key);
+  if (!isOidcNonce(value)) malformed();
+  return value;
 }
 
 function optionalNonce(record: DiskRow, key: string): string | undefined {

@@ -54,6 +54,7 @@ Configure these runtime variables:
 | Variable | Purpose |
 | --- | --- |
 | `UPSTREAM_OIDC_ISSUER_URL` | Upstream issuer URL. |
+| `UPSTREAM_OIDC_DISCOVERY_URL` | Upstream discovery document URL. |
 | `UPSTREAM_OIDC_AUTHORIZATION_URL` | Upstream authorization endpoint. |
 | `UPSTREAM_OIDC_TOKEN_URL` | Upstream token endpoint. |
 | `UPSTREAM_OIDC_USERINFO_URL` | Upstream userinfo endpoint. |
@@ -63,7 +64,9 @@ Configure these runtime variables:
 | `UPSTREAM_OIDC_SCOPES` | Upstream scopes. |
 | `UPSTREAM_OIDC_TOKEN_AUTH_METHOD` | Upstream token client authentication method. |
 
-The default upstream scopes are `openid profile email`. Required userinfo claims are `sub`, `email`, and `email_verified`.
+The default upstream scopes are `openid profile email`. The upstream token response must include an ID token. Required userinfo claims are `sub`, `email`, and `email_verified`.
+
+The discovery document must expose `jwks_uri` and ID token signing algorithms. The service validates the upstream ID token and binds userinfo to the ID token subject before issuing service tokens.
 
 The public service callback URL is:
 

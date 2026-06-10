@@ -32,6 +32,7 @@ Use these values when an upstream provider already exists:
 ```sh
 export CDK_IDENTITY_PROVIDER_MODE="external"
 export CDK_UPSTREAM_OIDC_ISSUER_URL="https://idp.example.com"
+export CDK_UPSTREAM_OIDC_DISCOVERY_URL="https://idp.example.com/.well-known/openid-configuration"
 export CDK_UPSTREAM_OIDC_AUTHORIZATION_URL="https://idp.example.com/oauth2/authorize"
 export CDK_UPSTREAM_OIDC_TOKEN_URL="https://idp.example.com/oauth2/token"
 export CDK_UPSTREAM_OIDC_USERINFO_URL="https://idp.example.com/oauth2/userinfo"

@@ -34,6 +34,7 @@ export type UpstreamOidcTokenAuthMethod = "client_secret_post" | "client_secret_
 
 export interface UpstreamOidcConfig {
   issuer: string;
+  discoveryUrl: string;
   authorizationUrl: string;
   tokenUrl: string;
   userinfoUrl: string;
@@ -179,8 +180,10 @@ function readUpstreamOidcConfig(env: NodeJS.ProcessEnv, serviceIssuer: string, p
   const localIssuer = "http://127.0.0.1:4100";
   const scopes = parseList(env.UPSTREAM_OIDC_SCOPES ?? "openid profile email");
   if (!scopes.includes("openid")) throw new Error("UPSTREAM_OIDC_SCOPES must include openid");
+  const upstreamIssuer = readHttpUrl(env, "UPSTREAM_OIDC_ISSUER_URL", localIssuer, production);
   return {
-    issuer: readHttpUrl(env, "UPSTREAM_OIDC_ISSUER_URL", localIssuer, production),
+    issuer: upstreamIssuer,
+    discoveryUrl: readUpstreamDiscoveryUrl(env, upstreamIssuer, production),
     authorizationUrl: readHttpUrl(env, "UPSTREAM_OIDC_AUTHORIZATION_URL", `${localIssuer}/oauth2/authorize`, production),
     tokenUrl: readHttpUrl(env, "UPSTREAM_OIDC_TOKEN_URL", `${localIssuer}/oauth2/token`, production),
     userinfoUrl: readHttpUrl(env, "UPSTREAM_OIDC_USERINFO_URL", `${localIssuer}/oauth2/userInfo`, production),
@@ -190,6 +193,11 @@ function readUpstreamOidcConfig(env: NodeJS.ProcessEnv, serviceIssuer: string, p
     scopes,
     tokenEndpointAuthMethod: readUpstreamTokenAuthMethod(env),
   };
+}
+
+function readUpstreamDiscoveryUrl(env: NodeJS.ProcessEnv, issuerInput: string, production: boolean): string {
+  const value = env.UPSTREAM_OIDC_DISCOVERY_URL ?? `${issuerInput}/.well-known/openid-configuration`;
+  return readHttpUrl({ UPSTREAM_OIDC_DISCOVERY_URL: value }, "UPSTREAM_OIDC_DISCOVERY_URL", value, production);
 }
 
 function readText(env: NodeJS.ProcessEnv, key: string, fallback: string, production: boolean): string {

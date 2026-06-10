@@ -32,6 +32,7 @@ The CDK stack writes these String parameters during deployment:
 | `RATE_LIMIT_MAX_REQUESTS` | Durable rate-limit request limit. |
 | `MCP_SSE_MAX_CONNECTIONS` | Open SSE receive stream limit. |
 | `UPSTREAM_OIDC_ISSUER_URL` | Upstream issuer URL. |
+| `UPSTREAM_OIDC_DISCOVERY_URL` | Upstream discovery document URL. |
 | `UPSTREAM_OIDC_AUTHORIZATION_URL` | Upstream authorization endpoint. |
 | `UPSTREAM_OIDC_TOKEN_URL` | Upstream token endpoint. |
 | `UPSTREAM_OIDC_USERINFO_URL` | Upstream userinfo endpoint. |
