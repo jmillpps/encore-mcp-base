@@ -18,7 +18,7 @@ export const session = api<SessionRequest, SessionResponse>(
   { expose: true, auth: true, method: "GET", path: "/actions/session" },
   async (request) => {
     rejectActionAccessTokenQuery(request.access_token);
-    const claims = verifyActionBearer(request.authorization, actionScopes.session);
+    const claims = verifyActionBearer(request.authorization, actionScopes.session, { endpoint: "actions.session", method: "GET" });
     return {
       subject: claims.sub,
       clientId: claims.client_id,

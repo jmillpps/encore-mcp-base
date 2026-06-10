@@ -4,8 +4,10 @@ import type { ServerResponse } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { emitActionBearerDiagnostic } from "../../actions/action-bearer-diagnostics.ts";
 import { writeOAuthError } from "../../auth/oauth-errors.ts";
 import { enforceRateLimit } from "../../auth/rate-limit.ts";
+import { accessTokenError } from "../../auth/tokens/access-token-error.ts";
 import { readConfig } from "../../shared/config.ts";
 import { emitDiagnostic, redactFields, setDiagnosticSink, type DiagnosticEvent } from "../../shared/diagnostics.ts";
 import { ServiceError } from "../../shared/errors.ts";
@@ -154,6 +156,31 @@ test("rate limit diagnostics expose bucket policy and hashed subject", async (t)
     assert.equal(events[0]?.fields.maxRequests, 1);
     assert.equal(typeof events[0]?.fields.subjectHash, "string");
     assert.equal(JSON.stringify(events[0]).includes("client-secret-value"), false);
+  } finally {
+    restore();
+  }
+});
+
+test("Actions bearer diagnostics expose internal failure reasons without tokens", () => {
+  const requiredScopes = ["openid", "profile", "email"];
+  const events: DiagnosticEvent[] = [];
+  const restore = setDiagnosticSink((event) => events.push(event));
+  try {
+    emitActionBearerDiagnostic(accessTokenError("missing_authorization_header"), requiredScopes, { endpoint: "actions.profile", method: "GET" });
+    emitActionBearerDiagnostic(accessTokenError("audience_mismatch"), requiredScopes, { endpoint: "actions.profile", method: "GET" });
+    emitActionBearerDiagnostic(accessTokenError("insufficient_scope", 403), requiredScopes, { endpoint: "actions.profile", method: "GET" });
+    assert.deepEqual(events.map((event) => event.fields.failureReason), ["missing_authorization_header", "audience_mismatch", "insufficient_scope"]);
+    assert.equal(events.every((event) => event.event === "actions_bearer_validation_failed"), true);
+    assert.equal(events.every((event) => event.level === "warn"), true);
+    assert.equal(events[0]?.fields.endpoint, "actions.profile");
+    assert.equal(events[0]?.fields.method, "GET");
+    assert.equal(events[0]?.fields.status, 401);
+    assert.equal(events[1]?.fields.code, "unauthorized");
+    assert.equal(events[2]?.fields.status, 403);
+    assert.deepEqual(events[2]?.fields.requiredScopes, requiredScopes);
+    const serialized = JSON.stringify(events);
+    assert.equal(serialized.includes("Bearer "), false);
+    assert.equal(serialized.includes("access-token"), false);
   } finally {
     restore();
   }

@@ -10,6 +10,8 @@ Operational review should inspect diagnostic status, endpoint, method, subject, 
 
 Actions error responses include `code`, `message`, `details`, and `internal_message`. Authentication and authorization failures return safe messages. Internal details stay absent from caller-visible responses.
 
+Actions bearer failures emit `actions_bearer_validation_failed`. The event includes `endpoint`, `method`, `status`, `code`, `failureReason`, and `requiredScopes`. The failure reason identifies missing headers, malformed headers, JWT parsing failures, key ID misses, issuer mismatches, audience mismatches, token time validity, claim-shape failures, and insufficient scopes.
+
 Redaction applies to exact secret field names such as authorization codes, OAuth codes, code challenges, code verifiers, nonces, session IDs, and state values. Redaction also applies to field names containing API key, authorization, cookie, password, private key, secret, signing key, or token.
 
 ## Rate Limits
@@ -73,5 +75,7 @@ Operational review can use:
 | method | Identify the HTTP method. |
 | subject | Group retries by logical caller. |
 | error code | Identify validation, authentication, authorization, and rate-limit outcomes. |
+| failureReason | Identify internal authentication and authorization failure classes without exposing credentials. |
+| requiredScopes | Compare the endpoint scope requirement to the caller's OAuth setup. |
 
 Bearer tokens, authorization codes, refresh tokens, client secrets, and private keys stay absent from diagnostic output.

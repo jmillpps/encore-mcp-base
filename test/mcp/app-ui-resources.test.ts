@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import { completeAuthorizationCodeFlow } from "../support/oauth-client.ts";
 import { bearer, callTool, initializeMcp, listMcpItems, mcpAuthorization, postMcp } from "../support/mcp.ts";
@@ -123,7 +126,12 @@ test("MCP resource methods reject invalid params, cursors, and missing resources
   await assertRpcError(await postMcp(service, { jsonrpc: "2.0", id: "bad-template-cursor", method: "resources/templates/list", params: { cursor: "never-issued" } }, { sessionId }), -32602);
 });
 
-test("MCP Apps UI helper validation rejects unsafe metadata, MIME types, and resource contents", async () => {
+test("MCP Apps UI helper validation rejects unsafe metadata, MIME types, and resource contents", async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), "mcp-app-ui-validation-"));
+  t.after(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+  const config = readConfig({ OAUTH_STORE_PATH: join(dir, "store.json") });
   assert.throws(() => appHtmlResource({ uri: "javascript:alert(1)", name: "bad", html: "<html></html>" }), ServiceError);
   assert.throws(() => appHtmlResource({ uri: "ui://widget/bad.html", name: "bad", html: "<html></html>", widget: { domain: "https://example.com/path" } }), ServiceError);
   assert.throws(() => appHtmlResource({ uri: "ui://widget/bad.html", name: "bad", html: "<html></html>", widget: { csp: { connectDomains: ["javascript:alert(1)"], resourceDomains: [] } } }), ServiceError);
@@ -141,7 +149,7 @@ test("MCP Apps UI helper validation rejects unsafe metadata, MIME types, and res
   const badContent = { ...baseResource("ui://widget/bad-content.html"), contents: [{ uri: "ui://widget/bad-content.html", mimeType: appUiResourceMimeType, text: "<html></html>", blob: "AAAA" }] } as McpResourceDefinition;
   resources.push(badContent);
   try {
-    await assert.rejects(() => readResource({ config: readConfig(), authorization: "Bearer test", rateLimitSubject: "test" }, badContent.uri), (error) => error instanceof ServiceError && error.message === "invalid resource content");
+    await assert.rejects(() => readResource({ config, authorization: "Bearer test", rateLimitSubject: "test" }, badContent.uri), (error) => error instanceof ServiceError && error.message === "invalid resource content");
   } finally {
     resources.splice(resources.indexOf(badContent), 1);
   }

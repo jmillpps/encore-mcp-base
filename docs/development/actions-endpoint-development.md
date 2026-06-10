@@ -37,7 +37,7 @@ Public endpoints stay read-only. The current public endpoints are health, privac
 
 ## Bearer Validation
 
-Use `verifyActionBearer` from `actions/action-bearer.ts` for protected endpoints. It validates the token against `ACTIONS_AUDIENCE` and maps service auth failures to Encore auth errors.
+Use `verifyActionBearer` from `actions/action-bearer.ts` for protected endpoints. It validates the token against `ACTIONS_AUDIENCE`, maps service auth failures to Encore auth errors, and emits a redacted `actions_bearer_validation_failed` diagnostic with the endpoint context.
 
 Use `rejectActionAccessTokenQuery` for every Actions endpoint that accepts a query object. Access tokens travel in the `Authorization` header.
 

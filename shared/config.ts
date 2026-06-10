@@ -1,6 +1,11 @@
 import { resolve } from "node:path";
 import { assertMcpResourceUrl, mcpEndpointPath } from "./mcp-resource.ts";
 import { isNonPublicHostname } from "./network-address.ts";
+import { readRateLimitPolicies, type RateLimitBucket, type RateLimitPolicy } from "./rate-limit-config.ts";
+import type { UpstreamOidcConfig, UpstreamOidcTokenAuthMethod } from "./upstream-oidc-config.ts";
+
+export type { RateLimitBucket, RateLimitPolicy } from "./rate-limit-config.ts";
+export type { UpstreamOidcConfig, UpstreamOidcTokenAuthMethod } from "./upstream-oidc-config.ts";
 
 export interface ServiceConfig {
   issuer: string;
@@ -25,32 +30,11 @@ export interface ServiceConfig {
 }
 
 export type OAuthStoreBackend = "file" | "dynamodb";
-export type RateLimitBucket = "oauth-authorize" | "oauth-token" | "oauth-userinfo" | "mcp-tool" | "mcp-resource";
-
-export interface RateLimitPolicy {
-  windowSeconds: number;
-  maxRequests: number;
-}
 
 export interface DynamoDbStoreConfig {
   tableName: string;
   region: string;
   endpoint?: string;
-}
-
-export type UpstreamOidcTokenAuthMethod = "client_secret_post" | "client_secret_basic";
-
-export interface UpstreamOidcConfig {
-  issuer: string;
-  discoveryUrl: string;
-  authorizationUrl: string;
-  tokenUrl: string;
-  userinfoUrl: string;
-  clientId: string;
-  clientSecret: string;
-  redirectUri: string;
-  scopes: string[];
-  tokenEndpointAuthMethod: UpstreamOidcTokenAuthMethod;
 }
 
 export function readConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig {
@@ -87,8 +71,6 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ServiceConfig 
     production,
   };
 }
-
-const rateLimitBuckets = ["oauth-authorize", "oauth-token", "oauth-userinfo", "mcp-tool", "mcp-resource"] as const satisfies readonly RateLimitBucket[];
 
 function readOAuthStoreBackend(env: NodeJS.ProcessEnv, production: boolean): OAuthStoreBackend {
   const value = env.OAUTH_STORE_BACKEND ?? (production ? "" : "file");
@@ -189,40 +171,6 @@ function readNumber(env: NodeJS.ProcessEnv, key: string, fallback: number, produ
   if (!Number.isSafeInteger(parsed) || parsed <= 0) throw new Error(`${key} must be a positive safe integer`);
   if (max !== undefined && parsed > max) throw new Error(`${key} must be at most ${max}`);
   return parsed;
-}
-
-function readRateLimitPolicies(env: NodeJS.ProcessEnv, defaults: RateLimitPolicy): Record<RateLimitBucket, RateLimitPolicy> {
-  const policies = Object.fromEntries(rateLimitBuckets.map((bucket) => [bucket, { ...defaults }])) as Record<RateLimitBucket, RateLimitPolicy>;
-  const value = env.RATE_LIMIT_POLICIES_JSON;
-  if (value === undefined) return policies;
-  const parsed = jsonObject(value, "RATE_LIMIT_POLICIES_JSON");
-  for (const [bucket, policyValue] of Object.entries(parsed)) {
-    if (!rateLimitBuckets.includes(bucket as RateLimitBucket)) throw new Error("RATE_LIMIT_POLICIES_JSON contains unknown bucket");
-    const policy = jsonObject(policyValue, `RATE_LIMIT_POLICIES_JSON.${bucket}`);
-    const windowSeconds = optionalPositiveInteger(policy.windowSeconds, `RATE_LIMIT_POLICIES_JSON.${bucket}.windowSeconds`) ?? defaults.windowSeconds;
-    const maxRequests = optionalPositiveInteger(policy.maxRequests, `RATE_LIMIT_POLICIES_JSON.${bucket}.maxRequests`) ?? defaults.maxRequests;
-    policies[bucket as RateLimitBucket] = { windowSeconds, maxRequests };
-  }
-  return policies;
-}
-
-function jsonObject(value: unknown, name: string): Record<string, unknown> {
-  let parsed = value;
-  if (typeof value === "string") {
-    try {
-      parsed = JSON.parse(value);
-    } catch {
-      throw new Error(`${name} must be valid JSON`);
-    }
-  }
-  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) throw new Error(`${name} must be a JSON object`);
-  return parsed as Record<string, unknown>;
-}
-
-function optionalPositiveInteger(value: unknown, name: string): number | undefined {
-  if (value === undefined) return undefined;
-  if (typeof value !== "number" || !Number.isSafeInteger(value) || value <= 0) throw new Error(`${name} must be a positive safe integer`);
-  return value;
 }
 
 function readUpstreamOidcConfig(env: NodeJS.ProcessEnv, serviceIssuer: string, production: boolean): UpstreamOidcConfig {

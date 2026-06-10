@@ -10,6 +10,6 @@ interface ProfileRequest {
 
 export const profile = api<ProfileRequest, UserProfile>({ expose: true, auth: true, method: "GET", path: "/actions/profile" }, async (request) => {
   rejectActionAccessTokenQuery(request.access_token);
-  const claims = verifyActionBearer(request.authorization, actionScopes.profile);
+  const claims = verifyActionBearer(request.authorization, actionScopes.profile, { endpoint: "actions.profile", method: "GET" });
   return userProfileFromClaims(claims);
 });

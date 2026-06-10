@@ -1,70 +1,76 @@
 import assert from "node:assert/strict";
 import { createSign, type KeyObject } from "node:crypto";
 import test from "node:test";
-import { ServiceError } from "../../shared/errors.ts";
 import { readConfig, type ServiceConfig } from "../../shared/config.ts";
 import { nowSeconds } from "../../shared/time.ts";
 import { getSigningKey } from "../../auth/tokens/signing-keys.ts";
 import { signJwt } from "../../auth/tokens/jwt.ts";
 import { verifyAccessToken } from "../../auth/tokens/access-token.ts";
+import { AccessTokenValidationError, type AccessTokenFailureReason } from "../../auth/tokens/access-token-error.ts";
 import { encodeJsonBase64Url } from "../../shared/base64url.ts";
 import { testUserProfile } from "../support/user-profile.ts";
 
 test("access token verifier rejects future issued-at values", () => {
   const config = testConfig();
-  assertRejectsToken(config, { iat: nowSeconds() + 60 });
+  assertRejectsToken(config, { iat: nowSeconds() + 60 }, "token_issued_in_future");
 });
 
 test("access token verifier rejects non-integer NumericDate values", () => {
   const config = testConfig();
-  assertRejectsToken(config, { exp: nowSeconds() + 900.5 });
-  assertRejectsToken(config, { nbf: 0.5 });
+  assertRejectsToken(config, { exp: nowSeconds() + 900.5 }, "invalid_numeric_date");
+  assertRejectsToken(config, { nbf: 0.5 }, "invalid_numeric_date");
 });
 
 test("access token verifier rejects empty string claims", () => {
   const config = testConfig();
-  assertRejectsToken(config, { sub: "" });
-  assertRejectsToken(config, { client_id: " " });
-  assertRejectsToken(config, { jti: "" });
+  assertRejectsToken(config, { sub: "" }, "missing_required_claim");
+  assertRejectsToken(config, { client_id: " " }, "missing_required_claim");
+  assertRejectsToken(config, { jti: "" }, "missing_required_claim");
 });
 
 test("access token verifier rejects malformed scope strings", () => {
   const config = testConfig();
-  assertRejectsToken(config, { scope: "" });
-  assertRejectsToken(config, { scope: "openid\nprofile" });
-  assertRejectsToken(config, { scope: "openid profile " });
-  assertRejectsToken(config, { scope: "openid bad!scope" });
+  assertRejectsToken(config, { scope: "" }, "missing_required_claim");
+  assertRejectsToken(config, { scope: "openid\nprofile" }, "invalid_scope_claim");
+  assertRejectsToken(config, { scope: "openid profile " }, "missing_required_claim");
+  assertRejectsToken(config, { scope: "openid bad!scope" }, "invalid_scope_claim");
 });
 
 test("access token verifier rejects malformed JWT input as unauthorized", () => {
   const config = testConfig();
-  assertRejectsRawToken(config, "not-a-jwt");
-  assertRejectsRawToken(config, "aaa.bbb.ccc");
-  assertRejectsRawToken(config, `${signedAccessToken(config, {}).split(".").slice(0, 2).join(".")}.%%%`);
+  assertRejectsRawToken(config, "not-a-jwt", "jwt_malformed");
+  assertRejectsRawToken(config, "aaa.bbb.ccc", "jwt_invalid_header");
+  assertRejectsRawToken(config, `${signedAccessToken(config, {}).split(".").slice(0, 2).join(".")}.%%%`, "jwt_invalid_signature");
 });
 
 test("access token verifier rejects oversized signed JWT input", () => {
   const config = testConfig();
   const token = signedAccessToken(config, { pad: "x".repeat(7000) });
   assert.ok(token.length > 8192);
-  assertRejectsRawToken(config, token);
+  assertRejectsRawToken(config, token, "jwt_oversized");
 });
 
 test("access token verifier rejects unsupported JWT header fields", () => {
   const config = testConfig();
   const key = getSigningKey(config);
-  assertRejectsRawToken(config, signedAccessTokenWithHeader(config, { alg: "RS256", kid: key.kid, typ: "access-token+jwt" }, {}));
-  assertRejectsRawToken(config, signedAccessTokenWithHeader(config, { alg: "RS256", kid: key.kid, typ: "JWT", crit: [] }, {}));
+  assertRejectsRawToken(config, signedAccessTokenWithHeader(config, { alg: "RS256", kid: key.kid, typ: "access-token+jwt" }, {}), "jwt_invalid_header");
+  assertRejectsRawToken(config, signedAccessTokenWithHeader(config, { alg: "RS256", kid: key.kid, typ: "JWT", crit: [] }, {}), "jwt_invalid_header");
 });
 
-function assertRejectsToken(config: ServiceConfig, overrides: Record<string, unknown>): void {
-  assertRejectsRawToken(config, signedAccessToken(config, overrides));
+test("access token verifier reports audience and expiration reasons", () => {
+  const config = testConfig();
+  assertRejectsToken(config, { aud: config.mcpResource }, "audience_mismatch");
+  assertRejectsToken(config, { exp: nowSeconds() - 1 }, "token_expired");
+});
+
+function assertRejectsToken(config: ServiceConfig, overrides: Record<string, unknown>, reason: AccessTokenFailureReason): void {
+  assertRejectsRawToken(config, signedAccessToken(config, overrides), reason);
 }
 
-function assertRejectsRawToken(config: ServiceConfig, token: string): void {
+function assertRejectsRawToken(config: ServiceConfig, token: string, reason: AccessTokenFailureReason): void {
   assert.throws(
     () => verifyAccessToken(config, token, config.actionsAudience),
-    (error) => error instanceof ServiceError && error.code === "unauthorized",
+    (error) => error instanceof AccessTokenValidationError && error.code === "unauthorized" && error.reason === reason,
   );
 }
 
