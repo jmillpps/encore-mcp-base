@@ -99,4 +99,4 @@ Keep new shared behavior in a focused module. Keep request parsing, protocol env
 
 OAuth, MCP, and Actions failures emit safe diagnostics through `shared/diagnostics.ts`. Redaction uses key names to protect tokens, secrets, authorization codes, session IDs, state, nonce, and private key material.
 
-Durable OAuth state lives in the configured store. The store holds hashed authorization codes, hashed upstream states, refresh token families, MCP sessions, and rate-limit buckets.
+Durable OAuth state lives in the configured store. The store holds hashed authorization codes, hashed upstream states, refresh token families, MCP sessions, and rate-limit buckets. Production DynamoDB state also holds bounded remote metadata cache entries for Client ID Metadata Document responses and private key JWT JWKS responses.

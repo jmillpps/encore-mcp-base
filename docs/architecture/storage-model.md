@@ -1,6 +1,6 @@
 # Storage Model
 
-The service stores OAuth, rate-limit, MCP session, and remote metadata cache state through one configured store. Production deployments use DynamoDB. Local development uses the file store by default.
+The service stores OAuth, rate-limit, and MCP session state through one configured store. Production deployments use DynamoDB and store remote metadata cache entries in the same table. Local development uses the file store for OAuth, session, and rate-limit state by default.
 
 ## Record Groups
 
@@ -13,13 +13,13 @@ The service stores OAuth, rate-limit, MCP session, and remote metadata cache sta
 | Rate-limit buckets | Sliding counter window start, previous count, current count, expiration time keyed by bucket plus hashed subject. | Enforce durable request limits across OAuth endpoints, MCP tools, and MCP resources. |
 | Metadata cache entries | Cache key hash, JSON response body, expiration time. | Share Client ID Metadata Document and private key JWT JWKS cache results across production instances. |
 
-The top-level store accepts only these record groups. Missing groups are treated as empty maps. Stored map keys use fixed-length base64url hashes.
+DynamoDB accepts every record group in this table. The local file store accepts the OAuth, MCP session, and rate-limit groups. Missing local file groups are treated as empty maps. Stored map keys use fixed-length base64url hashes.
 
 ## Stored Secrets
 
-The store keeps SHA-256 base64url hashes for authorization codes, upstream authorization states, refresh tokens, MCP session IDs, MCP request IDs, rate-limit subjects, and metadata cache keys.
+The store keeps SHA-256 base64url hashes for authorization codes, upstream authorization states, refresh tokens, MCP session IDs, MCP request IDs, and rate-limit subjects. Production metadata cache keys use the same hash format.
 
-Raw OAuth client secrets, upstream IdP client secrets, signing key material, fetched metadata URLs, and raw bearer material live outside the table. The runtime store keeps OAuth state, session state, rate state, and bounded public metadata cache bodies.
+Raw OAuth client secrets, upstream IdP client secrets, signing key material, fetched metadata URLs, and raw bearer material live outside the table. Production DynamoDB state keeps OAuth state, session state, rate state, and bounded public metadata cache bodies.
 
 ## Production Store
 

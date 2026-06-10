@@ -12,7 +12,7 @@ This section covers production setup, AWS deployment, runtime configuration, ide
 | 4 | [AWS CDK Deployment](aws-cdk.md) | Understand stack inputs, resources, identity provider modes, Parameter Store, outputs, and teardown. |
 | 5 | [CDK Operations](cdk-operations.md) | Run synth, diff, deploy, seed, build, restart, update, and destroy commands in the right order. |
 | 6 | [Runtime Parameters](runtime-parameters.md) | Understand String and SecureString parameters, runtime file placement, secret retrieval, and restarts. |
-| 7 | [Source Build](source-build.md) | Package source, build the image through CodeBuild, push to ECR, and restart the runtime container. |
+| 7 | [Source Build](source-build.md) | Package source, build the image through CodeBuild, push to ECR, promote the image tag, and restart the runtime container. |
 | 8 | [OpenAPI Export](openapi-export.md) | Export or serve the GPT Actions schema with the deployed base URL. |
 | 9 | [Release Verification](release-verification.md) | Verify infrastructure, runtime endpoints, OAuth metadata, GPT Apps, GPT Actions, logs, and rollback readiness. |
 

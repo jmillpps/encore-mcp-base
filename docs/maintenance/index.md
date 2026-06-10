@@ -36,5 +36,5 @@ This section contains operational procedures for a running service. Use these pa
 | Private key exposure | Rotate signing keys, revoke exposed secret material, redeploy, verify JWKS, review logs for token misuse. |
 | Refresh token family replay | Confirm replay through durable store state, revoke the affected family, require account relink for the affected client. |
 | Store file corruption | Stop writers, preserve a copy for analysis, restore the latest known-good backup, verify OAuth and MCP flows. |
-| Metadata document compromise | Remove or pin the affected client, clear metadata cache through restart, require a trusted client record. |
+| Metadata document compromise | Remove the affected metadata-document client, move the integration to a trusted client record or trusted metadata URL, restart to clear in-memory cache, and clear or expire the DynamoDB cache entry. |
 | Repeated wrong-audience tokens | Check ChatGPT configuration, OAuth resource handling, client allowed resources, and Actions or MCP setup values. |

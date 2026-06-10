@@ -34,7 +34,7 @@ Store operator-specific values in an ignored local shell file, CI secret store, 
 
 ## State Table
 
-The stack creates one DynamoDB table for OAuth grants, refresh tokens, MCP sessions, and rate-limit buckets. The table uses `pk` and `sk` keys, on-demand billing, TTL on `ttl`, point-in-time recovery, customer-managed KMS encryption, deletion protection, retained data, and zero secondary indexes.
+The stack creates one DynamoDB table for OAuth grants, refresh tokens, MCP sessions, rate-limit buckets, and metadata cache entries. The table uses `pk` and `sk` keys, on-demand billing, TTL on `ttl`, point-in-time recovery, customer-managed KMS encryption, deletion protection, retained data, and zero secondary indexes.
 
 The instance role receives `DescribeTable`, `GetItem`, `PutItem`, `UpdateItem`, `DeleteItem`, and `TransactWriteItems` on the table.
 
@@ -156,6 +156,16 @@ Upload source and trigger the container build:
 npm --prefix ci/cdk run build:image -- \
   --stack-name "$CDK_STACK_NAME" \
   --image-tag "$IMAGE_TAG"
+```
+
+Promote the built image tag by writing `IMAGE_TAG` under the deployment parameter path:
+
+```sh
+aws ssm put-parameter \
+  --name "$CDK_PARAMETER_PREFIX/IMAGE_TAG" \
+  --type String \
+  --value "$IMAGE_TAG" \
+  --overwrite
 ```
 
 Restart the instance service after the image build completes:

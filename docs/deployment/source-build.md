@@ -47,6 +47,8 @@ CodeBuild installs the Encore CLI, logs the Encore version, authenticates to ECR
 
 ## Runtime Pull
 
+The image build command publishes the requested tag to ECR. Runtime promotion writes the same tag to `IMAGE_TAG` under the deployment Parameter Store path.
+
 The EC2 runner reads `IMAGE_TAG` from Parameter Store. The runner logs in to ECR, pulls the configured tag, removes any existing service container, and starts a new container on `127.0.0.1:8080`.
 
 Caddy terminates HTTPS on ports `80` and `443` and proxies traffic to `127.0.0.1:8080`. The bootstrap installs Caddy `2.10.2` from the official release archive and verifies the SHA-512 checksum before installing the binary.

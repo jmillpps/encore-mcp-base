@@ -26,7 +26,7 @@ Protected tools and protected resources also enforce scopes. Tool scope failures
 | `GET` | `/mcp` | `Authorization`, `Accept`, `MCP-Session-Id` | SSE stream. |
 | `DELETE` | `/mcp` | `Authorization`, `MCP-Session-Id` | Empty response. |
 
-`POST /mcp` requires `Accept: application/json, text/event-stream` and JSON content. `GET /mcp` requires `Accept: text/event-stream`.
+`POST /mcp` requires an `Accept` header that accepts both `application/json` and `text/event-stream`. `GET /mcp` requires an `Accept` header that accepts `text/event-stream`. Exact media types and wildcard media ranges are accepted when their `q` value is positive.
 
 ## Streamable HTTP Status Codes
 

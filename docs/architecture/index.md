@@ -22,7 +22,7 @@ This section explains stable system design, protocol boundaries, trust boundarie
 | Protocol adapters | MCP and Actions adapters translate transport details and call shared behavior. | [Capabilities](capabilities.md), [Request Lifecycle](../development/request-lifecycle.md) |
 | OAuth authority | The service issues downstream OAuth tokens and delegates user authentication to upstream OIDC. | [OAuth Provider](oauth-provider.md), [Identity Provider](../deployment/identity-provider.md) |
 | Audience separation | MCP tokens use the MCP resource audience and Actions tokens use the Actions audience. | [Security Model](security-model.md), [Configuration Reference](../api/configuration.md) |
-| Durable state | OAuth grants, refresh tokens, rate limits, and MCP sessions share one guarded store. | [Storage Model](storage-model.md), [DynamoDB Store](dynamodb-store.md), [Storage Maintenance](../maintenance/storage.md) |
+| Durable state | OAuth grants, refresh tokens, rate limits, and MCP sessions use guarded storage. Production DynamoDB state also includes metadata cache entries. | [Storage Model](storage-model.md), [DynamoDB Store](dynamodb-store.md), [Storage Maintenance](../maintenance/storage.md) |
 | External specs | Architecture claims must align with authoritative external specs and official product docs. | [External References](../reference/external-references.md) |
 
 ## Decision Anchors

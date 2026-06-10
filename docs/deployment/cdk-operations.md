@@ -174,6 +174,16 @@ aws codebuild batch-get-builds \
   --output text
 ```
 
+Promote the built tag to the runtime parameter path:
+
+```sh
+aws ssm put-parameter \
+  --name "$CDK_PARAMETER_PREFIX/IMAGE_TAG" \
+  --type String \
+  --value "$IMAGE_TAG" \
+  --overwrite
+```
+
 ## Restart Runtime
 
 Restart the service after a successful image build or runtime parameter update:
@@ -204,8 +214,9 @@ Use this order for service-only updates:
 1. Commit the runtime source changes.
 2. Run targeted checks.
 3. Build and publish the image.
-4. Restart the runtime service.
-5. Verify public endpoints.
+4. Promote the built image tag with `IMAGE_TAG`.
+5. Restart the runtime service.
+6. Verify public endpoints.
 
 Use this order for infrastructure updates:
 
@@ -215,8 +226,9 @@ Use this order for infrastructure updates:
 4. Deploy the stack.
 5. Seed runtime parameters when ChatGPT client registration changed.
 6. Build and publish the image when runtime source changed.
-7. Restart the runtime service.
-8. Verify public endpoints and ChatGPT flows.
+7. Promote the built image tag with `IMAGE_TAG` when a new image was built.
+8. Restart the runtime service.
+9. Verify public endpoints and ChatGPT flows.
 
 ## Teardown
 

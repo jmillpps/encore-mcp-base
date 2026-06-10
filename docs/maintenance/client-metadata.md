@@ -33,6 +33,10 @@ Each service process also keeps a bounded in-memory hot cache for parsed metadat
 
 Responses with `Cache-Control: no-store` remove the corresponding DynamoDB cache entry.
 
+Restarting the service clears only the in-process hot cache. DynamoDB cache entries remain available until their TTL expires or an operator removes the targeted `CACHE#client-metadata#...` or `CACHE#client-jwks#...` item from the state table.
+
+When a metadata-document client is no longer trusted, remove the ChatGPT configuration that uses that client ID URL, move the integration to a trusted static client record or trusted metadata URL, restart the service to clear process memory, and clear the affected DynamoDB cache entry or wait for its TTL.
+
 ## Metadata Rules
 
 Metadata documents must decode as valid UTF-8 and parse as JSON.

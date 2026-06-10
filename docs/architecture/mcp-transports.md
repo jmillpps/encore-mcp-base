@@ -20,7 +20,7 @@ Every `/mcp` request validates transport input before protocol behavior runs.
 | Authorization header cardinality | All `/mcp` methods. | Rejects duplicate `Authorization` headers. |
 | MCP bearer validation | `POST /mcp`, `GET /mcp`, and `DELETE /mcp`. | Requires a token whose audience equals the configured MCP resource. |
 | CORS metadata auth shape | `OPTIONS /mcp`. | Validates authorization header cardinality and returns CORS metadata. |
-| `Accept` validation | `POST /mcp`, `GET /mcp`. | `POST` must accept both `application/json` and `text/event-stream`; `GET` must accept `text/event-stream`. |
+| `Accept` validation | `POST /mcp`, `GET /mcp`. | `POST` accepts exact or wildcard ranges for both `application/json` and `text/event-stream` with positive `q` values. `GET` accepts exact or wildcard ranges for `text/event-stream` with positive `q` values. |
 | `Content-Type` validation | `POST /mcp`. | Requires `application/json` with UTF-8 semantics. |
 | CORS response headers | All successful `/mcp` methods with an allowed origin. | Returns pinned methods and pinned request headers. |
 

@@ -11,7 +11,7 @@ Production mode is active when `NODE_ENV=production`.
 | `ACTIONS_AUDIENCE` | URL | Public Actions audience URL. HTTPS. Public hostname. |
 | `WIDGET_DOMAIN` | URL | ChatGPT Apps widget origin. HTTPS. Root path. Public hostname. Unique per app. |
 | `OAUTH_STORE_BACKEND` | enum | Production value is `dynamodb`. |
-| `OAUTH_DYNAMODB_TABLE_NAME` | string | DynamoDB table that stores OAuth, MCP session, and rate-limit state. |
+| `OAUTH_DYNAMODB_TABLE_NAME` | string | DynamoDB table that stores OAuth, MCP session, rate-limit, and metadata cache state. |
 | `OAUTH_DYNAMODB_REGION` | string | AWS Region for the DynamoDB table. |
 | `ALLOWED_ORIGINS` | string list | Space-separated browser origins allowed for ChatGPT. |
 | `OAUTH_CLIENTS_JSON` | JSON array | Configured OAuth clients. |

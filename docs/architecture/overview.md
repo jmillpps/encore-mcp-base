@@ -60,9 +60,9 @@ The same OAuth provider issues tokens for both GPT Apps and GPT Actions. Each en
 
 ## Durable State
 
-OAuth state, refresh tokens, rate-limit buckets, and MCP Streamable HTTP sessions are stored in the configured OAuth store. Production uses one DynamoDB table. Local development uses a JSON file. Sensitive tokens, authorization codes, upstream states, request IDs, and MCP session IDs are stored as SHA-256 base64url hashes.
+OAuth state, refresh tokens, rate-limit buckets, and MCP Streamable HTTP sessions are stored in the configured OAuth store. Production uses one DynamoDB table and also stores remote metadata cache entries there. Local development uses a JSON file for OAuth, session, and rate-limit state. Sensitive tokens, authorization codes, upstream states, request IDs, MCP session IDs, rate-limit subjects, and metadata cache keys are stored as SHA-256 base64url hashes.
 
-The store enforces owner-only permissions, rejects symlinks, serializes writes inside the process, serializes writes across processes with a lock file, writes temporary files with `0600`, and commits updates with atomic rename. Storage design is covered in [Storage Model](storage-model.md). Operator handling is covered in [Storage Maintenance](../maintenance/storage.md).
+The production DynamoDB table uses direct primary-key access patterns, zero secondary indexes, TTL, point-in-time recovery, customer-managed KMS encryption, deletion protection, retained table data, conditional writes, and transactions. The local file store enforces owner-only permissions, rejects symlinks, serializes writes inside the process, serializes writes across processes with a lock file, writes temporary files with `0600`, fsyncs writes, and commits updates with atomic rename. Storage design is covered in [Storage Model](storage-model.md). Operator handling is covered in [Storage Maintenance](../maintenance/storage.md).
 
 ## Configuration Boundary
 

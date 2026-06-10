@@ -82,6 +82,15 @@ A direct callback request without upstream parameters returns an OAuth error res
 
 ## Runtime Verification
 
+Confirm the promoted runtime image tag:
+
+```sh
+aws ssm get-parameter \
+  --name "$CDK_PARAMETER_PREFIX/IMAGE_TAG" \
+  --query Parameter.Value \
+  --output text
+```
+
 Check systemd service status through SSM:
 
 ```sh
@@ -98,6 +107,15 @@ aws ssm send-command \
   --instance-ids "$INSTANCE_ID" \
   --document-name AWS-RunShellScript \
   --parameters "commands=[\"docker ps --filter name=${CDK_SERVICE_NAME} --format '{{.Status}}'\"]"
+```
+
+Check the running container image through SSM:
+
+```sh
+aws ssm send-command \
+  --instance-ids "$INSTANCE_ID" \
+  --document-name AWS-RunShellScript \
+  --parameters "commands=[\"docker ps --filter name=${CDK_SERVICE_NAME} --format '{{.Image}}'\"]"
 ```
 
 Check recent service logs through SSM when public verification fails:
@@ -127,10 +145,12 @@ https://service.example.com/oauth/token
 Complete account linking through the configured upstream identity provider. After sign-in, refresh the app and confirm ChatGPT lists the MCP tools:
 
 - `health.check`
+- `health.status_card`
 - `identity.profile`
+- `identity.profile_card`
 - `auth.session`
 
-Run `health.check` and `identity.profile` from a normal ChatGPT chat to verify the MCP token audience and profile claims.
+Run `health.check`, `health.status_card`, `identity.profile`, and `identity.profile_card` from a normal ChatGPT chat to verify the MCP token audience, profile claims, and inline UI resources.
 
 ## GPT Actions Verification
 

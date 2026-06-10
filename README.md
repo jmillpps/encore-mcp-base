@@ -24,7 +24,7 @@ Start with the full documentation map at [docs/index.md](docs/index.md).
 | OAuth provider | Authorization code grants, refresh grants, PKCE, client authentication, RS256 access tokens, ID tokens, JWKS, discovery, userinfo. |
 | Upstream identity | OIDC authorization bridge through `/oauth/callback`, upstream userinfo claim validation, generic provider configuration. |
 | Security | Audience-bound tokens, scope checks, duplicate-header rejection, query bearer rejection, rate limits, diagnostics redaction, hashed stored tokens. |
-| Operations | Production startup validation, durable JSON state, AWS CDK deployment, Systems Manager Parameter Store, KMS-backed secrets. |
+| Operations | Production startup validation, DynamoDB state, local file state for development, AWS CDK deployment, Systems Manager Parameter Store, KMS-backed secrets. |
 | Maintainability | Small domain modules, shared capability code, protocol adapters, focused tests under `test/`, docs under `docs/`. |
 
 ## Standards Baseline
@@ -206,7 +206,7 @@ The service is built as production infrastructure from the first commit.
 - Protected MCP tools, MCP resources, and Actions endpoints enforce scopes at the adapter boundary.
 - Query-string bearer tokens are rejected.
 - Duplicate authorization headers are rejected.
-- OAuth state, refresh tokens, rate-limit buckets, and MCP sessions use a durable JSON store.
+- Production DynamoDB stores OAuth state, refresh tokens, rate-limit buckets, MCP sessions, and metadata cache entries. Local development uses the file store for OAuth state, refresh tokens, rate-limit buckets, and MCP sessions.
 - Sensitive tokens and session IDs are stored as hashes.
 - Diagnostics are designed for safe operational signals and secret redaction.
 - CORS origins are explicit and wildcard origins are rejected.
@@ -221,7 +221,7 @@ Security details live in [Security Model](docs/architecture/security-model.md), 
 | OAuth clients | Production client records contain exact redirect URIs, allowed scopes, allowed resources, auth method, PKCE policy, and secret hashes where required. |
 | Upstream identity | The upstream OIDC provider accepts `/oauth/callback` and returns `sub`, `email`, and `email_verified` through userinfo. |
 | Secrets | Raw client secrets, upstream IdP secret, and signing key material are loaded from secure runtime configuration. |
-| Storage | `OAUTH_STORE_PATH` points to durable storage owned by the service user. |
+| Storage | Production uses `OAUTH_STORE_BACKEND=dynamodb` with a DynamoDB table and Region. Local development uses `OAUTH_STORE_PATH` for the file store. |
 | Origins | `ALLOWED_ORIGINS` contains explicit browser origins used by ChatGPT and local development. |
 | OpenAPI | `/actions/openapi.json` returns OpenAPI 3.1 with OAuth URLs on the deployed origin. |
 | Verification | Targeted tests pass for the changed surface and `npm run check` passes before release. |
@@ -273,7 +273,7 @@ The CDK path provisions:
 - KMS key for SecureString values.
 - Systems Manager Parameter Store runtime configuration.
 - Optional Cognito upstream OIDC provider.
-- Runtime service container with durable OAuth state.
+- Runtime service container with DynamoDB state in production and local file state during development.
 
 Operator-specific values stay outside tracked source. Use environment variables, CI secrets, ignored local shell files, or a secure operator runbook for account IDs, hosted zone IDs, domains, parameter paths, client secrets, and stack names.
 

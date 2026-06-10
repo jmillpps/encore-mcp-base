@@ -80,4 +80,4 @@ The store checks the old token, family metadata, and rotation marker with strong
 
 ## Local Development
 
-Local development uses the file store by default. The file store keeps the same record groups and hash rules. Production configuration requires the DynamoDB backend.
+Local development uses the file store by default. The file store keeps the OAuth, MCP session, and rate-limit record groups with the same hash rules. Production configuration requires the DynamoDB backend.
