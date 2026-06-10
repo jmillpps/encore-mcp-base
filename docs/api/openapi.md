@@ -9,7 +9,8 @@ The OpenAPI document is the stable GPT Actions contract served by the service an
 | `openapi` | Version `3.1.0`. |
 | `info` | Service title, description, and version. |
 | `servers` | Public service origin. |
-| `x-generated-from` | Fixed value `encore-compiled-route-graph`. |
+| `x-source` | Fixed value `manual-actions-document`. |
+| `x-route-graph-verification` | Fixed value `encore-check`. |
 | `paths` | Health, profile, and session Actions operations. |
 | `components.securitySchemes` | OAuth2 authorization code flow. |
 | `components.schemas` | JSON response and error schemas. |
@@ -54,6 +55,8 @@ node --experimental-strip-types tools/export-openapi.ts \
 ```
 
 The command validates the route graph and compatibility rules before writing output.
+
+The OpenAPI document is maintained in `actions/openapi-document.ts`. The export command verifies the Encore route graph before writing an artifact. The public endpoint serves the same document builder at runtime.
 
 ## Export Options
 

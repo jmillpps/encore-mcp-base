@@ -9,7 +9,8 @@ export function openApiDocument(baseUrl: string): JsonObject {
       version: "0.1.0",
     },
     servers: [{ url: baseUrl }],
-    "x-generated-from": "encore-compiled-route-graph",
+    "x-source": "manual-actions-document",
+    "x-route-graph-verification": "encore-check",
     paths: actionPaths(),
     components: {
       securitySchemes: { OAuth2: oauthScheme(baseUrl) },

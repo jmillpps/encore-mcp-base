@@ -20,7 +20,7 @@ The public OpenAPI endpoint is read-only. It accepts GET requests and returns th
 
 ## OpenAPI Model
 
-The OpenAPI document builder is shared by the public schema endpoint and `tools/export-openapi.ts`. The export command reads the Encore route graph, builds a focused OpenAPI document, validates ChatGPT Actions compatibility rules, and writes JSON.
+The OpenAPI document builder is shared by the public schema endpoint and `tools/export-openapi.ts`. The document is maintained in code, and the export command reads the Encore route graph before validating ChatGPT Actions compatibility rules and writing JSON.
 
 The document includes:
 

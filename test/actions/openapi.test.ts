@@ -14,7 +14,8 @@ test("OpenAPI export contains Actions endpoints and OAuth authorization code met
   assert.equal(result.status, 0, result.stderr);
   const document = JSON.parse(result.stdout) as Record<string, unknown>;
   assert.equal(document.openapi, "3.1.0");
-  assert.equal(document["x-generated-from"], "encore-compiled-route-graph");
+  assert.equal(document["x-source"], "manual-actions-document");
+  assert.equal(document["x-route-graph-verification"], "encore-check");
   assert.match(requireString(requireRecord(document.info, "info").description, "info description"), /OAuth-protected/);
   const paths = document.paths as Record<string, Record<string, unknown>>;
   const health = requireRecord(requireRecord(paths["/health"], "/health").get, "health get");

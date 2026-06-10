@@ -3,8 +3,13 @@ export function mediaType(value: string): string {
 }
 
 export function acceptsMediaType(value: string, expected: string): boolean {
-  const normalized = expected.toLowerCase();
-  return value.split(",").some((range) => mediaType(range) === normalized && mediaRangeAccepted(range));
+  const normalized = mediaTypeParts(expected);
+  if (!normalized) return false;
+  return value.split(",").some((range) => {
+    const accepted = mediaTypeParts(mediaType(range));
+    if (!accepted || !mediaRangeAccepted(range)) return false;
+    return (accepted.type === "*" || accepted.type === normalized.type) && (accepted.subtype === "*" || accepted.subtype === normalized.subtype);
+  });
 }
 
 export function contentTypeUsesUtf8(value: string): boolean {
@@ -32,6 +37,18 @@ function mediaRangeAccepted(value: string): boolean {
   if (quality === undefined) return true;
   if (!/^(?:0(?:\.[0-9]{0,3})?|1(?:\.0{0,3})?)$/.test(quality)) return false;
   return Number(quality) > 0;
+}
+
+function mediaTypeParts(value: string): { type: string; subtype: string } | undefined {
+  const separator = value.indexOf("/");
+  if (separator <= 0 || separator === value.length - 1) return undefined;
+  const type = value.slice(0, separator).trim().toLowerCase();
+  const subtype = value.slice(separator + 1).trim().toLowerCase();
+  if (!type || !subtype) return undefined;
+  if (type === "*" && subtype !== "*") return undefined;
+  if (type.includes("*") && type !== "*") return undefined;
+  if (subtype.includes("*") && subtype !== "*") return undefined;
+  return { type, subtype };
 }
 
 function unquote(value: string): string {
